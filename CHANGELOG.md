@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.1.2] - 2026-07-19
+
+### Added
+
+- One-click OTA installation from the web interface
+- Automatic status polling during restart
+- Visible success and failure messages
+
 ## [4.1.1] - 2026-07-19
 
 ### Changed
