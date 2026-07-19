@@ -21,6 +21,8 @@ def test_update_page():
 
     assert response.status_code == 200
     assert b"Software-Update" in response.data
+    assert b"Update herunterladen und pr" in response.data
+    assert b"Downloadstatus" in response.data
 
 @patch("solarinspector.check_for_update")
 def test_update_check_endpoint(mock_check):

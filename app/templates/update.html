@@ -58,10 +58,42 @@
       Release auf GitHub öffnen
     </a>
 
-    <button id="install-update-button" type="button" disabled>
-      Installation folgt in Version 4.1.1
+    <button id="download-update-button" type="button" disabled>
+      Update herunterladen und prüfen
     </button>
+
   </div>
+</section>
+
+<section class="card" id="download-status-card">
+  <h2>Downloadstatus</h2>
+
+  <div class="update-grid">
+    <div>
+      <span class="label">Status</span>
+      <strong id="download-state">Bereit</strong>
+    </div>
+
+    <div>
+      <span class="label">Fortschritt</span>
+      <strong id="download-progress">0 %</strong>
+    </div>
+
+    <div>
+      <span class="label">Verifizierte Version</span>
+      <strong id="verified-version">–</strong>
+    </div>
+  </div>
+
+  <progress
+    id="download-progress-bar"
+    value="0"
+    max="100"
+  ></progress>
+
+  <p id="download-message">
+    Noch kein Update heruntergeladen.
+  </p>
 </section>
 
 <section class="card error-card" id="update-error" hidden>
