@@ -46,6 +46,8 @@ rsync -a \
 cp -R "$ROOT_DIR/scripts" "$PACKAGE_DIR/"
 cp -R "$ROOT_DIR/tools" "$PACKAGE_DIR/"
 cp -R "$ROOT_DIR/docs" "$PACKAGE_DIR/"
+cp -R "$ROOT_DIR/updater" "$PACKAGE_DIR/"
+cp -R "$ROOT_DIR/systemd" "$PACKAGE_DIR/"
 cp "$ROOT_DIR/VERSION" "$PACKAGE_DIR/"
 cp "$ROOT_DIR/LICENSE" "$PACKAGE_DIR/"
 cp "$ROOT_DIR/README.md" "$PACKAGE_DIR/"

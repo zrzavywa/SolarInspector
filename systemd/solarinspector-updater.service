@@ -1,3 +1,4 @@
+
 [Unit]
 Description=SolarInspector Privileged Updater
 After=network-online.target
@@ -25,3 +26,4 @@ ReadWritePaths=/var/log/solarinspector
 
 [Install]
 WantedBy=multi-user.target
+
