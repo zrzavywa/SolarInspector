@@ -57,3 +57,4 @@ jobs:
           files: |
             dist/SolarInspector-*.tar.gz
             dist/SolarInspector-*.sha256
+            release-manifest.json
