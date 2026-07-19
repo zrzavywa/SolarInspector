@@ -13,7 +13,7 @@ def test_health_endpoint():
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["status"] == "ok"
-    assert payload["version"] == "4.1.0"
+    assert payload["version"] == si.get_installed_version()
 
 def test_system_version_endpoint():
     client = si.app.test_client()
@@ -23,7 +23,7 @@ def test_system_version_endpoint():
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["product"] == "SolarInspector"
-    assert payload["version"] == "4.1.0"
+    assert payload["version"] == si.get_installed_version()
 
 def test_update_page():
     client = si.app.test_client()

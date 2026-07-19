@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.1.1] - 2026-07-19
+
+### Changed
+
+- End-to-end update validation release
+
 ## [4.1.0] - 2026-07-19
 
 ### Added
