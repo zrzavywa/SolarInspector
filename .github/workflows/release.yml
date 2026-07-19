@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: app/requirements.txt
+
+      - name: Abhängigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+          pip install pytest
+
+      - name: Tests ausführen
+        env:
+          SOLARINSPECTOR_SECRET: github-actions-release-secret
+        run: |
+          pytest -v
+
+      - name: Version gegen Tag prüfen
+        run: |
+          FILE_VERSION="$(tr -d '[:space:]' < VERSION)"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+
+          if [ "$FILE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Fehler: VERSION=$FILE_VERSION, Tag=$TAG_VERSION"
+            exit 1
+          fi
+
+      - name: Release-Paket erzeugen
+        run: |
+          chmod +x scripts/build-release.sh
+          ./scripts/build-release.sh
+
+      - name: GitHub Release erstellen
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/SolarInspector-*.tar.gz
+            dist/SolarInspector-*.sha256
