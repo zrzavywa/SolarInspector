@@ -1,19 +1,92 @@
 import io
 import tarfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
 from release_installer import (
     ReleaseInstallError,
     activate_release,
+    activate_with_healthcheck,
     prepare_release,
     prepare_release_environment,
     read_current_release,
     rollback_release,
     validate_release_archive,
+    wait_for_healthcheck,
 )
+
+@patch("release_installer.requests.get")
+def test_healthcheck_accepts_expected_version(mock_get):
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = {
+        "status": "ok",
+        "version": "4.1.0",
+    }
+    mock_get.return_value = response
+
+    payload = wait_for_healthcheck(
+        url="http://127.0.0.1:8787/api/health",
+        expected_version="4.1.0",
+        timeout_seconds=1,
+        interval_seconds=0.01,
+    )
+
+    assert payload["status"] == "ok"
+
+@patch("release_installer.requests.get")
+def test_healthcheck_rejects_wrong_version(mock_get):
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = {
+        "status": "ok",
+        "version": "4.0.1",
+    }
+    mock_get.return_value = response
+
+    with pytest.raises(ReleaseInstallError):
+        wait_for_healthcheck(
+            url="http://127.0.0.1:8787/api/health",
+            expected_version="4.1.0",
+            timeout_seconds=0.05,
+            interval_seconds=0.01,
+        )
+
+@patch("release_installer.wait_for_healthcheck")
+def test_failed_healthcheck_rolls_back(
+    mock_healthcheck,
+    tmp_path: Path,
+):
+    releases = tmp_path / "releases"
+    old_release = releases / "4.0.1"
+    new_release = releases / "4.1.0"
+    current = tmp_path / "current"
+
+    old_release.mkdir(parents=True)
+    new_release.mkdir(parents=True)
+    current.symlink_to(old_release.resolve())
+
+    mock_healthcheck.side_effect = ReleaseInstallError("boom")
+
+    restart_calls = []
+
+    def restart_service():
+        restart_calls.append(True)
+
+    with pytest.raises(ReleaseInstallError):
+        activate_with_healthcheck(
+            release_directory=new_release,
+            current_link=current,
+            healthcheck_url="http://127.0.0.1:8787/api/health",
+            expected_version="4.1.0",
+            restart_service=restart_service,
+            timeout_seconds=1,
+        )
+
+    assert current.resolve() == old_release.resolve()
+    assert len(restart_calls) == 2
 
 @patch("release_installer.run_release_smoke_test")
 @patch("release_installer.install_release_dependencies")

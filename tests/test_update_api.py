@@ -4,6 +4,17 @@ import solarinspector as si
 from github_updater import ReleaseInfo
 
 
+
+def test_health_endpoint():
+    client = si.app.test_client()
+
+    response = client.get("/api/health")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "ok"
+    assert payload["version"] == "4.1.0"
+
 def test_system_version_endpoint():
     client = si.app.test_client()
 

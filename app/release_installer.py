@@ -5,6 +5,8 @@ import tarfile
 import os
 import subprocess
 import sys
+import time
+import requests
 from pathlib import Path
 
 
@@ -378,6 +380,96 @@ def activate_release(
         )
 
     return previous_release
+
+
+def wait_for_healthcheck(
+    url: str,
+    expected_version: str,
+    timeout_seconds: int = 60,
+    interval_seconds: float = 2.0,
+) -> dict:
+    deadline = time.monotonic() + timeout_seconds
+    last_error: Exception | None = None
+
+    while time.monotonic() < deadline:
+        try:
+            response = requests.get(
+                url,
+                timeout=5,
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": "SolarInspector-Updater",
+                },
+            )
+            response.raise_for_status()
+            payload = response.json()
+
+            if payload.get("status") != "ok":
+                raise ReleaseInstallError(
+                    f"Healthcheck meldet Status {payload.get('status')!r}."
+                )
+
+            if payload.get("version") != expected_version:
+                raise ReleaseInstallError(
+                    "Healthcheck meldet eine unerwartete Version: "
+                    f"{payload.get('version')!r}"
+                )
+
+            return payload
+
+        except (
+            requests.RequestException,
+            ValueError,
+            ReleaseInstallError,
+        ) as exc:
+            last_error = exc
+            time.sleep(interval_seconds)
+
+    raise ReleaseInstallError(
+        "Healthcheck ist innerhalb des Zeitlimits fehlgeschlagen: "
+        + str(last_error or "unbekannter Fehler")
+    )
+
+
+def activate_with_healthcheck(
+    release_directory: Path,
+    current_link: Path,
+    healthcheck_url: str,
+    expected_version: str,
+    restart_service,
+    timeout_seconds: int = 60,
+) -> Path | None:
+    previous_release = activate_release(
+        release_directory=release_directory,
+        current_link=current_link,
+    )
+
+    try:
+        restart_service()
+
+        wait_for_healthcheck(
+            url=healthcheck_url,
+            expected_version=expected_version,
+            timeout_seconds=timeout_seconds,
+        )
+
+        return previous_release
+
+    except Exception as exc:
+        if previous_release is not None:
+            rollback_release(
+                previous_release=previous_release,
+                current_link=current_link,
+            )
+
+            try:
+                restart_service()
+            except Exception:
+                pass
+
+        raise ReleaseInstallError(
+            f"Aktivierung fehlgeschlagen; Rollback durchgeführt: {exc}"
+        ) from exc
 
 
 def rollback_release(

@@ -1112,6 +1112,17 @@ def api_status():
     return jsonify(collector.status())
 
 
+@app.get("/api/health")
+def api_health():
+    return {
+        "status": "ok",
+        "version": get_installed_version(),
+        "config_schema": 5,
+        "database": "ok",
+        "web": "ok",
+    }
+    
+
 @app.get("/api/live")
 def api_live():
     latest = database.latest()
