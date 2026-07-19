@@ -23,7 +23,14 @@ import webbrowser
 from dataclasses import dataclass, asdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from github_updater import UpdateCheckError, check_for_update
+from github_updater import (
+    UpdateCheckError,
+    UpdateVerificationError,
+    check_for_update,
+    download_and_verify_release,
+)
+from update_status import read_update_status, write_update_status
+
 from typing import Any, Iterator, Optional
 
 import requests
@@ -41,6 +48,20 @@ DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "solarinspector.db"
 LOG_PATH = DATA_DIR / "solarinspector.log"
 PID_PATH = DATA_DIR / "solarinspector.pid"
+
+UPDATE_STATUS_PATH = Path(
+    os.environ.get(
+        "SOLARINSPECTOR_UPDATE_STATUS",
+        Path(__file__).resolve().parent / "data" / "update-status.json",
+    )
+)
+
+UPDATE_CACHE_DIR = Path(
+    os.environ.get(
+        "SOLARINSPECTOR_UPDATE_CACHE",
+        Path(__file__).resolve().parent / "data" / "updates",
+    )
+)
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "general": {
@@ -1274,6 +1295,73 @@ def api_update_check():
         "checksum_name": release.checksum_name,
         "checksum_url": release.checksum_url,
     }
+
+@app.get("/api/update/status")
+def api_update_status():
+    return read_update_status(UPDATE_STATUS_PATH)
+
+@app.post("/api/update/download")
+def api_update_download():
+    installed_version = get_installed_version()
+
+    write_update_status(
+        UPDATE_STATUS_PATH,
+        state="checking",
+        progress=10,
+        message="GitHub Release wird geprüft.",
+        installed_version=installed_version,
+    )
+
+    try:
+        release = check_for_update(installed_version)
+
+        if not release.update_available:
+            status = write_update_status(
+                UPDATE_STATUS_PATH,
+                state="idle",
+                progress=0,
+                message="Keine neuere Version verfügbar.",
+                available_version=release.available_version,
+            )
+            return status, 409
+
+        write_update_status(
+            UPDATE_STATUS_PATH,
+            state="downloading",
+            progress=30,
+            message="Release-Paket wird heruntergeladen.",
+            available_version=release.available_version,
+        )
+
+        target_directory = (
+            UPDATE_CACHE_DIR / release.available_version
+        )
+
+        archive_path = download_and_verify_release(
+            release,
+            target_directory=target_directory,
+        )
+
+        status = write_update_status(
+            UPDATE_STATUS_PATH,
+            state="verified",
+            progress=100,
+            message="Release-Paket wurde erfolgreich heruntergeladen und geprüft.",
+            archive_path=str(archive_path),
+            available_version=release.available_version,
+        )
+
+        return status
+
+    except (UpdateCheckError, UpdateVerificationError) as exc:
+        status = write_update_status(
+            UPDATE_STATUS_PATH,
+            state="failed",
+            progress=0,
+            message=str(exc),
+        )
+        return status, 502
+
 
 @app.get("/update")
 def update_page():
