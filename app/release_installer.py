@@ -326,3 +326,72 @@ def prepare_release(
         raise
 
     return target_directory
+
+
+def read_current_release(current_link: Path) -> Path | None:
+    if not current_link.exists() and not current_link.is_symlink():
+        return None
+
+    if not current_link.is_symlink():
+        raise ReleaseInstallError(
+            f"{current_link} ist kein symbolischer Link."
+        )
+
+    try:
+        return current_link.resolve(strict=True)
+    except FileNotFoundError as exc:
+        raise ReleaseInstallError(
+            "Der current-Link verweist auf kein gültiges Release."
+        ) from exc
+
+def activate_release(
+    release_directory: Path,
+    current_link: Path,
+) -> Path | None:
+    if not release_directory.is_dir():
+        raise ReleaseInstallError(
+            f"Release-Verzeichnis fehlt: {release_directory}"
+        )
+
+    previous_release = read_current_release(current_link)
+
+    current_link.parent.mkdir(parents=True, exist_ok=True)
+
+    temporary_link = current_link.with_name(
+        f".{current_link.name}.tmp"
+    )
+
+    temporary_link.unlink(missing_ok=True)
+
+    temporary_link.symlink_to(
+        release_directory.resolve(),
+        target_is_directory=True,
+    )
+
+    temporary_link.replace(current_link)
+
+    active_release = read_current_release(current_link)
+
+    if active_release != release_directory.resolve():
+        raise ReleaseInstallError(
+            "Das Release konnte nicht aktiviert werden."
+        )
+
+    return previous_release
+
+
+def rollback_release(
+    previous_release: Path,
+    current_link: Path,
+) -> Path:
+    if not previous_release.is_dir():
+        raise ReleaseInstallError(
+            f"Vorheriges Release fehlt: {previous_release}"
+        )
+
+    activate_release(
+        release_directory=previous_release,
+        current_link=current_link,
+    )
+
+    return previous_release.resolve()

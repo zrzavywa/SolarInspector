@@ -7,8 +7,11 @@ import pytest
 
 from release_installer import (
     ReleaseInstallError,
+    activate_release,
     prepare_release,
     prepare_release_environment,
+    read_current_release,
+    rollback_release,
     validate_release_archive,
 )
 
@@ -152,3 +155,56 @@ def test_runtime_config_is_rejected(tmp_path: Path):
             archive_path,
             root,
         )
+
+
+def test_activate_release_creates_current_symlink(tmp_path: Path):
+    releases = tmp_path / "releases"
+    release = releases / "4.1.0"
+    current = tmp_path / "current"
+
+    release.mkdir(parents=True)
+
+    previous = activate_release(release, current)
+
+    assert previous is None
+    assert current.is_symlink()
+    assert current.resolve() == release.resolve()
+
+def test_activate_release_returns_previous_release(tmp_path: Path):
+    releases = tmp_path / "releases"
+    old_release = releases / "4.0.1"
+    new_release = releases / "4.1.0"
+    current = tmp_path / "current"
+
+    old_release.mkdir(parents=True)
+    new_release.mkdir(parents=True)
+
+    current.symlink_to(old_release.resolve())
+
+    previous = activate_release(new_release, current)
+
+    assert previous == old_release.resolve()
+    assert current.resolve() == new_release.resolve()
+
+def test_rollback_restores_previous_release(tmp_path: Path):
+    releases = tmp_path / "releases"
+    old_release = releases / "4.0.1"
+    new_release = releases / "4.1.0"
+    current = tmp_path / "current"
+
+    old_release.mkdir(parents=True)
+    new_release.mkdir(parents=True)
+
+    current.symlink_to(new_release.resolve())
+
+    result = rollback_release(old_release, current)
+
+    assert result == old_release.resolve()
+    assert current.resolve() == old_release.resolve()
+
+def test_non_symlink_current_path_is_rejected(tmp_path: Path):
+    current = tmp_path / "current"
+    current.mkdir()
+
+    with pytest.raises(ReleaseInstallError):
+        read_current_release(current)
