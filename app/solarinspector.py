@@ -23,6 +23,7 @@ import webbrowser
 from dataclasses import dataclass, asdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from github_updater import UpdateCheckError, check_for_update
 from typing import Any, Iterator, Optional
 
 import requests
@@ -87,6 +88,17 @@ DEVICE_TYPES = {
     "shelly_pro_3em": "Shelly Pro 3EM / EM RPC",
     "simulation": "Simulation",
 }
+
+
+def get_installed_version() -> str:
+    version_file = Path(__file__).resolve().parent.parent / "VERSION"
+
+    try:
+        version = version_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        return "0.0.0"
+
+    return version or "0.0.0"
 
 
 def log(message: str) -> None:
@@ -1224,6 +1236,44 @@ def api_delete_all():
     database.delete_all()
     collector.reset_state()
     return jsonify({"ok": True})
+
+
+@app.get("/api/system/version")
+def api_system_version():
+    return {
+        "product": "SolarInspector",
+        "version": get_installed_version(),
+        "config_schema": 5,
+    }
+
+
+@app.get("/api/update/check")
+def api_update_check():
+    installed_version = get_installed_version()
+
+    try:
+        release = check_for_update(installed_version)
+    except UpdateCheckError as exc:
+        return {
+            "status": "error",
+            "installed_version": installed_version,
+            "message": str(exc),
+        }, 502
+
+    return {
+        "status": "ok",
+        "installed_version": release.installed_version,
+        "available_version": release.available_version,
+        "update_available": release.update_available,
+        "release_name": release.release_name,
+        "release_notes": release.release_notes,
+        "published_at": release.published_at,
+        "release_url": release.html_url,
+        "asset_name": release.asset_name,
+        "asset_url": release.asset_url,
+        "checksum_name": release.checksum_name,
+        "checksum_url": release.checksum_url,
+    }
 
 
 def generate_demo_data(days: int = 400, interval_minutes: int = 15) -> None:
