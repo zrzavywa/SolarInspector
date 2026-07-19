@@ -20,6 +20,9 @@ const downloadProgress = document.querySelector("#download-progress");
 const downloadProgressBar = document.querySelector("#download-progress-bar");
 const downloadMessage = document.querySelector("#download-message");
 const verifiedVersion = document.querySelector("#verified-version");
+const installButton = document.querySelector("#install-update-button");
+const installationResult = document.querySelector("#installation-result");
+
 
 function formatDate(value) {
   if (!value) {
@@ -110,20 +113,149 @@ async function checkForUpdate() {
   }
 }
 
+function sleep(milliseconds) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, milliseconds);
+  });
+}
+
+async function fetchUpdateStatus() {
+  const response = await fetch("/api/update/status", {
+    headers: {
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Statusabfrage fehlgeschlagen: HTTP ${response.status}`,
+    );
+  }
+
+  return response.json();
+}
+
+
+async function pollInstallationStatus() {
+  for (let attempt = 0; attempt < 180; attempt += 1) {
+    try {
+      const payload = await fetchUpdateStatus();
+      renderDownloadStatus(payload);
+
+      if (payload.state === "success") {
+        checkButton.disabled = false;
+        return;
+      }
+
+      if (payload.state === "failed") {
+        checkButton.disabled = false;
+        downloadButton.disabled = false;
+        return;
+      }
+    } catch (error) {
+      renderDownloadStatus({
+        state: "activating",
+        progress: 85,
+        message:
+          "SolarInspector wird neu gestartet. Verbindung wird wiederhergestellt …",
+      });
+    }
+
+    await sleep(2000);
+  }
+
+  throw new Error(
+    "Die Updateinstallation hat das maximale Zeitlimit überschritten.",
+  );
+}
+
+async function installUpdate() {
+  installButton.disabled = true;
+  downloadButton.disabled = true;
+  checkButton.disabled = true;
+  errorCard.hidden = true;
+
+  try {
+    const response = await fetch("/api/update/install", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        payload.message ||
+          `Installation konnte nicht gestartet werden: HTTP ${response.status}`,
+      );
+    }
+
+    await pollInstallationStatus();
+  } catch (error) {
+    errorMessage.textContent = error.message;
+    errorCard.hidden = false;
+
+    checkButton.disabled = false;
+  }
+}
+
+
+function formatUpdateState(state) {
+  const labels = {
+    idle: "Bereit",
+    checking: "GitHub wird geprüft",
+    downloading: "Download läuft",
+    verified: "Paket geprüft",
+    queued: "Installation vorgemerkt",
+    backing_up: "Backup wird erstellt",
+    preparing: "Neue Version wird vorbereitet",
+    activating: "Neue Version wird aktiviert",
+    healthchecking: "Funktionstest läuft",
+    rollback: "Rollback läuft",
+    success: "Update erfolgreich",
+    failed: "Update fehlgeschlagen",
+  };
+
+  return labels[state] || state || "Unbekannt";
+}
+
+
 function renderDownloadStatus(payload) {
   const state = payload.state || "idle";
   const progress = Number(payload.progress || 0);
 
-  downloadState.textContent = state;
+  downloadState.textContent = formatUpdateState(state);
   downloadProgress.textContent = `${progress} %`;
   downloadProgressBar.value = progress;
   downloadMessage.textContent =
     payload.message || "Kein Status verfügbar.";
 
   verifiedVersion.textContent =
-    payload.state === "verified"
-      ? payload.available_version || "–"
-      : "–";
+    payload.available_version || "–";
+
+  const canInstall =
+    state === "verified" &&
+    Boolean(payload.available_version) &&
+    Boolean(payload.archive_path);
+
+  installButton.disabled = !canInstall;
+
+  if (state === "success") {
+    installationResult.hidden = false;
+    installationResult.textContent =
+      `SolarInspector ${payload.available_version || ""} wurde erfolgreich installiert.`;
+  } else if (state === "failed") {
+    installationResult.hidden = false;
+    installationResult.textContent =
+      payload.message || "Die Installation ist fehlgeschlagen.";
+  } else {
+    installationResult.hidden = true;
+  }
 }
 
 async function loadDownloadStatus() {
@@ -189,3 +321,6 @@ downloadButton.addEventListener("click", downloadUpdate);
 loadDownloadStatus().catch((error) => {
   console.error(error);
 });
+
+installButton.addEventListener("click", installUpdate);
+
