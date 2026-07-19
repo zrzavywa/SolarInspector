@@ -1,0 +1,39 @@
+{
+  "general": {
+    "project_name": "SolarInspector",
+    "site_name": "Solakon Anlage",
+    "poll_interval_seconds": 10,
+    "auto_start_collection": false,
+    "bind_host": "127.0.0.1",
+    "port": 8787,
+    "open_browser": true,
+    "solar_power_source": "auto",
+    "grid_power_source": "auto"
+  },
+  "solakon_one": {
+    "enabled": false,
+    "host": "",
+    "port": 502,
+    "device_id": 1,
+    "timeout_seconds": 5,
+    "simulation": false
+  },
+  "house_meter": {
+    "enabled": false,
+    "type": "shelly_3em_gen1",
+    "host": "",
+    "username": "",
+    "password": "",
+    "timeout_seconds": 3,
+    "direction_factor": 1
+  },
+  "solakon_meter": {
+    "enabled": false,
+    "type": "shelly_pm_mini_gen3",
+    "host": "",
+    "username": "",
+    "password": "",
+    "timeout_seconds": 3,
+    "direction_factor": 1
+  }
+}

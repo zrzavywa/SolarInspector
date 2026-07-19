@@ -216,3 +216,50 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# SolarInspector local configuration
+config.json
+app/config.json
+config.local.json
+*.local.json
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+secrets/
+credentials/
+
+# Runtime data
+app/data/
+data/
+logs/
+backups/
+SolarInspector-Backups/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build and release artifacts
+build/
+dist/
+*.egg-info/
+*.tar.gz
+*.zip
+*.sha256
+
+# Local tools
+.DS_Store
+.vscode/
+.idea/

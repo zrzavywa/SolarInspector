@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">ENERGIEÜBERSICHT</p>
+    <h1>Dashboard</h1>
+    <p>Live-Leistung, Solakon-ONE-Status und Auswertung für Tag, Woche und Jahr.</p>
+  </div>
+  <div class="period-controls">
+    <div class="segmented">
+      <button data-period="day" class="active">Tag</button>
+      <button data-period="week">Woche</button>
+      <button data-period="year">Jahr</button>
+    </div>
+    <div class="date-nav">
+      <button id="previous-period" title="Vorheriger Zeitraum">←</button>
+      <input type="date" id="anchor-date">
+      <button id="today-period">Heute</button>
+      <button id="next-period" title="Nächster Zeitraum">→</button>
+    </div>
+  </div>
+</section>
+
+<section class="live-grid">
+  <article class="live-card solar">
+    <span>Ausgewählte Erzeugung</span>
+    <strong id="live-solar">–</strong>
+    <small>W</small>
+  </article>
+  <article class="live-card house">
+    <span>Hausverbrauch</span>
+    <strong id="live-house">–</strong>
+    <small>W</small>
+  </article>
+  <article class="live-card import">
+    <span>Netzbezug</span>
+    <strong id="live-import">–</strong>
+    <small>W</small>
+  </article>
+  <article class="live-card export">
+    <span>Einspeisung</span>
+    <strong id="live-export">–</strong>
+    <small>W</small>
+  </article>
+</section>
+<p id="live-meta" class="live-meta">Noch keine Messung vorhanden.</p>
+
+<section class="panel solakon-panel" id="solakon-one-panel">
+  <div class="panel-head">
+    <div>
+      <p class="eyebrow">MODBUS TCP</p>
+      <h2>Solakon ONE</h2>
+      <p id="solakon-device-info">Noch keine Modbus-Messung vorhanden.</p>
+    </div>
+    <span id="solakon-live-status" class="mini-pill off">nicht verbunden</span>
+  </div>
+  <div class="solakon-live-grid">
+    <article><span>PV-Eingang</span><strong id="live-one-pv">–</strong><small>W</small></article>
+    <article><span>AC-Wirkleistung</span><strong id="live-one-ac">–</strong><small>W</small></article>
+    <article><span>Batterie-SoC</span><strong id="live-one-soc">–</strong><small>%</small></article>
+    <article><span>Batterieleistung</span><strong id="live-one-battery">–</strong><small>W</small><em id="battery-direction">–</em></article>
+    <article><span>Last laut ONE</span><strong id="live-one-load">–</strong><small>W</small></article>
+    <article><span>Temperatur</span><strong id="live-one-temp">–</strong><small>°C</small></article>
+  </div>
+  <div class="comparison-strip">
+    <div><span>Shelly AC</span><strong id="live-shelly-ac">– W</strong></div>
+    <div><span>Solakon ONE AC</span><strong id="live-solakon-ac-compare">– W</strong></div>
+    <div><span>Abweichung Shelly − ONE</span><strong id="live-difference">–</strong></div>
+    <div><span>Datenquelle</span><strong id="live-source">–</strong></div>
+  </div>
+</section>
+
+<section class="panel chart-panel">
+  <div class="panel-head">
+    <div>
+      <p class="eyebrow">ENERGIE</p>
+      <h2 id="period-title">Aktueller Tag</h2>
+    </div>
+    <div class="legend">
+      <span><i class="legend-solar"></i>Erzeugung</span>
+      <span><i class="legend-house"></i>Haus</span>
+      <span><i class="legend-import"></i>Netzbezug</span>
+      <span><i class="legend-export"></i>Einspeisung</span>
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="energy-chart" height="340"></canvas>
+    <div id="chart-empty" class="chart-empty">Für diesen Zeitraum sind noch keine Energiedaten vorhanden.</div>
+  </div>
+</section>
+
+<section class="kpi-grid">
+  <article class="kpi-card"><span>Ausgewählter Ertrag</span><strong id="kpi-solar">0,000 kWh</strong></article>
+  <article class="kpi-card"><span>Hausverbrauch</span><strong id="kpi-house">0,000 kWh</strong></article>
+  <article class="kpi-card"><span>Netzbezug</span><strong id="kpi-import">0,000 kWh</strong></article>
+  <article class="kpi-card"><span>Einspeisung</span><strong id="kpi-export">0,000 kWh</strong></article>
+  <article class="kpi-card highlight"><span>Eigenverbrauchsquote</span><strong id="kpi-self-pct">–</strong></article>
+  <article class="kpi-card highlight"><span>Autarkiegrad</span><strong id="kpi-autarky">–</strong></article>
+</section>
+
+<section class="panel modbus-period-panel">
+  <div class="panel-head">
+    <div><p class="eyebrow">SOLAKON ONE IM ZEITRAUM</p><h2>PV und Batterie</h2></div>
+    <span id="period-source" class="source-badge">–</span>
+  </div>
+  <div class="modbus-kpi-grid">
+    <article><span>PV-Eingang DC</span><strong id="kpi-one-pv">0,000 kWh</strong></article>
+    <article><span>AC-Wirkleistung</span><strong id="kpi-one-ac">0,000 kWh</strong></article>
+    <article><span>Shelly AC</span><strong id="kpi-shelly-ac">0,000 kWh</strong></article>
+    <article><span>Batterie geladen</span><strong id="kpi-battery-charge">0,000 kWh</strong></article>
+    <article><span>Batterie entladen</span><strong id="kpi-battery-discharge">0,000 kWh</strong></article>
+    <article><span>SoC Ø / min / max</span><strong id="kpi-battery-soc">–</strong></article>
+    <article><span>Ø Abweichung Shelly − ONE</span><strong id="kpi-difference">–</strong></article>
+    <article><span>Netzdatenquelle</span><strong id="kpi-grid-source">–</strong></article>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+{% endblock %}

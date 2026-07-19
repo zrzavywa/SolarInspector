@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">STEUERUNG</p>
+    <h1>Datenerfassung</h1>
+    <p>Messung starten, stoppen und den aktuellen Zustand aller Datenquellen kontrollieren.</p>
+  </div>
+</section>
+
+<section class="acquisition-layout">
+  <article class="panel control-panel">
+    <div id="big-status" class="big-status {{ 'running' if status.running else 'stopped' }}">
+      <span class="pulse"></span>
+      <div>
+        <small>STATUS</small>
+        <strong>{{ "Datenerfassung läuft" if status.running else "Datenerfassung gestoppt" }}</strong>
+      </div>
+    </div>
+    <div class="button-row">
+      <button id="start-button" class="button primary" {{ "disabled" if status.running else "" }}>▶ Erfassung starten</button>
+      <button id="stop-button" class="button danger" {{ "" if status.running else "disabled" }}>■ Erfassung stoppen</button>
+      <button id="once-button" class="button secondary">Einzelmessung</button>
+    </div>
+    <p class="hint">Abfrageintervall: {{ config.general.poll_interval_seconds }} Sekunden. Solakon ONE wird ausschließlich lesend über Modbus TCP abgefragt.</p>
+  </article>
+
+  <article class="panel status-details">
+    <h2>Aktueller Zustand</h2>
+    <dl>
+      <div><dt>Gestartet</dt><dd id="started-at">{{ status.started_at or "–" }}</dd></div>
+      <div><dt>Messzyklen</dt><dd id="cycles">{{ status.cycles }}</dd></div>
+      <div><dt>Letzte Messung</dt><dd id="last-measurement">{{ status.last_sample.ts_local if status.last_sample else "–" }}</dd></div>
+      <div><dt>Letzte Meldung</dt><dd id="last-error">{{ status.last_error or "Keine Fehler" }}</dd></div>
+    </dl>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <p class="eyebrow">DATENQUELLEN</p>
+      <h2>Konfigurierte Geräte</h2>
+    </div>
+    <a class="button secondary" href="{{ url_for('configuration_page') }}">Konfiguration öffnen</a>
+  </div>
+  <div class="device-grid">
+    {% set one = config.solakon_one %}
+    <article class="device-card">
+      <div class="device-icon">1</div>
+      <div>
+        <strong>Solakon ONE</strong>
+        <span>Modbus TCP · Port {{ one.port }} · Geräte-ID {{ one.device_id }}</span>
+        <small>{{ "Simulation" if one.simulation else (one.host or "Keine IP konfiguriert") }}</small>
+      </div>
+      <span class="mini-pill {{ 'on' if one.enabled else 'off' }}">{{ "aktiv" if one.enabled else "inaktiv" }}</span>
+    </article>
+
+    {% for role, title in [('house_meter', 'Separate Hausanschlussmessung'), ('solakon_meter', 'Shelly AC-Erzeugungsmessung')] %}
+      {% set device = config[role] %}
+      <article class="device-card">
+        <div class="device-icon">{{ "H" if role == "house_meter" else "S" }}</div>
+        <div>
+          <strong>{{ title }}</strong>
+          <span>{{ device_types[device.type] }}</span>
+          <small>{{ device.host or "Keine IP konfiguriert" }}</small>
+        </div>
+        <span class="mini-pill {{ 'on' if device.enabled else 'off' }}">{{ "aktiv" if device.enabled else "inaktiv" }}</span>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div><p class="eyebrow">AUSWAHL</p><h2>Verwendete Messwerte</h2></div>
+  </div>
+  <div class="comparison-strip">
+    <div><span>Ertragsquelle</span><strong>{{ solar_source_types[config.general.solar_power_source] }}</strong></div>
+    <div><span>Netzquelle</span><strong>{{ grid_source_types[config.general.grid_power_source] }}</strong></div>
+    <div><span>Solakon ONE</span><strong>{{ "aktiv" if one.enabled else "inaktiv" }}</strong></div>
+    <div><span>Shelly-Vergleich</span><strong>{{ "verfügbar" if config.solakon_meter.enabled else "nicht aktiviert" }}</strong></div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+const startButton = document.getElementById("start-button");
+const stopButton = document.getElementById("stop-button");
+const onceButton = document.getElementById("once-button");
+
+async function action(url) {
+  const response = await fetch(url, {method: "POST"});
+  const data = await response.json();
+  if (!response.ok || data.ok === false) throw new Error(data.error || "Aktion fehlgeschlagen");
+  await refreshStatus();
+}
+
+async function refreshStatus() {
+  const response = await fetch("/api/status");
+  const status = await response.json();
+  const big = document.getElementById("big-status");
+  big.className = "big-status " + (status.running ? "running" : "stopped");
+  big.querySelector("strong").textContent = status.running ? "Datenerfassung läuft" : "Datenerfassung gestoppt";
+  startButton.disabled = status.running;
+  stopButton.disabled = !status.running;
+  document.getElementById("started-at").textContent = status.started_at || "–";
+  document.getElementById("cycles").textContent = status.cycles;
+  document.getElementById("last-measurement").textContent = status.last_sample?.ts_local || "–";
+  document.getElementById("last-error").textContent = status.last_error || "Keine Fehler";
+  const header = document.getElementById("header-status");
+  header.className = "status-pill " + (status.running ? "running" : "stopped");
+  header.innerHTML = `<span></span>${status.running ? "Erfassung aktiv" : "Erfassung gestoppt"}`;
+}
+
+startButton.addEventListener("click", () => action("/api/start").catch(e => alert(e.message)));
+stopButton.addEventListener("click", () => action("/api/stop").catch(e => alert(e.message)));
+onceButton.addEventListener("click", async () => {
+  onceButton.disabled = true;
+  try { await action("/api/collect-once"); }
+  catch (e) { alert(e.message); }
+  finally { onceButton.disabled = false; }
+});
+setInterval(refreshStatus, 3000);
+</script>
+{% endblock %}

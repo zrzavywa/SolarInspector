@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">EINSTELLUNGEN</p>
+    <h1>Konfiguration</h1>
+    <p>Solakon ONE, Datenquellen und zusätzliche Shelly-Messstellen konfigurieren.</p>
+  </div>
+</section>
+
+<form method="post" class="config-form">
+  <section class="panel">
+    <div class="panel-head"><div><p class="eyebrow">ALLGEMEIN</p><h2>Anlage und Anwendung</h2></div></div>
+    <div class="form-grid">
+      <label><span>Projektname</span><input name="project_name" value="{{ config.general.project_name }}"></label>
+      <label><span>Standort / Anlage</span><input name="site_name" value="{{ config.general.site_name }}"></label>
+      <label><span>Abfrageintervall in Sekunden</span><input type="number" min="2" max="3600" name="poll_interval_seconds" value="{{ config.general.poll_interval_seconds }}"></label>
+      <label><span>Webserver-Adresse</span><input name="bind_host" value="{{ config.general.bind_host }}"><small>127.0.0.1 nur lokal, 0.0.0.0 im Heimnetz</small></label>
+      <label><span>Webserver-Port</span><input type="number" min="1" max="65535" name="port" value="{{ config.general.port }}"></label>
+      <label><span>Quelle für Ertrag und Statistik</span>
+        <select name="solar_power_source">
+          {% for value, label in solar_source_types.items() %}
+            <option value="{{ value }}" {{ "selected" if config.general.solar_power_source == value else "" }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <small>Für den Vergleich mit dem Shelly empfiehlt sich „Automatisch“.</small>
+      </label>
+      <label><span>Quelle für Netzbezug/Einspeisung</span>
+        <select name="grid_power_source">
+          {% for value, label in grid_source_types.items() %}
+            <option value="{{ value }}" {{ "selected" if config.general.grid_power_source == value else "" }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="check-label"><input type="checkbox" name="auto_start_collection" {{ "checked" if config.general.auto_start_collection else "" }}><span>Datenerfassung beim Programmstart automatisch starten</span></label>
+      <label class="check-label"><input type="checkbox" name="open_browser" {{ "checked" if config.general.open_browser else "" }}><span>Browser beim Start automatisch öffnen</span></label>
+    </div>
+  </section>
+
+  {% set one = config.solakon_one %}
+  <section class="panel device-config modbus-config">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">SOLAKON ONE</p>
+        <h2>Modbus TCP</h2>
+        <p>Direkter, lokaler und ausschließlich lesender Zugriff auf Speicher, PV, Batterie und Systemwerte.</p>
+      </div>
+      <label class="switch"><input type="checkbox" name="solakon_one_enabled" {{ "checked" if one.enabled else "" }}><span></span><b>Aktiv</b></label>
+    </div>
+    <div class="readonly-note">
+      <strong>Read-only:</strong> SolarInspector 4.0 liest ausschließlich Holding-Register. Es werden keine Betriebsarten, Ladeleistungen oder Grenzwerte verändert.
+    </div>
+    <div class="form-grid">
+      <label><span>IP-Adresse / Hostname</span><input name="solakon_one_host" placeholder="192.168.x.x" value="{{ one.host }}"><small>IP des Solakon ONE im lokalen WLAN oder LAN.</small></label>
+      <label><span>Modbus-TCP-Port</span><input type="number" min="1" max="65535" name="solakon_one_port" value="{{ one.port }}"><small>Standard: 502</small></label>
+      <label><span>Modbus Geräte-ID</span><input type="number" min="1" max="247" name="solakon_one_device_id" value="{{ one.device_id }}"><small>Normalerweise: 1</small></label>
+      <label><span>Timeout in Sekunden</span><input type="number" min="1" max="30" name="solakon_one_timeout_seconds" value="{{ one.timeout_seconds }}"></label>
+      <label class="check-label"><input type="checkbox" name="solakon_one_simulation" {{ "checked" if one.simulation else "" }}><span>Solakon ONE simulieren (nur für Funktionstest ohne Gerät)</span></label>
+    </div>
+    <div class="test-row">
+      <button type="button" class="button secondary" id="test-solakon-one">Modbus-Verbindung testen</button>
+      <span id="test-result-solakon-one" class="test-result"></span>
+    </div>
+    <div id="solakon-test-values" class="test-values hidden"></div>
+  </section>
+
+  {% for role, title, subtitle in [
+    ('house_meter', 'Separate Hausanschlussmessung', 'Netzbezug positiv, Einspeisung negativ'),
+    ('solakon_meter', 'AC-Erzeugungsmessung über Shelly', 'Shelly PM Mini Gen 3 zwischen Solakon ONE und Steckdose')
+  ] %}
+  {% set device = config[role] %}
+  <section class="panel device-config">
+    <div class="panel-head">
+      <div><p class="eyebrow">OPTIONALE MESSSTELLE</p><h2>{{ title }}</h2><p>{{ subtitle }}</p></div>
+      <label class="switch"><input type="checkbox" name="{{ role }}_enabled" {{ "checked" if device.enabled else "" }}><span></span><b>Aktiv</b></label>
+    </div>
+    <div class="form-grid">
+      <label><span>Gerätetyp</span>
+        <select name="{{ role }}_type">
+          {% for value, label in device_types.items() %}
+            <option value="{{ value }}" {{ "selected" if device.type == value else "" }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label><span>IP-Adresse / Hostname</span><input name="{{ role }}_host" placeholder="192.168.x.x" value="{{ device.host }}"></label>
+      <label><span>Benutzername (optional)</span><input name="{{ role }}_username" value="{{ device.username }}"></label>
+      <label><span>Passwort (optional)</span><input type="password" name="{{ role }}_password" value="{{ device.password }}"></label>
+      <label><span>Timeout in Sekunden</span><input type="number" min="1" max="30" name="{{ role }}_timeout_seconds" value="{{ device.timeout_seconds }}"></label>
+      <label><span>Messrichtung</span>
+        <select name="{{ role }}_direction_factor">
+          <option value="1" {{ "selected" if device.direction_factor == 1 else "" }}>Normal (+1)</option>
+          <option value="-1" {{ "selected" if device.direction_factor == -1 else "" }}>Vorzeichen umkehren (−1)</option>
+        </select>
+      </label>
+    </div>
+    <div class="test-row">
+      <button type="button" class="button secondary test-device" data-role="{{ role }}">Verbindung testen</button>
+      <span id="test-result-{{ role }}" class="test-result"></span>
+    </div>
+  </section>
+  {% endfor %}
+
+  <div class="sticky-actions">
+    <button class="button primary" type="submit">Konfiguration speichern</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+const numberDE = value => value === null || value === undefined ? "–" : Number(value).toLocaleString("de-DE", {maximumFractionDigits: 1});
+const escapeHTML = value => String(value ?? "–").replace(/[&<>'"]/g, character => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;"}[character]));
+
+document.getElementById("test-solakon-one").addEventListener("click", async () => {
+  const button = document.getElementById("test-solakon-one");
+  const result = document.getElementById("test-result-solakon-one");
+  const values = document.getElementById("solakon-test-values");
+  result.className = "test-result";
+  result.textContent = "Modbus-Verbindung und Register werden geprüft …";
+  values.classList.add("hidden");
+  button.disabled = true;
+  try {
+    const payload = {
+      enabled: document.querySelector('[name="solakon_one_enabled"]').checked,
+      host: document.querySelector('[name="solakon_one_host"]').value,
+      port: document.querySelector('[name="solakon_one_port"]').value,
+      device_id: document.querySelector('[name="solakon_one_device_id"]').value,
+      timeout_seconds: document.querySelector('[name="solakon_one_timeout_seconds"]').value,
+      simulation: document.querySelector('[name="solakon_one_simulation"]').checked
+    };
+    const response = await fetch("/api/test-solakon-one", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || "Modbus-Test fehlgeschlagen");
+    const r = data.reading;
+    result.className = "test-result success";
+    result.textContent = `Erfolgreich: ${r.model_name || "Solakon ONE"} · ${r.status}`;
+    values.innerHTML = `
+      <div><span>Seriennummer</span><strong>${escapeHTML(r.serial_number)}</strong></div>
+      <div><span>PV-Eingang</span><strong>${numberDE(r.total_pv_power_w)} W</strong></div>
+      <div><span>AC-Wirkleistung</span><strong>${numberDE(r.active_power_w)} W</strong></div>
+      <div><span>Batterie</span><strong>${numberDE(r.battery_soc_pct)} % · ${numberDE(r.battery_power_w)} W</strong></div>
+      <div><span>Last</span><strong>${numberDE(r.load_power_w)} W</strong></div>
+      <div><span>Temperatur</span><strong>${numberDE(r.internal_temperature_c)} °C</strong></div>`;
+    values.classList.remove("hidden");
+  } catch (error) {
+    result.className = "test-result error";
+    result.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelectorAll(".test-device").forEach(button => {
+  button.addEventListener("click", async () => {
+    const role = button.dataset.role;
+    const result = document.getElementById("test-result-" + role);
+    result.className = "test-result";
+    result.textContent = "Verbindung wird geprüft …";
+    button.disabled = true;
+    try {
+      const payload = {
+        enabled: document.querySelector(`[name="${role}_enabled"]`).checked,
+        type: document.querySelector(`[name="${role}_type"]`).value,
+        host: document.querySelector(`[name="${role}_host"]`).value,
+        username: document.querySelector(`[name="${role}_username"]`).value,
+        password: document.querySelector(`[name="${role}_password"]`).value,
+        timeout_seconds: document.querySelector(`[name="${role}_timeout_seconds"]`).value,
+        direction_factor: document.querySelector(`[name="${role}_direction_factor"]`).value
+      };
+      const response = await fetch("/api/test-device/" + role, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Test fehlgeschlagen");
+      result.className = "test-result success";
+      result.textContent = `Erfolgreich: ${Math.round(data.reading.power_w)} W · ${data.reading.source}`;
+    } catch (error) {
+      result.className = "test-result error";
+      result.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
+</script>
+{% endblock %}
