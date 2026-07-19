@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from updater_service import (
+    create_backup,
     read_request,
     run_update,
 )
@@ -81,12 +82,11 @@ def test_run_update(
         status_path=status_path,
         releases_directory=releases,
         current_link=current,
-        healthcheck_url=(
-            "http://127.0.0.1:8787/api/health"
-        ),
-        service_name=(
-            "solarinspector.service"
-        ),
+        healthcheck_url="http://127.0.0.1:8787/api/health",
+        service_name="solarinspector.service",
+	backup_directory=tmp_path / "backups",
+    	config_path=tmp_path / "config.json",
+    	database_path=tmp_path / "solarinspector.db",
     )
 
     assert not request_path.exists()
@@ -102,3 +102,32 @@ def test_run_update(
 
     mock_prepare.assert_called_once()
     mock_activate.assert_called_once()
+
+
+def test_create_backup(tmp_path: Path):
+    backup_directory = tmp_path / "backups"
+    config_path = tmp_path / "config.json"
+    database_path = tmp_path / "solarinspector.db"
+
+    releases = tmp_path / "releases"
+    current_release = releases / "4.0.1"
+    current_link = tmp_path / "current"
+
+    current_release.mkdir(parents=True)
+    current_link.symlink_to(current_release.resolve())
+
+    config_path.write_text('{"test": true}', encoding="utf-8")
+    database_path.write_bytes(b"sqlite-data")
+
+    result = create_backup(
+        backup_directory=backup_directory,
+        version="4.1.0",
+        config_path=config_path,
+        database_path=database_path,
+        current_link=current_link,
+    )
+
+    assert (result / "config.json").exists()
+    assert (result / "solarinspector.db").exists()
+    assert (result / "previous-release.txt").exists()
+    assert (result / "backup.json").exists()
