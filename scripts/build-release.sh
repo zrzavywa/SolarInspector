@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+export COPYFILE_DISABLE=1
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION_FILE="$ROOT_DIR/VERSION"
 DIST_DIR="$ROOT_DIR/dist"
@@ -79,7 +81,19 @@ if [[ -n "$FORBIDDEN_FILES" ]]; then
   exit 1
 fi
 
-tar -czf "$ARCHIVE" \
+
+find "$PACKAGE_DIR" \
+  -type f \
+  \( -name '.DS_Store' -o -name '._*' \) \
+  -delete
+
+find "$DIST_DIR" \
+  -maxdepth 1 \
+  -type f \
+  -name '._*' \
+  -delete
+
+COPYFILE_DISABLE=1 tar -czf "$ARCHIVE" \
   -C "$DIST_DIR" \
   "$PACKAGE_NAME"
 
