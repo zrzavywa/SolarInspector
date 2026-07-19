@@ -1,6 +1,7 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import json
 import solarinspector as si
 from github_updater import ReleaseInfo
 
@@ -58,3 +59,52 @@ def test_update_status_endpoint(tmp_path: Path, monkeypatch):
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["state"] == "idle"
+
+def test_update_install_endpoint(
+    tmp_path: Path,
+    monkeypatch,
+):
+    status_path = (
+        tmp_path / "update-status.json"
+    )
+    request_path = (
+        tmp_path / "update-request.json"
+    )
+
+    monkeypatch.setattr(
+        si,
+        "UPDATE_STATUS_PATH",
+        status_path,
+    )
+    monkeypatch.setattr(
+        si,
+        "UPDATE_REQUEST_PATH",
+        request_path,
+    )
+
+    si.write_update_status(
+        status_path,
+        state="verified",
+        progress=100,
+        available_version="4.2.0",
+        archive_path=(
+            "/tmp/"
+            "SolarInspector-4.2.0.tar.gz"
+        ),
+    )
+
+    client = si.app.test_client()
+    response = client.post(
+        "/api/update/install"
+    )
+
+    assert response.status_code == 202
+    assert request_path.exists()
+
+    payload = json.loads(
+        request_path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["version"] == "4.2.0"

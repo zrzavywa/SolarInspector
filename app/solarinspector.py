@@ -63,6 +63,15 @@ UPDATE_CACHE_DIR = Path(
     )
 )
 
+UPDATE_REQUEST_PATH = Path(
+    os.environ.get(
+        "SOLARINSPECTOR_UPDATE_REQUEST",
+        Path(__file__).resolve().parent
+        / "data"
+        / "update-request.json",
+    )
+)
+
 DEFAULT_CONFIG: dict[str, Any] = {
     "general": {
         "project_name": "SolarInspector",
@@ -109,6 +118,37 @@ DEVICE_TYPES = {
     "shelly_pro_3em": "Shelly Pro 3EM / EM RPC",
     "simulation": "Simulation",
 }
+
+
+
+def write_update_request(
+    version: str,
+    archive_path: str,
+) -> None:
+    payload = {
+        "version": version,
+        "archive_path": archive_path,
+    }
+
+    UPDATE_REQUEST_PATH.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    temporary = UPDATE_REQUEST_PATH.with_suffix(
+        ".tmp"
+    )
+
+    temporary.write_text(
+        json.dumps(
+            payload,
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    temporary.replace(UPDATE_REQUEST_PATH)
 
 
 def get_installed_version() -> str:
@@ -1481,6 +1521,59 @@ def generate_demo_data(days: int = 400, interval_minutes: int = 15) -> None:
         current += timedelta(minutes=interval_minutes)
     log("Demodaten fertig.")
 
+
+@app.post("/api/update/install")
+def api_update_install():
+    status = read_update_status(
+        UPDATE_STATUS_PATH
+    )
+
+    if status.get("state") != "verified":
+        return {
+            "status": "error",
+            "message": (
+                "Es liegt kein verifiziertes "
+                "Update-Paket vor."
+            ),
+        }, 409
+
+    version = status.get(
+        "available_version"
+    )
+    archive_path = status.get(
+        "archive_path"
+    )
+
+    if not version or not archive_path:
+        return {
+            "status": "error",
+            "message": (
+                "Updateinformationen sind "
+                "unvollständig."
+            ),
+        }, 409
+
+    write_update_request(
+        version=version,
+        archive_path=archive_path,
+    )
+
+    write_update_status(
+        UPDATE_STATUS_PATH,
+        state="queued",
+        progress=0,
+        message=(
+            "Update wurde zur Installation "
+            "vorgemerkt."
+        ),
+    )
+
+    return {
+        "status": "queued",
+        "version": version,
+    }, 202
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="SolarInspector 4.0.1")
     parser.add_argument("--host", help="Webserver-Bind-Adresse; überschreibt config.json")
@@ -1518,12 +1611,18 @@ def main() -> None:
     serve(app, host=host, port=port, threads=8)
 
 
+
+
+
 def cleanup_pid_file() -> None:
     try:
         if PID_PATH.exists() and PID_PATH.read_text(encoding="ascii").strip() == str(os.getpid()):
             PID_PATH.unlink()
     except OSError:
         pass
+
+
+
 
 
 atexit.register(collector.stop)
