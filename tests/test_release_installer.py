@@ -1,0 +1,154 @@
+import io
+import tarfile
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+from release_installer import (
+    ReleaseInstallError,
+    prepare_release,
+    prepare_release_environment,
+    validate_release_archive,
+)
+
+@patch("release_installer.run_release_smoke_test")
+@patch("release_installer.install_release_dependencies")
+@patch("release_installer.create_release_venv")
+def test_prepare_release_environment(
+    mock_create_venv,
+    mock_install_dependencies,
+    mock_smoke_test,
+    tmp_path: Path,
+):
+    archive_path = tmp_path / "SolarInspector-4.1.0.tar.gz"
+    releases_directory = tmp_path / "releases"
+
+    create_valid_archive(archive_path)
+
+    expected_release = releases_directory / "4.1.0"
+    expected_venv = expected_release / ".venv"
+
+    mock_create_venv.return_value = expected_venv
+
+    result = prepare_release_environment(
+        archive_path=archive_path,
+        version="4.1.0",
+        releases_directory=releases_directory,
+    )
+
+    assert result == expected_release
+
+    mock_create_venv.assert_called_once_with(
+        expected_release,
+        python_executable=None,
+    )
+    mock_install_dependencies.assert_called_once_with(
+        expected_release,
+        expected_venv,
+    )
+    mock_smoke_test.assert_called_once_with(
+        expected_release,
+        expected_venv,
+    )
+
+
+def create_valid_archive(path: Path, version: str = "4.1.0") -> None:
+    root = f"SolarInspector-{version}"
+
+    files = {
+        f"{root}/VERSION": version.encode(),
+        f"{root}/release-manifest.json": b"{}",
+        f"{root}/app/solarinspector.py": b"print('ok')",
+        f"{root}/app/requirements.txt": b"Flask>=3",
+    }
+
+    with tarfile.open(path, "w:gz") as archive:
+        for name, content in files.items():
+            info = tarfile.TarInfo(name=name)
+            info.size = len(content)
+            archive.addfile(info, io.BytesIO(content))
+
+
+def test_valid_release_archive(tmp_path: Path):
+    archive_path = tmp_path / "SolarInspector-4.1.0.tar.gz"
+    create_valid_archive(archive_path)
+
+    members = validate_release_archive(
+        archive_path,
+        "SolarInspector-4.1.0",
+    )
+
+    assert len(members) == 4
+
+
+def test_prepare_release(tmp_path: Path):
+    archive_path = tmp_path / "SolarInspector-4.1.0.tar.gz"
+    releases_directory = tmp_path / "releases"
+
+    create_valid_archive(archive_path)
+
+    result = prepare_release(
+        archive_path=archive_path,
+        version="4.1.0",
+        releases_directory=releases_directory,
+    )
+
+    assert result == releases_directory / "4.1.0"
+    assert (result / "VERSION").read_text() == "4.1.0"
+    assert (result / "app" / "solarinspector.py").exists()
+
+
+def test_path_traversal_is_rejected(tmp_path: Path):
+    archive_path = tmp_path / "malicious.tar.gz"
+
+    with tarfile.open(archive_path, "w:gz") as archive:
+        content = b"bad"
+        info = tarfile.TarInfo(
+            name="SolarInspector-4.1.0/../../evil.txt"
+        )
+        info.size = len(content)
+        archive.addfile(info, io.BytesIO(content))
+
+    with pytest.raises(ReleaseInstallError):
+        validate_release_archive(
+            archive_path,
+            "SolarInspector-4.1.0",
+        )
+
+
+def test_symlink_is_rejected(tmp_path: Path):
+    archive_path = tmp_path / "symlink.tar.gz"
+
+    with tarfile.open(archive_path, "w:gz") as archive:
+        info = tarfile.TarInfo(
+            name="SolarInspector-4.1.0/app/link"
+        )
+        info.type = tarfile.SYMTYPE
+        info.linkname = "/etc/passwd"
+        archive.addfile(info)
+
+    with pytest.raises(ReleaseInstallError):
+        validate_release_archive(
+            archive_path,
+            "SolarInspector-4.1.0",
+        )
+
+
+def test_runtime_config_is_rejected(tmp_path: Path):
+    archive_path = tmp_path / "config.tar.gz"
+    root = "SolarInspector-4.1.0"
+
+    with tarfile.open(archive_path, "w:gz") as archive:
+        content = b"{}"
+        info = tarfile.TarInfo(
+            name=f"{root}/app/config.json"
+        )
+        info.size = len(content)
+        archive.addfile(info, io.BytesIO(content))
+
+    with pytest.raises(ReleaseInstallError):
+        validate_release_archive(
+            archive_path,
+            root,
+        )
