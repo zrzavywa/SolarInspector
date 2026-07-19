@@ -88,7 +88,9 @@ async function checkForUpdate() {
     } else {
       updateStatus.textContent = "SolarInspector ist aktuell";
     }
-
+    
+    downloadButton.disabled = !payload.update_available;
+    
     releaseName.textContent =
       payload.release_name || `SolarInspector ${payload.available_version}`;
 
