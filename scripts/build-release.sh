@@ -47,6 +47,8 @@ cp -R "$ROOT_DIR/docs" "$PACKAGE_DIR/"
 cp "$ROOT_DIR/VERSION" "$PACKAGE_DIR/"
 cp "$ROOT_DIR/LICENSE" "$PACKAGE_DIR/"
 cp "$ROOT_DIR/README.md" "$PACKAGE_DIR/"
+cp "$ROOT_DIR/release-manifest.json" "$PACKAGE_DIR/"
+cp "$ROOT_DIR/CHANGELOG.md" "$PACKAGE_DIR/"
 
 find "$PACKAGE_DIR" \
   -type d -name '__pycache__' \
