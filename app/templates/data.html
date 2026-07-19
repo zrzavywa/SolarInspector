@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">DATENBANK</p>
+    <h1>Daten</h1>
+    <p>Lokale Messdaten prüfen und als CSV exportieren.</p>
+  </div>
+</section>
+
+<section class="kpi-grid data-stats">
+  <article class="kpi-card"><span>Messpunkte</span><strong>{{ "{:,}".format(stats.count or 0).replace(",", ".") }}</strong></article>
+  <article class="kpi-card"><span>Datenbankgröße</span><strong>{{ "%.2f"|format((stats.db_size_bytes or 0) / 1024 / 1024) }} MB</strong></article>
+  <article class="kpi-card"><span>Erste Messung</span><strong class="small-value" id="first-date">–</strong></article>
+  <article class="kpi-card"><span>Letzte Messung</span><strong class="small-value" id="last-date">–</strong></article>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><div><p class="eyebrow">EXPORT</p><h2>CSV-Datei erstellen</h2></div></div>
+  <form action="{{ url_for('api_export_csv') }}" method="get" class="export-form">
+    <label><span>Von</span><input type="date" name="from" id="export-from" required></label>
+    <label><span>Bis einschließlich</span><input type="date" name="to" id="export-to" required></label>
+    <button class="button primary">CSV herunterladen</button>
+  </form>
+  <p class="hint">Die CSV-Datei verwendet Semikolon als Trennzeichen und enthält auch die Rohwerte von Solakon ONE, Batterie, Meter und Shelly-Vergleich.</p>
+</section>
+
+<section class="panel danger-zone">
+  <div>
+    <p class="eyebrow">GEFAHRENBEREICH</p>
+    <h2>Alle Messdaten löschen</h2>
+    <p>Die Konfiguration bleibt erhalten. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+  </div>
+  <button id="delete-all" class="button danger">Messdaten löschen</button>
+</section>
+
+<p class="path-note">Datenbank: <code>{{ db_path }}</code></p>
+{% endblock %}
+{% block scripts %}
+<script>
+function localISODate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+const now = new Date();
+const monthAgo = new Date(now); monthAgo.setDate(monthAgo.getDate() - 30);
+document.getElementById("export-to").value = localISODate(now);
+document.getElementById("export-from").value = localISODate(monthAgo);
+
+const firstEpoch = {{ stats.first_epoch or "null" }};
+const lastEpoch = {{ stats.last_epoch or "null" }};
+if (firstEpoch) document.getElementById("first-date").textContent = new Date(firstEpoch * 1000).toLocaleString("de-DE");
+if (lastEpoch) document.getElementById("last-date").textContent = new Date(lastEpoch * 1000).toLocaleString("de-DE");
+
+document.getElementById("delete-all").addEventListener("click", async () => {
+  const confirmation = prompt('Zum endgültigen Löschen bitte "LÖSCHEN" eingeben:');
+  if (confirmation !== "LÖSCHEN") return;
+  const response = await fetch("/api/delete-all", {method: "POST"});
+  if (response.ok) location.reload();
+  else alert("Die Messdaten konnten nicht gelöscht werden.");
+});
+</script>
+{% endblock %}
