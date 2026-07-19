@@ -23,6 +23,14 @@ import webbrowser
 from dataclasses import dataclass, asdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from github_updater import (
+    UpdateCheckError,
+    UpdateVerificationError,
+    check_for_update,
+    download_and_verify_release,
+)
+from update_status import read_update_status, write_update_status
+
 from typing import Any, Iterator, Optional
 
 import requests
@@ -40,6 +48,29 @@ DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "solarinspector.db"
 LOG_PATH = DATA_DIR / "solarinspector.log"
 PID_PATH = DATA_DIR / "solarinspector.pid"
+
+UPDATE_STATUS_PATH = Path(
+    os.environ.get(
+        "SOLARINSPECTOR_UPDATE_STATUS",
+        Path(__file__).resolve().parent / "data" / "update-status.json",
+    )
+)
+
+UPDATE_CACHE_DIR = Path(
+    os.environ.get(
+        "SOLARINSPECTOR_UPDATE_CACHE",
+        Path(__file__).resolve().parent / "data" / "updates",
+    )
+)
+
+UPDATE_REQUEST_PATH = Path(
+    os.environ.get(
+        "SOLARINSPECTOR_UPDATE_REQUEST",
+        Path(__file__).resolve().parent
+        / "data"
+        / "update-request.json",
+    )
+)
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "general": {
@@ -87,6 +118,48 @@ DEVICE_TYPES = {
     "shelly_pro_3em": "Shelly Pro 3EM / EM RPC",
     "simulation": "Simulation",
 }
+
+
+
+def write_update_request(
+    version: str,
+    archive_path: str,
+) -> None:
+    payload = {
+        "version": version,
+        "archive_path": archive_path,
+    }
+
+    UPDATE_REQUEST_PATH.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    temporary = UPDATE_REQUEST_PATH.with_suffix(
+        ".tmp"
+    )
+
+    temporary.write_text(
+        json.dumps(
+            payload,
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    temporary.replace(UPDATE_REQUEST_PATH)
+
+
+def get_installed_version() -> str:
+    version_file = Path(__file__).resolve().parent.parent / "VERSION"
+
+    try:
+        version = version_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        return "0.0.0"
+
+    return version or "0.0.0"
 
 
 def log(message: str) -> None:
@@ -1079,6 +1152,17 @@ def api_status():
     return jsonify(collector.status())
 
 
+@app.get("/api/health")
+def api_health():
+    return {
+        "status": "ok",
+        "version": get_installed_version(),
+        "config_schema": 5,
+        "database": "ok",
+        "web": "ok",
+    }
+    
+
 @app.get("/api/live")
 def api_live():
     latest = database.latest()
@@ -1226,6 +1310,114 @@ def api_delete_all():
     return jsonify({"ok": True})
 
 
+@app.get("/api/system/version")
+def api_system_version():
+    return {
+        "product": "SolarInspector",
+        "version": get_installed_version(),
+        "config_schema": 5,
+    }
+
+
+@app.get("/api/update/check")
+def api_update_check():
+    installed_version = get_installed_version()
+
+    try:
+        release = check_for_update(installed_version)
+    except UpdateCheckError as exc:
+        return {
+            "status": "error",
+            "installed_version": installed_version,
+            "message": str(exc),
+        }, 502
+
+    return {
+        "status": "ok",
+        "installed_version": release.installed_version,
+        "available_version": release.available_version,
+        "update_available": release.update_available,
+        "release_name": release.release_name,
+        "release_notes": release.release_notes,
+        "published_at": release.published_at,
+        "release_url": release.html_url,
+        "asset_name": release.asset_name,
+        "asset_url": release.asset_url,
+        "checksum_name": release.checksum_name,
+        "checksum_url": release.checksum_url,
+    }
+
+@app.get("/api/update/status")
+def api_update_status():
+    return read_update_status(UPDATE_STATUS_PATH)
+
+@app.post("/api/update/download")
+def api_update_download():
+    installed_version = get_installed_version()
+
+    write_update_status(
+        UPDATE_STATUS_PATH,
+        state="checking",
+        progress=10,
+        message="GitHub Release wird geprüft.",
+        installed_version=installed_version,
+    )
+
+    try:
+        release = check_for_update(installed_version)
+
+        if not release.update_available:
+            status = write_update_status(
+                UPDATE_STATUS_PATH,
+                state="idle",
+                progress=0,
+                message="Keine neuere Version verfügbar.",
+                available_version=release.available_version,
+            )
+            return status, 409
+
+        write_update_status(
+            UPDATE_STATUS_PATH,
+            state="downloading",
+            progress=30,
+            message="Release-Paket wird heruntergeladen.",
+            available_version=release.available_version,
+        )
+
+        target_directory = (
+            UPDATE_CACHE_DIR / release.available_version
+        )
+
+        archive_path = download_and_verify_release(
+            release,
+            target_directory=target_directory,
+        )
+
+        status = write_update_status(
+            UPDATE_STATUS_PATH,
+            state="verified",
+            progress=100,
+            message="Release-Paket wurde erfolgreich heruntergeladen und geprüft.",
+            archive_path=str(archive_path),
+            available_version=release.available_version,
+        )
+
+        return status
+
+    except (UpdateCheckError, UpdateVerificationError) as exc:
+        status = write_update_status(
+            UPDATE_STATUS_PATH,
+            state="failed",
+            progress=0,
+            message=str(exc),
+        )
+        return status, 502
+
+
+@app.get("/update")
+def update_page():
+    return render_template("update.html")
+
 def generate_demo_data(days: int = 400, interval_minutes: int = 15) -> None:
     log(f"Erzeuge Demodaten für {days} Tage.")
     end = datetime.now().astimezone()
@@ -1329,6 +1521,59 @@ def generate_demo_data(days: int = 400, interval_minutes: int = 15) -> None:
         current += timedelta(minutes=interval_minutes)
     log("Demodaten fertig.")
 
+
+@app.post("/api/update/install")
+def api_update_install():
+    status = read_update_status(
+        UPDATE_STATUS_PATH
+    )
+
+    if status.get("state") != "verified":
+        return {
+            "status": "error",
+            "message": (
+                "Es liegt kein verifiziertes "
+                "Update-Paket vor."
+            ),
+        }, 409
+
+    version = status.get(
+        "available_version"
+    )
+    archive_path = status.get(
+        "archive_path"
+    )
+
+    if not version or not archive_path:
+        return {
+            "status": "error",
+            "message": (
+                "Updateinformationen sind "
+                "unvollständig."
+            ),
+        }, 409
+
+    write_update_request(
+        version=version,
+        archive_path=archive_path,
+    )
+
+    write_update_status(
+        UPDATE_STATUS_PATH,
+        state="queued",
+        progress=0,
+        message=(
+            "Update wurde zur Installation "
+            "vorgemerkt."
+        ),
+    )
+
+    return {
+        "status": "queued",
+        "version": version,
+    }, 202
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="SolarInspector 4.0.1")
     parser.add_argument("--host", help="Webserver-Bind-Adresse; überschreibt config.json")
@@ -1366,12 +1611,18 @@ def main() -> None:
     serve(app, host=host, port=port, threads=8)
 
 
+
+
+
 def cleanup_pid_file() -> None:
     try:
         if PID_PATH.exists() and PID_PATH.read_text(encoding="ascii").strip() == str(os.getpid()):
             PID_PATH.unlink()
     except OSError:
         pass
+
+
+
 
 
 atexit.register(collector.stop)

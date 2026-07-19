@@ -247,3 +247,50 @@ code { background: #e7ecea; border-radius: 6px; padding: 3px 6px; }
   .test-values div:last-child { border-bottom: 0; }
   .source-badge { max-width: none; text-align: left; }
 }
+
+.update-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.update-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.update-grid .label {
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.release-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.error-card {
+  border-left: 4px solid #b42318;
+}
+
+#download-progress-bar {
+  width: 100%;
+  height: 1rem;
+  margin-top: 1rem;
+}
+
+#download-message {
+  margin-top: 0.75rem;
+}

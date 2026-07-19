@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+export COPYFILE_DISABLE=1
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION_FILE="$ROOT_DIR/VERSION"
 DIST_DIR="$ROOT_DIR/dist"
@@ -44,9 +46,13 @@ rsync -a \
 cp -R "$ROOT_DIR/scripts" "$PACKAGE_DIR/"
 cp -R "$ROOT_DIR/tools" "$PACKAGE_DIR/"
 cp -R "$ROOT_DIR/docs" "$PACKAGE_DIR/"
+cp -R "$ROOT_DIR/updater" "$PACKAGE_DIR/"
+cp -R "$ROOT_DIR/systemd" "$PACKAGE_DIR/"
 cp "$ROOT_DIR/VERSION" "$PACKAGE_DIR/"
 cp "$ROOT_DIR/LICENSE" "$PACKAGE_DIR/"
 cp "$ROOT_DIR/README.md" "$PACKAGE_DIR/"
+cp "$ROOT_DIR/release-manifest.json" "$PACKAGE_DIR/"
+cp "$ROOT_DIR/CHANGELOG.md" "$PACKAGE_DIR/"
 
 find "$PACKAGE_DIR" \
   -type d -name '__pycache__' \
@@ -77,7 +83,19 @@ if [[ -n "$FORBIDDEN_FILES" ]]; then
   exit 1
 fi
 
-tar -czf "$ARCHIVE" \
+
+find "$PACKAGE_DIR" \
+  -type f \
+  \( -name '.DS_Store' -o -name '._*' \) \
+  -delete
+
+find "$DIST_DIR" \
+  -maxdepth 1 \
+  -type f \
+  -name '._*' \
+  -delete
+
+COPYFILE_DISABLE=1 tar -czf "$ARCHIVE" \
   -C "$DIST_DIR" \
   "$PACKAGE_NAME"
 

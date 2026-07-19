@@ -1,0 +1,12 @@
+{
+  "product": "SolarInspector",
+  "version": "4.1.0",
+  "channel": "stable",
+  "config_schema": 5,
+  "minimum_python": "3.11",
+  "minimum_updater": "1.0.0",
+  "asset": "SolarInspector-4.1.0.tar.gz",
+  "checksum_asset": "SolarInspector-4.1.0.tar.gz.sha256",
+  "healthcheck": "/api/health",
+  "service_restart_required": true
+}
