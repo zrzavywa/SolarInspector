@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Software-Update · SolarInspector{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>Software-Update</h1>
+    <p>Installierte Version prüfen und verfügbare GitHub-Releases anzeigen.</p>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Versionsstatus</h2>
+
+  <div class="update-grid">
+    <div>
+      <span class="label">Installierte Version</span>
+      <strong id="installed-version">Wird geladen …</strong>
+    </div>
+
+    <div>
+      <span class="label">Verfügbare Version</span>
+      <strong id="available-version">Wird geprüft …</strong>
+    </div>
+
+    <div>
+      <span class="label">Status</span>
+      <strong id="update-status">Prüfung läuft …</strong>
+    </div>
+  </div>
+
+  <div class="button-row">
+    <button id="check-update-button" type="button">
+      Jetzt prüfen
+    </button>
+  </div>
+</section>
+
+<section class="card" id="release-card" hidden>
+  <h2 id="release-name">Release</h2>
+
+  <p>
+    <span class="label">Veröffentlicht:</span>
+    <span id="published-at">–</span>
+  </p>
+
+  <h3>Änderungen</h3>
+  <pre id="release-notes" class="release-notes"></pre>
+
+  <div class="button-row">
+    <a
+      id="release-link"
+      href="#"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Release auf GitHub öffnen
+    </a>
+
+    <button id="install-update-button" type="button" disabled>
+      Installation folgt in Version 4.1.1
+    </button>
+  </div>
+</section>
+
+<section class="card error-card" id="update-error" hidden>
+  <h2>Updateprüfung fehlgeschlagen</h2>
+  <p id="update-error-message"></p>
+</section>
+
+<script src="{{ url_for('static', filename='update.js') }}"></script>
+{% endblock %}

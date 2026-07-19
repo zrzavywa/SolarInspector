@@ -1275,6 +1275,9 @@ def api_update_check():
         "checksum_url": release.checksum_url,
     }
 
+@app.get("/update")
+def update_page():
+    return render_template("update.html")
 
 def generate_demo_data(days: int = 400, interval_minutes: int = 15) -> None:
     log(f"Erzeuge Demodaten für {days} Tage.")

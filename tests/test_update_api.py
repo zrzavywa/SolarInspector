@@ -14,6 +14,13 @@ def test_system_version_endpoint():
     assert payload["product"] == "SolarInspector"
     assert payload["version"] == "4.1.0"
 
+def test_update_page():
+    client = si.app.test_client()
+
+    response = client.get("/update")
+
+    assert response.status_code == 200
+    assert b"Software-Update" in response.data
 
 @patch("solarinspector.check_for_update")
 def test_update_check_endpoint(mock_check):
