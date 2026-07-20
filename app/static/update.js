@@ -326,3 +326,14 @@ loadDownloadStatus().catch((error) => {
 
 installButton.addEventListener("click", installUpdate);
 
+loadDownloadStatus()
+  .then((payload) => {
+    if (ACTIVE_UPDATE_STATES.has(payload?.state)) {
+      return pollInstallationStatus();
+    }
+
+    return null;
+  })
+  .catch((error) => {
+    console.error(error);
+  });
