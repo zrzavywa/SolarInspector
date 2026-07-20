@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
-import shutil
 from datetime import datetime, timezone
 
 
@@ -136,6 +136,54 @@ def restart_systemd_service(
         ) from exc
 
 
+def configure_runtime_paths(
+    release_directory: Path,
+    config_path: Path,
+    database_path: Path,
+) -> None:
+    app_directory = release_directory / "app"
+
+    if not app_directory.is_dir():
+        raise ReleaseInstallError(
+            f"App-Verzeichnis fehlt: {app_directory}"
+        )
+
+    config_link = app_directory / "config.json"
+    data_link = app_directory / "data"
+    data_directory = database_path.parent
+
+    if not config_path.is_file():
+        raise ReleaseInstallError(
+            f"Konfigurationsdatei fehlt: {config_path}"
+        )
+
+    if not database_path.is_file():
+        raise ReleaseInstallError(
+            f"Datenbank fehlt: {database_path}"
+        )
+
+    if config_link.is_symlink() or config_link.is_file():
+        config_link.unlink()
+    elif config_link.exists():
+        raise ReleaseInstallError(
+            f"Unerwarteter Konfigurationspfad: {config_link}"
+        )
+
+    if data_link.is_symlink() or data_link.is_file():
+        data_link.unlink()
+    elif data_link.is_dir():
+        shutil.rmtree(data_link)
+    elif data_link.exists():
+        raise ReleaseInstallError(
+            f"Unerwarteter Datenpfad: {data_link}"
+        )
+
+    config_link.symlink_to(config_path.resolve())
+    data_link.symlink_to(
+        data_directory.resolve(),
+        target_is_directory=True,
+    )
+
 def run_update(
     request_path: Path,
     status_path: Path,
@@ -182,6 +230,12 @@ def run_update(
         archive_path=archive_path,
         version=version,
         releases_directory=releases_directory,
+    )
+
+    configure_runtime_paths(
+        release_directory=release_directory,
+        config_path=config_path,
+        database_path=database_path,
     )
 
     write_update_status(

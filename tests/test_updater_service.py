@@ -73,6 +73,21 @@ def test_run_update(
         releases / "4.1.0"
     )
 
+    app_directory = release_directory / "app"
+    app_directory.mkdir(parents=True)
+
+    config_path = tmp_path / "config.json"
+    database_path = tmp_path / "solarinspector.db"
+
+    config_path.write_text(
+        '{"test": true}',
+        encoding="utf-8",
+    )
+
+    database_path.write_bytes(
+        b"sqlite-data"
+    )
+
     mock_prepare.return_value = (
         release_directory
     )
@@ -84,9 +99,9 @@ def test_run_update(
         current_link=current,
         healthcheck_url="http://127.0.0.1:8787/api/health",
         service_name="solarinspector.service",
-	backup_directory=tmp_path / "backups",
-    	config_path=tmp_path / "config.json",
-    	database_path=tmp_path / "solarinspector.db",
+        backup_directory=tmp_path / "backups",
+        config_path=config_path,
+        database_path=database_path,
     )
 
     assert not request_path.exists()
@@ -103,6 +118,14 @@ def test_run_update(
     mock_prepare.assert_called_once()
     mock_activate.assert_called_once()
 
+    config_link = release_directory / "app" / "config.json"
+    data_link = release_directory / "app" / "data"
+
+    assert config_link.is_symlink()
+    assert data_link.is_symlink()
+
+    assert config_link.resolve() == config_path.resolve()
+    assert data_link.resolve() == database_path.parent.resolve()
 
 def test_create_backup(tmp_path: Path):
     backup_directory = tmp_path / "backups"
