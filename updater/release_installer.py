@@ -18,7 +18,9 @@ def create_release_venv(
     release_directory: Path,
     python_executable: str | None = None,
 ) -> Path:
-    python_executable = python_executable or sys.executable
+    python_executable = os.path.realpath(
+    python_executable or sys.executable
+)
     venv_directory = release_directory / ".venv"
 
     if venv_directory.exists():
