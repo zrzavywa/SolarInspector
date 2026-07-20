@@ -254,7 +254,9 @@ function renderDownloadStatus(payload) {
     Boolean(payload.available_version) &&
     Boolean(payload.archive_path);
 
-  installButton.disabled = !canInstall;
+  if (installButton) {
+    installButton.disabled = !canInstall;
+  }
 
   if (state === "success") {
     installationResult.hidden = false;
@@ -324,7 +326,11 @@ async function downloadUpdate() {
 
 checkButton.addEventListener("click", checkForUpdate);
 downloadButton.addEventListener("click", downloadUpdate);
-installButton.addEventListener("click", installUpdate);
+
+if (installButton) {
+  installButton.addEventListener("click", installUpdate);
+}
+
 
 loadDownloadStatus()
   .then((payload) => {
