@@ -23,6 +23,15 @@ const verifiedVersion = document.querySelector("#verified-version");
 const installButton = document.querySelector("#install-update-button");
 const installationResult = document.querySelector("#installation-result");
 
+const ACTIVE_UPDATE_STATES = new Set([
+  "queued",
+  "backing_up",
+  "preparing",
+  "activating",
+  "healthchecking",
+  "rollback",
+]);
+
 
 function formatDate(value) {
   if (!value) {
@@ -265,6 +274,7 @@ async function loadDownloadStatus() {
     headers: {
       Accept: "application/json",
     },
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -273,6 +283,8 @@ async function loadDownloadStatus() {
 
   const payload = await response.json();
   renderDownloadStatus(payload);
+
+  return payload;
 }
 
 async function downloadUpdate() {
@@ -311,19 +323,7 @@ async function downloadUpdate() {
 }
 
 checkButton.addEventListener("click", checkForUpdate);
-checkForUpdate();
-if (payload.update_available) {
-  updateStatus.textContent = "Neue Version verfügbar";
-}
-
-downloadButton.disabled = !payload.update_available;
-
 downloadButton.addEventListener("click", downloadUpdate);
-
-loadDownloadStatus().catch((error) => {
-  console.error(error);
-});
-
 installButton.addEventListener("click", installUpdate);
 
 loadDownloadStatus()
@@ -337,3 +337,5 @@ loadDownloadStatus()
   .catch((error) => {
     console.error(error);
   });
+
+checkForUpdate();
