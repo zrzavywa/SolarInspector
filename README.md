@@ -79,6 +79,7 @@ http://<IP-DES-RASPBERRY-PI>:8787/
 | Architektur | [Architekturübersicht](docs/architecture.md) |
 | REST-Schnittstellen | [API-Referenz](docs/api.md) |
 | Sicherheit | [Sicherheitsmodell](docs/security.md) |
+| Markenhinweise | [TRADEMARKS.md](TRADEMARKS.md) |
 | Mitarbeit | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Änderungen | [CHANGELOG.md](CHANGELOG.md) |
 
@@ -114,6 +115,14 @@ Vor einem Fehlerbericht bitte:
 4. die Schritte zur Reproduktion beschreiben.
 
 Fehler und Verbesserungsvorschläge können über die GitHub-Issues des Projekts gemeldet werden.
+
+## Markenhinweise
+
+SolarInspector ist ein unabhängiges Projekt und steht in keiner offiziellen Verbindung zu Solakon GmbH, Shelly Group oder Raspberry Pi Ltd. Die Produkt- und Markennamen werden ausschließlich zur Beschreibung der unterstützten Geräte und Plattformen verwendet.
+
+**Raspberry Pi is a trademark of Raspberry Pi Ltd.**
+
+Weitere Informationen enthält die Datei [TRADEMARKS.md](TRADEMARKS.md).
 
 ## Lizenz
 

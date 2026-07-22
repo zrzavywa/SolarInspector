@@ -18,6 +18,7 @@ Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von Solar
 - [API-Referenz](api.md)
 - [Mitwirken](../CONTRIBUTING.md)
 - [Änderungshistorie](../CHANGELOG.md)
+- [Markenhinweise](../TRADEMARKS.md)
 
 ## Dokumentationsprinzipien
 
@@ -38,3 +39,7 @@ Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von Solar
 | Release | veröffentlichte, versionierte SolarInspector-Ausgabe |
 | Updater | separater Prozess für Prüfung, Backup, Aktivierung und Rollback |
 | Healthcheck | lokale Prüfung, ob die aktivierte Anwendung erfolgreich gestartet wurde |
+
+## Markenhinweise
+
+SolarInspector ist ein unabhängiges Projekt. **Raspberry Pi is a trademark of Raspberry Pi Ltd.** Weitere Hinweise zu Solakon, Shelly, Raspberry Pi und anderen Produktbezeichnungen stehen in [TRADEMARKS.md](../TRADEMARKS.md).
