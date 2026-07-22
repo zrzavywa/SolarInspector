@@ -10,6 +10,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 - Zentrale GitHub-Dokumentation mit Installations-, Konfigurations-, Betriebs-, Update-, Sicherheits-, Architektur- und API-Referenz ergänzt.
 - Aktuellen Betrieb der 4.1-Reihe klar von der geplanten 5.0-Zielarchitektur getrennt.
+- Zentrale Markenhinweise und Herstellerabgrenzung für Solakon, Shelly und Raspberry Pi ergänzt.
 
 ## [4.1.3] - 2026-07-20
 
