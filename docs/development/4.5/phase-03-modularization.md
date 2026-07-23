@@ -1,4 +1,6 @@
-# SolarInspector 4.5 – Phase 03: Modularisierungsplan
+# SolarInspector 4.5 – Phase 03: Modularisierung
+
+> **Status:** Phase 03 ist abgeschlossen. Die Abschnitte 1 bis 10 dokumentieren die ursprüngliche Analyse und Planung. Abschnitt 11 beschreibt den erreichten Endstand.
 
 ## 1. Zweck
 
@@ -668,3 +670,67 @@ Der erste vorgesehene Commit lautet:
 ```text
 Create SolarInspector core package structure
 ```
+
+## 11. Umsetzungsergebnis
+
+Phase 03 wurde auf dem Branch
+`feature/4.5-03-modularization` abgeschlossen.
+
+Die Arbeiten waren ausschließlich Refactoring:
+
+- keine neuen fachlichen Funktionen,
+- keine Änderung der Messformeln,
+- keine Änderung der HTTP-Endpunkte,
+- keine Änderung des Konfigurationsformats,
+- keine Änderung des Datenbankschemas,
+- keine Änderung der CLI-Optionen.
+
+Die Implementierung wurde in folgende Bereiche aufgeteilt:
+
+- `adapters`: Shelly und Solakon,
+- `config`: Standardwerte und Konfigurationsverwaltung,
+- `models`: Legacy-Messwertmodell,
+- `persistence`: SQLite-Datenbank,
+- `services`: Collector, Dashboard, Zeiträume, Demo, Update und Version,
+- `web`: Seiten, API-Helfer, Konfigurationsmapping, Kontext und CSV-Export,
+- `runtime.py`: CLI, Startablauf und PID-Bereinigung,
+- `paths.py` und `logging.py`: gemeinsame Infrastruktur.
+
+`app/solarinspector.py` bleibt als kompatibler Einstiegspunkt bestehen.
+Es enthält weiterhin:
+
+- Flask-Routendeklarationen,
+- globale Anwendungsverdrahtung,
+- historische Re-Exports,
+- dynamische Hooks für bestehende Tests,
+- Prozessstart und Cleanup-Registrierung.
+
+`app/modbus_solakon.py` bleibt als Legacy-Importpfad erhalten.
+Die Implementierung liegt nun in
+`solarinspector_core/adapters/solakon.py`.
+
+Die Modularisierung wurde in 23 kleinen, einzeln prüfbaren Commits
+durchgeführt.
+
+Bestätigter Qualitätsstand:
+
+```text
+pytest:               222 bestanden
+Ruff Format:          bestanden
+Ruff Check:           bestanden
+Mypy:                 bestanden
+git diff --check:     bestanden
+Importkompatibilität: bestanden
+Manueller Starttest: bestanden
+```
+
+Bewusst nicht verändert wurden:
+
+- die fachlichen Energieformeln,
+- das Secret-Fehlerverhalten beim Import,
+- die globale Flask-Anwendungsinstanz,
+- historische Datenbank-Seiteneffekte,
+- bestehende Legacy-Importpfade.
+
+Diese Punkte benötigen bei einer späteren Bearbeitung eigene
+Charakterisierungstests und eine separate Migrationsentscheidung.

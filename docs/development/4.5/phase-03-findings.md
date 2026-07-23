@@ -104,3 +104,49 @@ potenziell eine fachliche Verhaltensänderung.
 **Vorgeschlagene Zielphase:** spätere technische Bereinigung
 
 **Priorität:** niedrig
+
+## Abschlussbewertung der Findings
+
+Die Findings bleiben als technische Entscheidungsgrundlage erhalten.
+Ihr Status nach Abschluss von Phase 03 ist:
+
+| Finding | Status | Bewertung |
+|---|---|---|
+| MOD-001 | teilweise entschärft | Pfade, Konfiguration, Datenbank und Services wurden ausgelagert. Die globale Instanziierung im kompatiblen Einstiegspunkt bleibt bewusst bestehen. |
+| MOD-002 | strukturell entschärft | Der Collector liegt jetzt in `services/collector.py`. Eine weitere fachliche Zerlegung wurde wegen des Refactoring-Auftrags nicht vorgenommen. |
+| MOD-003 | bewusst akzeptiert | Weblogik wurde in Hilfsmodule ausgelagert. Flask-Routen und dynamische Monkeypatch-Punkte bleiben im Einstiegspunkt kompatibel. |
+| MOD-004 | offen | Das historisch charakterisierte Verhalten des Datenbank-Datenverzeichnisses wurde nicht verändert. |
+| MOD-005 | offen | Die Prüfung von `SOLARINSPECTOR_SECRET` erfolgt weiterhin beim Import des Einstiegspunkts. |
+| MOD-006 | bewusst akzeptiert | Die Demodatengenerierung wurde nach `services/demo.py` verschoben. Ihre Formeln bleiben unverändert. |
+
+## MOD-007 – Legacy-Importpfade sind Teil der Schnittstelle
+
+**Betroffener Bereich:** `solarinspector.py` und `modbus_solakon.py`
+
+**Beobachtung:** Charakterisierungstests und bestehende Integrationen
+verwenden nicht nur öffentliche Klassen und Funktionen, sondern ersetzen
+teilweise auch Modulattribute wie Reader, Zeitquellen, Logging,
+Threading, Socket und Modbus-Verbindungen.
+
+**Auswirkung:** Ein einfacher Re-Export ist nicht immer ausreichend.
+Die aufrufende Implementierung muss den historischen Patchpunkt weiterhin
+dynamisch auflösen.
+
+**Umsetzung in Phase 03:** Für Collector, Konfiguration, Runtime und
+Solakon wurden gezielte Kompatibilitäts-Wrapper beziehungsweise Hooks
+beibehalten.
+
+**Status:** gelöst und durch Charakterisierungstests abgesichert.
+
+**Priorität für spätere Arbeiten:** hoch, falls Legacy-Pfade entfernt
+oder eine neue öffentliche API eingeführt werden soll.
+
+## Schlussfolgerung
+
+Die verbliebenen offenen Punkte sind keine versehentlich ausgelassenen
+Teile der Modularisierung. Sie wurden bewusst nicht verändert, weil sie
+beobachtbares Verhalten, Importverhalten oder fachliche Berechnungen
+betreffen.
+
+Ihre Bearbeitung sollte in eigenständigen Arbeitspaketen mit eigenen
+Charakterisierungstests und klarer Migrationsstrategie erfolgen.
