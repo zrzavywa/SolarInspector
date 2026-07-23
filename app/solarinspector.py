@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import atexit
-import json
 import math
 import os
 import threading
@@ -96,7 +95,9 @@ from solarinspector_core.services.update import (
     perform_update_download,
     queue_update_installation,
     read_update_status_response,
+    write_update_request_file,
 )
+from solarinspector_core.services.version import read_installed_version
 from solarinspector_core.web.api import (
     build_collect_once_api_response,
     build_dashboard_api_response,
@@ -139,41 +140,18 @@ def write_update_request(
     version: str,
     archive_path: str,
 ) -> None:
-    payload = {
-        "version": version,
-        "archive_path": archive_path,
-    }
-
-    UPDATE_REQUEST_PATH.parent.mkdir(
-        parents=True,
-        exist_ok=True,
+    write_update_request_file(
+        UPDATE_REQUEST_PATH,
+        version,
+        archive_path,
     )
-
-    temporary = UPDATE_REQUEST_PATH.with_suffix(
-        ".tmp"
-    )
-
-    temporary.write_text(
-        json.dumps(
-            payload,
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
-
-    temporary.replace(UPDATE_REQUEST_PATH)
 
 
 def get_installed_version() -> str:
-    version_file = Path(__file__).resolve().parent.parent / "VERSION"
-
-    try:
-        version = version_file.read_text(encoding="utf-8").strip()
-    except OSError:
-        return "0.0.0"
-
-    return version or "0.0.0"
+    return read_installed_version(
+        Path(__file__).resolve().parent.parent
+        / "VERSION"
+    )
 
 
 APP_VERSION = get_installed_version()

@@ -7,6 +7,7 @@ effective.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Callable
 
@@ -169,3 +170,33 @@ def queue_update_installation(
         "status": "queued",
         "version": version,
     }, 202
+
+
+def write_update_request_file(
+    request_path: Path,
+    version: str,
+    archive_path: str,
+) -> None:
+    """Atomically persist an update installation request."""
+    payload = {
+        "version": version,
+        "archive_path": archive_path,
+    }
+
+    request_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    temporary = request_path.with_suffix(".tmp")
+
+    temporary.write_text(
+        json.dumps(
+            payload,
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    temporary.replace(request_path)
