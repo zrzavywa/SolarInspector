@@ -4,6 +4,11 @@ import solarinspector as si
 from github_updater import ReleaseInfo
 
 
+def test_application_version_matches_installed_version() -> None:
+    """Ensure the runtime version uses the canonical VERSION file."""
+
+    assert si.APP_VERSION == si.get_installed_version()
+
 
 def test_health_endpoint():
     client = si.app.test_client()
