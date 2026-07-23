@@ -6,7 +6,13 @@ the patchable application clock remain in the compatible entry module.
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any, Protocol
+
+from solarinspector_core.config.manager import ConfigManager
+from solarinspector_core.persistence.database import Database
+from solarinspector_core.services.dashboard import build_dashboard
+from solarinspector_core.services.periods import parse_anchor
 
 
 class CollectorApi(Protocol):
@@ -150,3 +156,135 @@ def build_system_version_api_response(
         "version": installed_version,
         "config_schema": 5,
     }
+
+
+def build_dashboard_api_response(
+    database: Database,
+    period: str,
+    anchor_value: str | None,
+) -> dict[str, Any]:
+    """Build the existing dashboard API payload."""
+    if period not in {"day", "week", "year"}:
+        period = "day"
+
+    anchor = parse_anchor(anchor_value)
+
+    return build_dashboard(
+        database,
+        period,
+        anchor,
+    )
+
+
+def build_test_device_api_response(
+    root_config: dict[str, Any],
+    role: str,
+    payload: dict[str, Any],
+    reader: Any,
+) -> tuple[dict[str, Any], int | None]:
+    """Build the existing Shelly device-test payload."""
+    if role not in {
+        "house_meter",
+        "solakon_meter",
+    }:
+        return {
+            "ok": False,
+            "error": "Unbekannte Messstelle.",
+        }, 404
+
+    if payload:
+        root_config[role].update(
+            {
+                "enabled": bool(payload.get("enabled", True)),
+                "type": payload.get(
+                    "type",
+                    root_config[role]["type"],
+                ),
+                "host": payload.get("host", ""),
+                "username": payload.get(
+                    "username",
+                    "",
+                ),
+                "password": payload.get(
+                    "password",
+                    "",
+                ),
+                "timeout_seconds": payload.get(
+                    "timeout_seconds",
+                    3,
+                ),
+                "direction_factor": payload.get(
+                    "direction_factor",
+                    1,
+                ),
+            }
+        )
+
+        root_config = ConfigManager.validate(root_config)
+
+    config = root_config[role]
+
+    if not config.get("enabled"):
+        return {
+            "ok": False,
+            "error": "Messstelle ist deaktiviert.",
+        }, 400
+
+    try:
+        reading = reader.read(config, role)
+
+        return {
+            "ok": True,
+            "reading": asdict(reading),
+        }, None
+    except Exception as exc:
+        return {
+            "ok": False,
+            "error": str(exc),
+        }, 502
+
+
+def build_test_solakon_one_api_response(
+    root_config: dict[str, Any],
+    payload: dict[str, Any],
+    reader: Any,
+) -> tuple[dict[str, Any], int | None]:
+    """Build the existing Solakon ONE test payload."""
+    root_config["solakon_one"].update(
+        {
+            "enabled": bool(payload.get("enabled", True)),
+            "host": payload.get("host", ""),
+            "port": payload.get("port", 502),
+            "device_id": payload.get(
+                "device_id",
+                1,
+            ),
+            "timeout_seconds": payload.get(
+                "timeout_seconds",
+                5,
+            ),
+            "simulation": bool(payload.get("simulation", False)),
+        }
+    )
+
+    try:
+        root_config = ConfigManager.validate(root_config)
+        config = root_config["solakon_one"]
+
+        if not config.get("enabled"):
+            return {
+                "ok": False,
+                "error": ("Solakon ONE ist deaktiviert."),
+            }, 400
+
+        reading = reader.test(config)
+
+        return {
+            "ok": True,
+            "reading": reading.to_dict(),
+        }, None
+    except Exception as exc:
+        return {
+            "ok": False,
+            "error": str(exc),
+        }, 502

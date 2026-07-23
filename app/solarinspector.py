@@ -17,7 +17,6 @@ import os
 import threading
 import time
 import webbrowser
-from dataclasses import asdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
@@ -98,6 +97,7 @@ from solarinspector_core.services.periods import (
 )
 from solarinspector_core.web.api import (
     build_collect_once_api_response,
+    build_dashboard_api_response,
     build_delete_all_api_response,
     build_health_api_response,
     build_live_api_response,
@@ -105,6 +105,8 @@ from solarinspector_core.web.api import (
     build_status_api_response,
     build_stop_api_response,
     build_system_version_api_response,
+    build_test_device_api_response,
+    build_test_solakon_one_api_response,
 )
 from solarinspector_core.web.configuration import (
     apply_configuration_form,
@@ -362,63 +364,59 @@ def api_live():
 
 @app.get("/api/dashboard")
 def api_dashboard():
-    period = request.args.get("period", "day")
-    if period not in {"day", "week", "year"}:
-        period = "day"
-    anchor = parse_anchor(request.args.get("anchor"))
-    return jsonify(build_dashboard(database, period, anchor))
+    return jsonify(
+        build_dashboard_api_response(
+            database,
+            request.args.get(
+                "period",
+                "day",
+            ),
+            request.args.get("anchor"),
+        )
+    )
 
 
 @app.post("/api/test-device/<role>")
 def api_test_device(role: str):
-    if role not in {"house_meter", "solakon_meter"}:
-        return jsonify({"ok": False, "error": "Unbekannte Messstelle."}), 404
-    root_config = config_manager.get()
-    payload = request.get_json(silent=True) or {}
-    if payload:
-        root_config[role].update({
-            "enabled": bool(payload.get("enabled", True)),
-            "type": payload.get("type", root_config[role]["type"]),
-            "host": payload.get("host", ""),
-            "username": payload.get("username", ""),
-            "password": payload.get("password", ""),
-            "timeout_seconds": payload.get("timeout_seconds", 3),
-            "direction_factor": payload.get("direction_factor", 1),
-        })
-        root_config = ConfigManager.validate(root_config)
-    config = root_config[role]
-    if not config.get("enabled"):
-        return jsonify({"ok": False, "error": "Messstelle ist deaktiviert."}), 400
-    try:
-        reading = collector.reader.read(config, role)
-        return jsonify({"ok": True, "reading": asdict(reading)})
-    except Exception as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 502
+    payload, status_code = (
+        build_test_device_api_response(
+            config_manager.get(),
+            role,
+            request.get_json(
+                silent=True
+            )
+            or {},
+            collector.reader,
+        )
+    )
+
+    response = jsonify(payload)
+
+    if status_code is not None:
+        return response, status_code
+
+    return response
 
 
 @app.post("/api/test-solakon-one")
 def api_test_solakon_one():
-    root_config = config_manager.get()
-    payload = request.get_json(silent=True) or {}
-    root_config["solakon_one"].update(
-        {
-            "enabled": bool(payload.get("enabled", True)),
-            "host": payload.get("host", ""),
-            "port": payload.get("port", 502),
-            "device_id": payload.get("device_id", 1),
-            "timeout_seconds": payload.get("timeout_seconds", 5),
-            "simulation": bool(payload.get("simulation", False)),
-        }
+    payload, status_code = (
+        build_test_solakon_one_api_response(
+            config_manager.get(),
+            request.get_json(
+                silent=True
+            )
+            or {},
+            collector.solakon_reader,
+        )
     )
-    try:
-        root_config = ConfigManager.validate(root_config)
-        config = root_config["solakon_one"]
-        if not config.get("enabled"):
-            return jsonify({"ok": False, "error": "Solakon ONE ist deaktiviert."}), 400
-        reading = collector.solakon_reader.test(config)
-        return jsonify({"ok": True, "reading": reading.to_dict()})
-    except Exception as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 502
+
+    response = jsonify(payload)
+
+    if status_code is not None:
+        return response, status_code
+
+    return response
 
 
 @app.get("/api/export.csv")
