@@ -20,7 +20,7 @@ import threading
 import time
 import webbrowser
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterator, Optional
@@ -57,6 +57,7 @@ from solarinspector_core.config.manager import (
     deep_merge as _deep_merge,
 )
 from solarinspector_core.logging import log
+from solarinspector_core.models.legacy import MeterReading
 from solarinspector_core.paths import (
     BASE_DIR as _BASE_DIR,
 )
@@ -132,18 +133,6 @@ class ConfigManager(CoreConfigManager):
             path,
             logger=lambda message: log(message),
         )
-
-
-@dataclass
-class MeterReading:
-    power_w: float
-    voltage_v: Optional[float] = None
-    current_a: Optional[float] = None
-    power_factor: Optional[float] = None
-    frequency_hz: Optional[float] = None
-    energy_total_wh: Optional[float] = None
-    returned_energy_total_wh: Optional[float] = None
-    source: str = ""
 
 
 class ShellyReader:
