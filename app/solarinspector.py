@@ -170,8 +170,8 @@ class Collector:
     def __init__(self, config_manager: ConfigManager, database: Database):
         self.config_manager = config_manager
         self.database = database
-        self.reader = ShellyReader()
-        self.solakon_reader = SolakonOneReader()
+        self.reader = self._create_shelly_reader()
+        self.solakon_reader = self._create_solakon_reader()
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._lock = threading.RLock()
@@ -181,6 +181,46 @@ class Collector:
         self._cycles = 0
         self._previous_power: Optional[dict[str, Any]] = None
         self._previous_epoch: Optional[float] = None
+
+    @staticmethod
+    def _create_shelly_reader() -> ShellyReader:
+        """Create the existing default Shelly reader."""
+        return ShellyReader()
+
+    @staticmethod
+    def _create_solakon_reader() -> SolakonOneReader:
+        """Create the existing default Solakon reader."""
+        return SolakonOneReader()
+
+    @staticmethod
+    def _now() -> datetime:
+        """Return the current local time."""
+        return datetime.now().astimezone()
+
+    @staticmethod
+    def _monotonic() -> float:
+        """Return the monotonic runtime clock."""
+        return time.monotonic()
+
+    @staticmethod
+    def _log(message: str) -> None:
+        """Write a collector message through application logging."""
+        log(message)
+
+    @staticmethod
+    def _create_thread(
+        *,
+        target: Any,
+        name: str,
+        daemon: bool,
+    ) -> threading.Thread:
+        """Create the existing collector worker thread."""
+        return threading.Thread(
+            target=target,
+            name=name,
+            daemon=daemon,
+        )
+
 
     @staticmethod
     def _has_enabled_source(config: dict[str, Any]) -> bool:
@@ -194,20 +234,20 @@ class Collector:
         if not self._has_enabled_source(config):
             with self._lock:
                 self._last_error = "Keine Messstelle aktiviert. Bitte zuerst die Konfiguration prüfen."
-            log(self._last_error)
+            self._log(self._last_error)
             return False
         with self._lock:
             if self._thread and self._thread.is_alive():
                 return False
             self._stop_event.clear()
-            self._started_at = datetime.now().astimezone().isoformat(timespec="seconds")
-            self._thread = threading.Thread(
+            self._started_at = self._now().isoformat(timespec="seconds")
+            self._thread = self._create_thread(
                 target=self._run,
                 name="SolarInspectorCollector",
                 daemon=True,
             )
             self._thread.start()
-            log("Datenerfassung gestartet.")
+            self._log("Datenerfassung gestartet.")
             return True
 
     def stop(self) -> bool:
@@ -217,7 +257,7 @@ class Collector:
             self._stop_event.set()
             thread = self._thread
         thread.join(timeout=10)
-        log("Datenerfassung gestoppt.")
+        self._log("Datenerfassung gestoppt.")
         return True
 
     def is_running(self) -> bool:
@@ -279,7 +319,7 @@ class Collector:
         if not self._has_enabled_source(config):
             raise ValueError("Keine Messstelle aktiviert. Bitte zuerst die Konfiguration prüfen.")
 
-        now = datetime.now().astimezone()
+        now = self._now()
         now_epoch = now.timestamp()
         house_cfg = config["house_meter"]
         solar_cfg = config["solakon_meter"]
@@ -445,7 +485,7 @@ class Collector:
             self._cycles += 1
 
         if errors:
-            log("Messzyklus mit Warnung: " + " | ".join(errors))
+            self._log("Messzyklus mit Warnung: " + " | ".join(errors))
         return sample
 
     def reset_state(self) -> None:
@@ -459,15 +499,15 @@ class Collector:
 
     def _run(self) -> None:
         while not self._stop_event.is_set():
-            cycle_started = time.monotonic()
+            cycle_started = self._monotonic()
             try:
                 self.collect_once()
             except Exception as exc:
                 with self._lock:
                     self._last_error = str(exc)
-                log(f"Messzyklus fehlgeschlagen: {exc}")
+                self._log(f"Messzyklus fehlgeschlagen: {exc}")
             interval = self.config_manager.get()["general"]["poll_interval_seconds"]
-            elapsed = time.monotonic() - cycle_started
+            elapsed = self._monotonic() - cycle_started
             self._stop_event.wait(max(0.2, interval - elapsed))
 
 
