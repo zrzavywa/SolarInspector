@@ -3,7 +3,6 @@
 from datetime import UTC, datetime
 
 import pytest
-
 from solarinspector_core.adapters.solakon import SolakonOneReading
 from solarinspector_core.adapters.solakon_measurement import (
     SolakonMeasurementAdapter,

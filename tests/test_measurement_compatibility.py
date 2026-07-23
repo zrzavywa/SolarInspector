@@ -3,7 +3,6 @@
 from datetime import UTC, datetime
 
 import pytest
-
 from solarinspector_core.adapters.compatibility import (
     meter_reading_from_snapshot,
     solakon_reading_from_snapshot,
@@ -50,9 +49,7 @@ def snapshot(
     return DeviceSnapshot(
         source_id="source",
         status=(
-            DeviceConnectionStatus.DEGRADED
-            if error
-            else DeviceConnectionStatus.ONLINE
+            DeviceConnectionStatus.DEGRADED if error else DeviceConnectionStatus.ONLINE
         ),
         measurements=tuple(measurements),
         received_at=NOW,

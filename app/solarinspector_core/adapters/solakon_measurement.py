@@ -144,9 +144,7 @@ def _snapshot_metadata(
         ("operating_status", reading.status),
     )
     return tuple(
-        (key, value)
-        for key, value in values
-        if value is not None and value.strip()
+        (key, value) for key, value in values if value is not None and value.strip()
     )
 
 
