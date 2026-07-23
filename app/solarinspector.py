@@ -30,8 +30,6 @@ from flask import (
     url_for,
 )
 from github_updater import (
-    UpdateCheckError,
-    UpdateVerificationError,
     check_for_update,
     download_and_verify_release,
 )
@@ -92,6 +90,12 @@ from solarinspector_core.services.periods import (
 )
 from solarinspector_core.services.periods import (
     period_bounds as _period_bounds,
+)
+from solarinspector_core.services.update import (
+    build_update_check_response,
+    perform_update_download,
+    queue_update_installation,
+    read_update_status_response,
 )
 from solarinspector_core.web.api import (
     build_collect_once_api_response,
@@ -463,97 +467,46 @@ def api_system_version():
 
 @app.get("/api/update/check")
 def api_update_check():
-    installed_version = get_installed_version()
+    payload, status_code = (
+        build_update_check_response(
+            get_installed_version(),
+            check_for_update,
+        )
+    )
 
-    try:
-        release = check_for_update(installed_version)
-    except UpdateCheckError as exc:
-        return {
-            "status": "error",
-            "installed_version": installed_version,
-            "message": str(exc),
-        }, 502
+    if status_code is not None:
+        return payload, status_code
 
-    return {
-        "status": "ok",
-        "installed_version": release.installed_version,
-        "available_version": release.available_version,
-        "update_available": release.update_available,
-        "release_name": release.release_name,
-        "release_notes": release.release_notes,
-        "published_at": release.published_at,
-        "release_url": release.html_url,
-        "asset_name": release.asset_name,
-        "asset_url": release.asset_url,
-        "checksum_name": release.checksum_name,
-        "checksum_url": release.checksum_url,
-    }
+    return payload
 
 @app.get("/api/update/status")
 def api_update_status():
-    return read_update_status(UPDATE_STATUS_PATH)
+    return read_update_status_response(
+        UPDATE_STATUS_PATH,
+        read_update_status,
+    )
 
 @app.post("/api/update/download")
 def api_update_download():
-    installed_version = get_installed_version()
-
-    write_update_status(
-        UPDATE_STATUS_PATH,
-        state="checking",
-        progress=10,
-        message="GitHub Release wird geprüft.",
-        installed_version=installed_version,
+    payload, status_code = (
+        perform_update_download(
+            installed_version=(
+                get_installed_version()
+            ),
+            status_path=UPDATE_STATUS_PATH,
+            cache_directory=UPDATE_CACHE_DIR,
+            update_checker=check_for_update,
+            release_downloader=(
+                download_and_verify_release
+            ),
+            status_writer=write_update_status,
+        )
     )
 
-    try:
-        release = check_for_update(installed_version)
+    if status_code is not None:
+        return payload, status_code
 
-        if not release.update_available:
-            status = write_update_status(
-                UPDATE_STATUS_PATH,
-                state="idle",
-                progress=0,
-                message="Keine neuere Version verfügbar.",
-                available_version=release.available_version,
-            )
-            return status, 409
-
-        write_update_status(
-            UPDATE_STATUS_PATH,
-            state="downloading",
-            progress=30,
-            message="Release-Paket wird heruntergeladen.",
-            available_version=release.available_version,
-        )
-
-        target_directory = (
-            UPDATE_CACHE_DIR / release.available_version
-        )
-
-        archive_path = download_and_verify_release(
-            release,
-            target_directory=target_directory,
-        )
-
-        status = write_update_status(
-            UPDATE_STATUS_PATH,
-            state="verified",
-            progress=100,
-            message="Release-Paket wurde erfolgreich heruntergeladen und geprüft.",
-            archive_path=str(archive_path),
-            available_version=release.available_version,
-        )
-
-        return status
-
-    except (UpdateCheckError, UpdateVerificationError) as exc:
-        status = write_update_status(
-            UPDATE_STATUS_PATH,
-            state="failed",
-            progress=0,
-            message=str(exc),
-        )
-        return status, 502
+    return payload
 
 
 @app.get("/update")
@@ -666,54 +619,12 @@ def generate_demo_data(days: int = 400, interval_minutes: int = 15) -> None:
 
 @app.post("/api/update/install")
 def api_update_install():
-    status = read_update_status(
-        UPDATE_STATUS_PATH
+    return queue_update_installation(
+        status_path=UPDATE_STATUS_PATH,
+        status_reader=read_update_status,
+        request_writer=write_update_request,
+        status_writer=write_update_status,
     )
-
-    if status.get("state") != "verified":
-        return {
-            "status": "error",
-            "message": (
-                "Es liegt kein verifiziertes "
-                "Update-Paket vor."
-            ),
-        }, 409
-
-    version = status.get(
-        "available_version"
-    )
-    archive_path = status.get(
-        "archive_path"
-    )
-
-    if not version or not archive_path:
-        return {
-            "status": "error",
-            "message": (
-                "Updateinformationen sind "
-                "unvollständig."
-            ),
-        }, 409
-
-    write_update_request(
-        version=version,
-        archive_path=archive_path,
-    )
-
-    write_update_status(
-        UPDATE_STATUS_PATH,
-        state="queued",
-        progress=0,
-        message=(
-            "Update wurde zur Installation "
-            "vorgemerkt."
-        ),
-    )
-
-    return {
-        "status": "queued",
-        "version": version,
-    }, 202
 
 
 def parse_args() -> argparse.Namespace:
