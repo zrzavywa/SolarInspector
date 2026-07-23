@@ -36,6 +36,7 @@ files = [
     "app/modbus_solakon.py",
     "app/release_installer.py",
     "app/solarinspector_core/adapters/base.py",
+    "app/solarinspector_core/adapters/shelly.py",
     "app/solarinspector_core/models/device.py",
     "app/solarinspector_core/models/measurement.py",
     "app/solarinspector_core/models/metrics.py",
