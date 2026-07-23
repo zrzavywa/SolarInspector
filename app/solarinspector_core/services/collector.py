@@ -11,12 +11,8 @@ import time
 from datetime import datetime
 from typing import Any, Optional
 
-from modbus_solakon import (
-    SolakonOneReader,
-    SolakonOneReading,
-)
-
 from solarinspector_core.adapters.shelly import ShellyReader
+from solarinspector_core.adapters.solakon import SolakonOneReader, SolakonOneReading
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.logging import log
 from solarinspector_core.models.legacy import MeterReading

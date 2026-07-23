@@ -31,12 +31,6 @@ from github_updater import (
     check_for_update,
     download_and_verify_release,
 )
-from modbus_solakon import (
-    SolakonOneReader,
-)
-from modbus_solakon import (
-    SolakonOneReading as SolakonOneReading,
-)
 from solarinspector_core.adapters.shelly import (
     ShellyReader as _ShellyReader,
 )
@@ -46,6 +40,8 @@ from solarinspector_core.adapters.shelly import (
 from solarinspector_core.adapters.shelly import (
     _nested_float as _nested_float_core,
 )
+from solarinspector_core.adapters.solakon import SolakonOneReader
+from solarinspector_core.adapters.solakon import SolakonOneReading as SolakonOneReading
 from solarinspector_core.config.defaults import (
     DEFAULT_CONFIG as _DEFAULT_CONFIG,
 )
