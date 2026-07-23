@@ -11,8 +11,12 @@ import time
 from datetime import datetime
 from typing import Any, Optional
 
+from solarinspector_core.adapters.compatibility import (
+    solakon_reading_from_snapshot,
+)
 from solarinspector_core.adapters.shelly import ShellyReader
 from solarinspector_core.adapters.solakon import SolakonOneReader, SolakonOneReading
+from solarinspector_core.adapters.solakon_measurement import SolakonMeasurementAdapter
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.logging import log
 from solarinspector_core.models.legacy import MeterReading
@@ -44,6 +48,31 @@ class Collector:
     def _create_solakon_reader() -> SolakonOneReader:
         """Create the existing default Solakon reader."""
         return SolakonOneReader()
+
+    def _read_solakon_snapshot(
+        self,
+        config: dict[str, Any],
+    ) -> tuple[Optional[SolakonOneReading], Optional[str]]:
+        """Read Solakon through the normalized adapter and restore legacy data."""
+
+        try:
+            snapshot = SolakonMeasurementAdapter(
+                source_id="solakon_one",
+                name="Solakon ONE",
+                config=config,
+                reader=self.solakon_reader,
+            ).read_snapshot()
+        except Exception as exc:
+            # Preserve the collector's historical catch-all error behavior.
+            return None, str(exc)
+
+        reading = solakon_reading_from_snapshot(snapshot)
+        if reading is not None:
+            return reading, None
+        if snapshot.error:
+            _prefix, separator, detail = snapshot.error.partition(": ")
+            return None, detail if separator else snapshot.error
+        return None, "Keine Solakon-Messwerte verfügbar."
 
     @staticmethod
     def _now() -> datetime:
@@ -203,10 +232,9 @@ class Collector:
         solakon_reading: Optional[SolakonOneReading] = None
 
         if one_cfg.get("enabled"):
-            try:
-                solakon_reading = self.solakon_reader.read(one_cfg)
-            except Exception as exc:
-                errors.append(f"Solakon ONE: {exc}")
+            solakon_reading, solakon_error = self._read_solakon_snapshot(one_cfg)
+            if solakon_error:
+                errors.append(f"Solakon ONE: {solakon_error}")
 
         if house_cfg.get("enabled"):
             try:

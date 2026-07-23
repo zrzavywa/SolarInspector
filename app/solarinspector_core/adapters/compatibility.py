@@ -80,7 +80,7 @@ def solakon_reading_from_snapshot(
 ) -> SolakonOneReading | None:
     """Map normalized Solakon metrics back to the current collector structure."""
 
-    if not snapshot.measurements:
+    if not snapshot.measurements and not snapshot.metadata:
         return None
 
     metadata = dict(snapshot.metadata)
