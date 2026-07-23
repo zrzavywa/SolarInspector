@@ -216,10 +216,10 @@ if ! command -v python3 >/dev/null 2>&1; then
 else
   if ! python3 - <<'PY' >/dev/null 2>&1
 import sys
-raise SystemExit(0 if sys.version_info >= (3, 9) else 1)
+raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
 PY
   then
-    die "SolarInspector ${VERSION} benötigt Python 3.9 oder neuer."
+    die "SolarInspector ${VERSION} benötigt Python 3.11 oder neuer."
   fi
   if ! python3 -m venv --help >/dev/null 2>&1; then
     NEED_APT=1

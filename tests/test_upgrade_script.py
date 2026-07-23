@@ -1,5 +1,6 @@
 """Tests for the Raspberry Pi upgrade script package layout."""
 
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -28,6 +29,22 @@ def test_upgrade_script_uses_project_version() -> None:
 
     assert result.returncode == 0, result.stderr
     assert f"SolarInspector {version}" in result.stdout
+
+
+def test_upgrade_script_requires_manifest_python_version() -> None:
+    """Ensure the upgrade script enforces the manifest Python version."""
+
+    manifest = json.loads(
+        (PROJECT_ROOT / "release-manifest.json").read_text(encoding="utf-8")
+    )
+    minimum_python = str(manifest["minimum_python"])
+    version_parts = minimum_python.split(".")
+    major = int(version_parts[0])
+    minor = int(version_parts[1])
+    script = SCRIPT_PATH.read_text(encoding="utf-8")
+
+    assert f"sys.version_info >= ({major}, {minor})" in script
+    assert f"benötigt Python {minimum_python} oder neuer." in script
 
 
 def test_upgrade_script_supports_root_package_layout(
