@@ -96,6 +96,16 @@ from solarinspector_core.services.periods import (
 from solarinspector_core.services.periods import (
     period_bounds as _period_bounds,
 )
+from solarinspector_core.web.api import (
+    build_collect_once_api_response,
+    build_delete_all_api_response,
+    build_health_api_response,
+    build_live_api_response,
+    build_start_api_response,
+    build_status_api_response,
+    build_stop_api_response,
+    build_system_version_api_response,
+)
 from solarinspector_core.web.configuration import (
     apply_configuration_form,
 )
@@ -296,51 +306,58 @@ def data_page():
 
 @app.post("/api/start")
 def api_start():
-    started = collector.start()
-    status = collector.status()
-    if not started and not status["running"]:
-        return jsonify({"ok": False, "started": False, "error": status["last_error"], "status": status}), 400
-    return jsonify({"ok": True, "started": started, "status": status})
+    payload, status_code = build_start_api_response(
+        collector
+    )
+    response = jsonify(payload)
+    if status_code is not None:
+        return response, status_code
+    return response
 
 
 @app.post("/api/stop")
 def api_stop():
-    stopped = collector.stop()
-    return jsonify({"ok": True, "stopped": stopped, "status": collector.status()})
+    return jsonify(
+        build_stop_api_response(collector)
+    )
 
 
 @app.post("/api/collect-once")
 def api_collect_once():
-    try:
-        sample = collector.collect_once()
-        return jsonify({"ok": True, "sample": sample})
-    except Exception as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 500
+    payload, status_code = (
+        build_collect_once_api_response(
+            collector
+        )
+    )
+    response = jsonify(payload)
+    if status_code is not None:
+        return response, status_code
+    return response
 
 
 @app.get("/api/status")
 def api_status():
-    return jsonify(collector.status())
+    return jsonify(
+        build_status_api_response(collector)
+    )
 
 
 @app.get("/api/health")
 def api_health():
-    return {
-        "status": "ok",
-        "version": get_installed_version(),
-        "config_schema": 5,
-        "database": "ok",
-        "web": "ok",
-    }
+    return build_health_api_response(
+        get_installed_version()
+    )
     
 
 @app.get("/api/live")
 def api_live():
-    latest = database.latest()
-    status = collector.status()
-    if latest:
-        latest["age_seconds"] = max(0, int(time.time() - float(latest["ts_epoch"])))
-    return jsonify({"latest": latest, "collector": status})
+    return jsonify(
+        build_live_api_response(
+            database,
+            collector,
+            time.time(),
+        )
+    )
 
 
 @app.get("/api/dashboard")
@@ -475,19 +492,19 @@ def api_export_csv():
 
 @app.post("/api/delete-all")
 def api_delete_all():
-    collector.stop()
-    database.delete_all()
-    collector.reset_state()
-    return jsonify({"ok": True})
+    return jsonify(
+        build_delete_all_api_response(
+            collector,
+            database,
+        )
+    )
 
 
 @app.get("/api/system/version")
 def api_system_version():
-    return {
-        "product": "SolarInspector",
-        "version": get_installed_version(),
-        "config_schema": 5,
-    }
+    return build_system_version_api_response(
+        get_installed_version()
+    )
 
 
 @app.get("/api/update/check")
