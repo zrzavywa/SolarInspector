@@ -1,16 +1,31 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_SOURCE="$PACKAGE_DIR/app"
-SERVICE_NAME="solarinspector.service"
-INSTALL_DIR_OVERRIDE=""
-NO_START=0
-VERSION="4.0.1"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 log() { printf '\n[SolarInspector] %s\n' "$*"; }
 warn() { printf '\n[WARNUNG] %s\n' "$*" >&2; }
 die() { printf '\n[FEHLER] %s\n' "$*" >&2; return 1; }
+
+if [[ -f "$SCRIPT_DIR/VERSION" ]]; then
+  PACKAGE_DIR="$SCRIPT_DIR"
+elif [[ -f "$SCRIPT_DIR/../VERSION" ]]; then
+  PACKAGE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+else
+  die "VERSION-Datei wurde im Paket nicht gefunden."
+fi
+
+VERSION_FILE="$PACKAGE_DIR/VERSION"
+VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")"
+
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  die "Ungültige Version in $VERSION_FILE: $VERSION"
+fi
+
+APP_SOURCE="$PACKAGE_DIR/app"
+SERVICE_NAME="solarinspector.service"
+INSTALL_DIR_OVERRIDE=""
+NO_START=0
 
 usage() {
   cat <<EOF
@@ -204,7 +219,7 @@ import sys
 raise SystemExit(0 if sys.version_info >= (3, 9) else 1)
 PY
   then
-    die "SolarInspector 4.0.1 benötigt Python 3.9 oder neuer."
+    die "SolarInspector ${VERSION} benötigt Python 3.9 oder neuer."
   fi
   if ! python3 -m venv --help >/dev/null 2>&1; then
     NEED_APT=1
@@ -280,7 +295,7 @@ PY
 log "systemd-Service einrichten"
 $SUDO tee "/etc/systemd/system/$SERVICE_NAME" >/dev/null <<EOF
 [Unit]
-Description=SolarInspector 4.0.1
+Description=SolarInspector ${VERSION}
 After=network-online.target
 Wants=network-online.target
 
@@ -308,7 +323,7 @@ $SUDO systemctl daemon-reload
 $SUDO systemctl enable "$SERVICE_NAME" >/dev/null
 
 if [[ $NO_START -eq 0 ]]; then
-  log "SolarInspector 4.0.1 starten"
+  log "SolarInspector ${VERSION} starten"
   $SUDO systemctl restart "$SERVICE_NAME"
 
   PORT="$(run_as_service_user "$INSTALL_DIR/.venv/bin/python" - "$INSTALL_DIR/config.json" <<'PY'
