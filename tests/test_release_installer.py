@@ -4,7 +4,6 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-
 from release_installer import (
     ReleaseInstallError,
     activate_release,
@@ -16,6 +15,7 @@ from release_installer import (
     validate_release_archive,
     wait_for_healthcheck,
 )
+
 
 @patch("release_installer.requests.get")
 def test_healthcheck_accepts_expected_version(mock_get):

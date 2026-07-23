@@ -5,9 +5,8 @@ import json
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 from datetime import datetime, timezone
-
+from pathlib import Path
 
 from release_installer import (
     ReleaseInstallError,
@@ -15,7 +14,6 @@ from release_installer import (
     prepare_release_environment,
 )
 from update_status import write_update_status
-
 
 DEFAULT_REQUEST_PATH = Path(
     "/var/lib/solarinspector/update-request.json"

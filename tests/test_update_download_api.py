@@ -1,7 +1,7 @@
+import json
 from pathlib import Path
 from unittest.mock import patch
 
-import json
 import solarinspector as si
 from github_updater import ReleaseInfo
 

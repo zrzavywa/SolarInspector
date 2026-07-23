@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import shutil
-import tarfile
 import os
+import shutil
 import subprocess
 import sys
+import tarfile
 import time
-import requests
 from pathlib import Path
+
+import requests
 
 
 class ReleaseInstallError(RuntimeError):

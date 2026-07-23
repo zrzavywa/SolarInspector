@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import atexit
 import csv
-from contextlib import contextmanager
 import io
 import json
 import math
@@ -20,26 +19,33 @@ import sqlite3
 import threading
 import time
 import webbrowser
-from dataclasses import dataclass, asdict
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import Any, Iterator, Optional
+
+import requests
+from flask import (
+    Flask,
+    Response,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from github_updater import (
     UpdateCheckError,
     UpdateVerificationError,
     check_for_update,
     download_and_verify_release,
 )
-from update_status import read_update_status, write_update_status
-
-from typing import Any, Iterator, Optional
-
-import requests
-from flask import Flask, Response, flash, jsonify, redirect, render_template, request, url_for
-from requests.auth import HTTPDigestAuth
-from waitress import serve
-
 from modbus_solakon import SolakonOneReader, SolakonOneReading
-
+from requests.auth import HTTPDigestAuth
+from update_status import read_update_status, write_update_status
+from waitress import serve
 
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = BASE_DIR / "config.json"
