@@ -78,6 +78,11 @@ from solarinspector_core.paths import (
     LOG_PATH as LOG_PATH,
 )
 from solarinspector_core.persistence.database import Database
+from solarinspector_core.runtime import (
+    cleanup_runtime_pid_file,
+    parse_runtime_args,
+    run_application,
+)
 from solarinspector_core.services.collector import Collector as CoreCollector
 from solarinspector_core.services.dashboard import build_dashboard as _build_dashboard
 from solarinspector_core.services.demo import generate_demo_samples
@@ -517,53 +522,36 @@ def api_update_install():
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=f"SolarInspector {APP_VERSION}",
+    return parse_runtime_args(
+        APP_VERSION
     )
-    parser.add_argument("--host", help="Webserver-Bind-Adresse; überschreibt config.json")
-    parser.add_argument("--port", type=int, help="Webserver-Port; überschreibt config.json")
-    parser.add_argument("--no-browser", action="store_true", help="Browser nicht automatisch öffnen")
-    parser.add_argument("--configuration", action="store_true", help="Beim Start direkt die Konfiguration öffnen")
-    parser.add_argument("--demo-data", action="store_true", help="Demodaten erzeugen und beenden")
-    parser.add_argument("--demo-days", type=int, default=400, help="Anzahl Tage für Demodaten")
-    return parser.parse_args()
 
 
 def main() -> None:
-    args = parse_args()
-    if args.demo_data:
-        generate_demo_data(days=max(1, args.demo_days))
-        return
-
-    config = config_manager.get()
-    general = config["general"]
-    host = args.host or general["bind_host"]
-    port = args.port or int(general["port"])
-
-    if general.get("auto_start_collection"):
-        collector.start()
-
-    should_open = general.get("open_browser", True) and not args.no_browser
-    browse_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
-    page_path = "/configuration" if args.configuration else "/"
-    url = f"http://{browse_host}:{port}{page_path}"
-    PID_PATH.write_text(str(os.getpid()), encoding="ascii")
-    if should_open:
-        threading.Timer(1.2, lambda: webbrowser.open(url)).start()
-
-    log(f"SolarInspector {APP_VERSION} läuft unter {url} (Bind: {host}:{port}).")
-    serve(app, host=host, port=port, threads=8)
+    run_application(
+        parse_args(),
+        application=app,
+        config_manager=config_manager,
+        collector=collector,
+        generate_demo_data=generate_demo_data,
+        log_message=log,
+        pid_path=PID_PATH,
+        process_id=os.getpid(),
+        version=APP_VERSION,
+        timer_factory=threading.Timer,
+        browser_open=webbrowser.open,
+        serve_application=serve,
+    )
 
 
 
 
 
 def cleanup_pid_file() -> None:
-    try:
-        if PID_PATH.exists() and PID_PATH.read_text(encoding="ascii").strip() == str(os.getpid()):
-            PID_PATH.unlink()
-    except OSError:
-        pass
+    cleanup_runtime_pid_file(
+        PID_PATH,
+        os.getpid(),
+    )
 
 
 
