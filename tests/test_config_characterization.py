@@ -6,6 +6,8 @@ from pathlib import Path
 import pytest
 import solarinspector as si
 
+pytestmark = pytest.mark.characterization
+
 
 def test_missing_configuration_file_creates_defaults(tmp_path: Path) -> None:
     """A missing configuration file is created with the current defaults."""

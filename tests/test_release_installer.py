@@ -16,6 +16,9 @@ from release_installer import (
     wait_for_healthcheck,
 )
 
+pytestmark = pytest.mark.release
+
+
 
 @patch("release_installer.requests.get")
 def test_healthcheck_accepts_expected_version(mock_get):

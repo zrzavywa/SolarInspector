@@ -7,6 +7,9 @@ from typing import Any
 import pytest
 import solarinspector as si
 
+pytestmark = pytest.mark.characterization
+
+
 EXPECTED_COLUMNS = [
     "id",
     "ts_epoch",

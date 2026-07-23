@@ -1,7 +1,11 @@
 from unittest.mock import patch
 
+import pytest
 import solarinspector as si
 from github_updater import ReleaseInfo
+
+pytestmark = pytest.mark.release
+
 
 
 def test_application_version_matches_installed_version() -> None:

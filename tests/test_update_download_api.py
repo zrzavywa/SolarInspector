@@ -2,8 +2,12 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 import solarinspector as si
 from github_updater import ReleaseInfo
+
+pytestmark = pytest.mark.release
+
 
 
 @patch("solarinspector.download_and_verify_release")

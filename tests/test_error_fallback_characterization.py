@@ -16,6 +16,8 @@ from github_updater import (
     UpdateVerificationError,
 )
 
+pytestmark = pytest.mark.characterization
+
 
 class FrozenDateTime:
     """Provide a deterministic current date for fallback tests."""

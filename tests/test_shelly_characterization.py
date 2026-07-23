@@ -8,6 +8,9 @@ import pytest
 import requests
 import solarinspector as si
 
+pytestmark = pytest.mark.characterization
+
+
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "shelly"
 
 

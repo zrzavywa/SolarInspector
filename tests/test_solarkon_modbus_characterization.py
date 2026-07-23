@@ -10,6 +10,9 @@ from unittest.mock import Mock
 import modbus_solakon as ms
 import pytest
 
+pytestmark = pytest.mark.characterization
+
+
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "solarkon"
 
 

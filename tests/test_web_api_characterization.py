@@ -9,6 +9,9 @@ from typing import Any
 import pytest
 import solarinspector as si
 
+pytestmark = pytest.mark.characterization
+
+
 EXPORT_FIELDS = [
     "ts_local",
     "grid_power_w",

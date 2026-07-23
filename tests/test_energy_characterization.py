@@ -7,6 +7,9 @@ from typing import Any
 import pytest
 import solarinspector as si
 
+pytestmark = pytest.mark.characterization
+
+
 ENERGY_KEYS = (
     "grid_import_wh",
     "feed_in_wh",
