@@ -52,6 +52,7 @@ class DeviceSnapshot:
     measurements: tuple[Measurement, ...]
     received_at: datetime
     error: str | None = None
+    metadata: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         """Validate snapshot consistency without applying quality decisions."""
@@ -71,6 +72,16 @@ class DeviceSnapshot:
             raise ValueError(
                 f"{self.status.value} snapshots cannot contain measurements"
             )
+
+        metadata_keys: set[str] = set()
+        for key, value in self.metadata:
+            if not key.strip():
+                raise ValueError("snapshot metadata keys must not be empty")
+            if not value.strip():
+                raise ValueError("snapshot metadata values must not be empty")
+            if key in metadata_keys:
+                raise ValueError("snapshot metadata keys must be unique")
+            metadata_keys.add(key)
 
         identities: set[tuple[MeasurementRole, Metric]] = set()
         for measurement in self.measurements:

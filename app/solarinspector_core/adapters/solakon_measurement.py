@@ -129,7 +129,25 @@ class SolakonMeasurementAdapter:
             measurements=measurements,
             received_at=received_at,
             error=reading.warnings or None,
+            metadata=_snapshot_metadata(reading),
         )
+
+
+def _snapshot_metadata(
+    reading: SolakonOneReading,
+) -> tuple[tuple[str, str], ...]:
+    """Preserve non-numeric device details needed by legacy consumers."""
+
+    values = (
+        ("model_name", reading.model_name),
+        ("serial_number", reading.serial_number),
+        ("operating_status", reading.status),
+    )
+    return tuple(
+        (key, value)
+        for key, value in values
+        if value is not None and value.strip()
+    )
 
 
 def _normalized_values(
