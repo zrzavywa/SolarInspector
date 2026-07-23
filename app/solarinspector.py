@@ -45,6 +45,7 @@ from github_updater import (
 from modbus_solakon import SolakonOneReader, SolakonOneReading
 from requests.auth import HTTPDigestAuth
 from solarinspector_core.config.defaults import DEFAULT_CONFIG, DEVICE_TYPES
+from solarinspector_core.logging import log
 from solarinspector_core.paths import (
     BASE_DIR as _BASE_DIR,
 )
@@ -52,11 +53,13 @@ from solarinspector_core.paths import (
     CONFIG_PATH,
     DATA_DIR,
     DB_PATH,
-    LOG_PATH,
     PID_PATH,
     UPDATE_CACHE_DIR,
     UPDATE_REQUEST_PATH,
     UPDATE_STATUS_PATH,
+)
+from solarinspector_core.paths import (
+    LOG_PATH as LOG_PATH,
 )
 from update_status import read_update_status, write_update_status
 from waitress import serve
@@ -105,15 +108,6 @@ def get_installed_version() -> str:
 
 
 APP_VERSION = get_installed_version()
-
-
-def log(message: str) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now().astimezone().isoformat(timespec="seconds")
-    line = f"{stamp} {message}"
-    print(line, flush=True)
-    with LOG_PATH.open("a", encoding="utf-8") as handle:
-        handle.write(line + "\n")
 
 
 def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
