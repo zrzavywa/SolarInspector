@@ -1,4 +1,5 @@
-"""Legacy data types shared by SolarInspector modules.
+"""Data types shared by SolarInspector modules.
 
-The SolarInspector 4.5 measurement model is not introduced in Phase 03.
+Legacy compatibility types remain available alongside the normalized
+SolarInspector 4.5 measurement model.
 """

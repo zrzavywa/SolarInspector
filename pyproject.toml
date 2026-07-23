@@ -35,6 +35,12 @@ files = [
     "app/update_status.py",
     "app/modbus_solakon.py",
     "app/release_installer.py",
+    "app/solarinspector_core/models/device.py",
+    "app/solarinspector_core/models/measurement.py",
+    "app/solarinspector_core/models/metrics.py",
+    "app/solarinspector_core/models/quality.py",
+    "app/solarinspector_core/models/roles.py",
+    "app/solarinspector_core/models/units.py",
 ]
 check_untyped_defs = true
 warn_unused_configs = true
