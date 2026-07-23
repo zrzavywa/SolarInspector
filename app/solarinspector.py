@@ -38,7 +38,7 @@ from flask import Flask, Response, flash, jsonify, redirect, render_template, re
 from requests.auth import HTTPDigestAuth
 from waitress import serve
 
-from modbus_solakon import ModbusError, SolakonOneReader, SolakonOneReading
+from modbus_solakon import SolakonOneReader, SolakonOneReading
 
 
 BASE_DIR = Path(__file__).resolve().parent
