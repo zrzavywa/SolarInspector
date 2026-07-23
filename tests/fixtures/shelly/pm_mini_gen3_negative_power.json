@@ -1,0 +1,13 @@
+{
+  "apower": -120.5,
+  "voltage": 229.8,
+  "current": 0.53,
+  "pf": -0.98,
+  "freq": 49.99,
+  "aenergy": {
+    "total": 12345.6
+  },
+  "ret_aenergy": {
+    "total": 199.4
+  }
+}
