@@ -44,7 +44,18 @@ from github_updater import (
 )
 from modbus_solakon import SolakonOneReader, SolakonOneReading
 from requests.auth import HTTPDigestAuth
-from solarinspector_core.config.defaults import DEFAULT_CONFIG, DEVICE_TYPES
+from solarinspector_core.config.defaults import (
+    DEFAULT_CONFIG as _DEFAULT_CONFIG,
+)
+from solarinspector_core.config.defaults import (
+    DEVICE_TYPES,
+)
+from solarinspector_core.config.manager import (
+    ConfigManager as CoreConfigManager,
+)
+from solarinspector_core.config.manager import (
+    deep_merge as _deep_merge,
+)
 from solarinspector_core.logging import log
 from solarinspector_core.paths import (
     BASE_DIR as _BASE_DIR,
@@ -65,6 +76,8 @@ from update_status import read_update_status, write_update_status
 from waitress import serve
 
 BASE_DIR = _BASE_DIR
+DEFAULT_CONFIG = _DEFAULT_CONFIG
+deep_merge = _deep_merge
 
 def write_update_request(
     version: str,
@@ -110,93 +123,15 @@ def get_installed_version() -> str:
 APP_VERSION = get_installed_version()
 
 
-def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
-    result = dict(base)
-    for key, value in override.items():
-        if isinstance(value, dict) and isinstance(result.get(key), dict):
-            result[key] = deep_merge(result[key], value)
-        else:
-            result[key] = value
-    return result
 
+class ConfigManager(CoreConfigManager):
+    """Compatibility wrapper for the historic public import path."""
 
-class ConfigManager:
-    def __init__(self, path: Path):
-        self.path = path
-        self._lock = threading.RLock()
-        self._config = self._load()
-
-    def _load(self) -> dict[str, Any]:
-        if not self.path.exists():
-            self.path.write_text(
-                json.dumps(DEFAULT_CONFIG, indent=2, ensure_ascii=False),
-                encoding="utf-8",
-            )
-            return deep_merge(DEFAULT_CONFIG, {})
-        try:
-            loaded = json.loads(self.path.read_text(encoding="utf-8"))
-            return self.validate(deep_merge(DEFAULT_CONFIG, loaded))
-        except Exception as exc:
-            log(f"Konfiguration konnte nicht gelesen werden: {exc}; Standardwerte werden verwendet.")
-            return deep_merge(DEFAULT_CONFIG, {})
-
-    def get(self) -> dict[str, Any]:
-        with self._lock:
-            return json.loads(json.dumps(self._config))
-
-    def save(self, config: dict[str, Any]) -> None:
-        validated = self.validate(deep_merge(DEFAULT_CONFIG, config))
-        with self._lock:
-            temp = self.path.with_suffix(".tmp")
-            temp.write_text(
-                json.dumps(validated, indent=2, ensure_ascii=False),
-                encoding="utf-8",
-            )
-            temp.replace(self.path)
-            self._config = validated
-
-    @staticmethod
-    def validate(config: dict[str, Any]) -> dict[str, Any]:
-        general = config["general"]
-        general["poll_interval_seconds"] = max(
-            2, min(3600, int(general.get("poll_interval_seconds", 10)))
+    def __init__(self, path: Path) -> None:
+        super().__init__(
+            path,
+            logger=lambda message: log(message),
         )
-        general["port"] = max(1, min(65535, int(general.get("port", 8787))))
-        general["bind_host"] = str(general.get("bind_host", "127.0.0.1")).strip() or "127.0.0.1"
-        general["project_name"] = str(general.get("project_name", "SolarInspector")).strip()
-        general["site_name"] = str(general.get("site_name", "")).strip()
-        general["auto_start_collection"] = bool(general.get("auto_start_collection", False))
-        general["open_browser"] = bool(general.get("open_browser", True))
-        if general.get("solar_power_source") not in {"auto", "shelly_ac", "solakon_ac", "solakon_pv"}:
-            general["solar_power_source"] = "auto"
-        if general.get("grid_power_source") not in {"auto", "house_meter", "solakon_one"}:
-            general["grid_power_source"] = "auto"
-
-        solakon = config["solakon_one"]
-        solakon["enabled"] = bool(solakon.get("enabled", False))
-        solakon["host"] = str(solakon.get("host", "")).strip().replace("http://", "").replace("https://", "").rstrip("/")
-        solakon["port"] = max(1, min(65535, int(solakon.get("port", 502))))
-        solakon["device_id"] = max(1, min(247, int(solakon.get("device_id", 1))))
-        solakon["timeout_seconds"] = max(1, min(30, int(solakon.get("timeout_seconds", 5))))
-        solakon["simulation"] = bool(solakon.get("simulation", False))
-
-        for role in ("house_meter", "solakon_meter"):
-            device = config[role]
-            if device.get("type") not in DEVICE_TYPES:
-                device["type"] = DEFAULT_CONFIG[role]["type"]
-            device["enabled"] = bool(device.get("enabled", False))
-            device["host"] = str(device.get("host", "")).strip().replace("http://", "").replace("https://", "").rstrip("/")
-            device["username"] = str(device.get("username", "")).strip()
-            device["password"] = str(device.get("password", ""))
-            device["timeout_seconds"] = max(
-                1, min(30, int(device.get("timeout_seconds", 3)))
-            )
-            try:
-                factor = int(device.get("direction_factor", 1))
-            except (TypeError, ValueError):
-                factor = 1
-            device["direction_factor"] = -1 if factor < 0 else 1
-        return config
 
 
 @dataclass
