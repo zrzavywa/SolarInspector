@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SolarInspector 4.0.1
+"""SolarInspector web application.
 
 Lokale Web-Anwendung zur Erfassung und Auswertung einer Solakon-Anlage.
 Unterstützt Solakon ONE über read-only Modbus TCP sowie Shelly-Messgeräte.
@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import atexit
 import csv
-from contextlib import contextmanager
 import io
 import json
 import math
@@ -20,28 +19,34 @@ import sqlite3
 import threading
 import time
 import webbrowser
-from dataclasses import dataclass, asdict
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import Any, Iterator, Optional
+
+import requests
+from flask import (
+    Flask,
+    Response,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from github_updater import (
     UpdateCheckError,
     UpdateVerificationError,
     check_for_update,
     download_and_verify_release,
 )
-from update_status import read_update_status, write_update_status
-
-from typing import Any, Iterator, Optional
-
-import requests
-from flask import Flask, Response, flash, jsonify, redirect, render_template, request, url_for
+from modbus_solakon import SolakonOneReader, SolakonOneReading
 from requests.auth import HTTPDigestAuth
+from update_status import read_update_status, write_update_status
 from waitress import serve
 
-from modbus_solakon import ModbusError, SolakonOneReader, SolakonOneReading
-
-
-APP_VERSION = "4.0.1"
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = BASE_DIR / "config.json"
 DATA_DIR = BASE_DIR / "data"
@@ -160,6 +165,9 @@ def get_installed_version() -> str:
         return "0.0.0"
 
     return version or "0.0.0"
+
+
+APP_VERSION = get_installed_version()
 
 
 def log(message: str) -> None:
@@ -1575,7 +1583,9 @@ def api_update_install():
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="SolarInspector 4.0.1")
+    parser = argparse.ArgumentParser(
+        description=f"SolarInspector {APP_VERSION}",
+    )
     parser.add_argument("--host", help="Webserver-Bind-Adresse; überschreibt config.json")
     parser.add_argument("--port", type=int, help="Webserver-Port; überschreibt config.json")
     parser.add_argument("--no-browser", action="store_true", help="Browser nicht automatisch öffnen")

@@ -15,6 +15,7 @@ Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von Solar
 ## Für Entwicklung und Integration
 
 - [Architektur](architecture.md)
+- [Entwicklungsstandards](development.md)
 - [API-Referenz](api.md)
 - [Mitwirken](../CONTRIBUTING.md)
 - [Änderungshistorie](../CHANGELOG.md)

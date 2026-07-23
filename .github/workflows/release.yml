@@ -21,19 +21,33 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: app/requirements.txt
+          cache-dependency-path: |
+            requirements-dev.txt
+            app/requirements.txt
+            updater/requirements.txt
 
-      - name: Abhängigkeiten installieren
+      - name: Entwicklungsabhängigkeiten installieren
         run: |
           python -m pip install --upgrade pip
-          pip install -r app/requirements.txt
-          pip install pytest
+          python -m pip install -r requirements-dev.txt
+
+      - name: Formatierung prüfen
+        run: |
+          python -m ruff format --check app tests
+
+      - name: Python-Code prüfen
+        run: |
+          python -m ruff check app tests
+
+      - name: Typprüfung ausführen
+        run: |
+          python -m mypy
 
       - name: Tests ausführen
         env:
           SOLARINSPECTOR_SECRET: github-actions-release-secret
         run: |
-          pytest -v
+          python -m pytest -v tests
 
       - name: Version gegen Tag prüfen
         run: |

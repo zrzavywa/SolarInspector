@@ -32,16 +32,33 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-          cache-dependency-path: app/requirements.txt
+          cache-dependency-path: |
+            requirements-dev.txt
+            app/requirements.txt
+            updater/requirements.txt
 
-      - name: Abhängigkeiten installieren
+      - name: Entwicklungsabhängigkeiten installieren
         run: |
           python -m pip install --upgrade pip
-          pip install -r app/requirements.txt
-          pip install pytest
+          python -m pip install -r requirements-dev.txt
+
+      - name: Formatierung prüfen
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m ruff format --check app tests
+
+      - name: Python-Code prüfen
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m ruff check app tests
+
+      - name: Typprüfung ausführen
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m mypy
 
       - name: Tests ausführen
         env:
           SOLARINSPECTOR_SECRET: github-actions-test-secret
         run: |
-          pytest -v tests
+          python -m pytest -v tests

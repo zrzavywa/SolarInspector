@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 
 import solarinspector as si
-from modbus_solakon import ModbusTcpConnection, SolakonOneReader
+from modbus_solakon import SolakonOneReader
 
 
 def encode_string(text: str, count: int) -> list[int]:
@@ -193,7 +193,7 @@ class SolarInspectorTests(unittest.TestCase):
             manager = si.ConfigManager(cfg_path)
             db = si.Database(Path(tmp) / "collector.db")
             collector = si.Collector(manager, db)
-            first = collector.collect_once()
+            collector.collect_once()
             collector._previous_epoch -= 10
             second = collector.collect_once()
             self.assertEqual(second["solakon_ok"], 1)

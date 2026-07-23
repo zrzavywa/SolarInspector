@@ -2,7 +2,6 @@ import hashlib
 from pathlib import Path
 
 import pytest
-
 from github_updater import (
     UpdateVerificationError,
     calculate_sha256,

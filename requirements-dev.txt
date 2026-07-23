@@ -1,0 +1,8 @@
+-r app/requirements.txt
+-r updater/requirements.txt
+
+pytest
+pytest-cov
+ruff
+mypy
+types-requests

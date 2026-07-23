@@ -26,6 +26,23 @@ Bitte bei Änderungen beachten:
 - bei neuen Endpunkten auch `docs/api.md` aktualisieren,
 - bei sichtbaren Änderungen `CHANGELOG.md` ergänzen.
 
+## Softwareänderungen
+
+Für Python-Code gelten die verbindlichen
+[Entwicklungsstandards](docs/development.md). Sie beschreiben insbesondere
+Formatierung, Typannotationen, Docstrings, Tests und die schrittweise Migration
+des bestehenden Codes.
+
+Vor einem Commit mit Python-Änderungen mindestens ausführen:
+
+```bash
+python -m ruff format --check app tests
+python -m ruff check app tests
+python -m mypy
+SOLARINSPECTOR_SECRET="solarinspector-test-secret" python -m pytest -v tests
+git diff --check
+```
+
 ## Branch- und Pull-Request-Ablauf
 
 ```bash

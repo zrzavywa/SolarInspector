@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import hashlib
+import re
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import requests
 from packaging.version import InvalidVersion, Version
-import hashlib
-import re
-import tempfile
-from pathlib import Path
 
 GITHUB_OWNER = "zrzavywa"
 GITHUB_REPOSITORY = "SolarInspector"
