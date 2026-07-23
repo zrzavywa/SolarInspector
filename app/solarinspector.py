@@ -96,6 +96,7 @@ from solarinspector_core.services.periods import (
 from solarinspector_core.services.periods import (
     period_bounds as _period_bounds,
 )
+from solarinspector_core.web.context import build_template_context
 from update_status import read_update_status, write_update_status
 from waitress import serve
 
@@ -234,25 +235,12 @@ app.secret_key = secret_key
 
 @app.context_processor
 def template_context() -> dict[str, Any]:
-    config = config_manager.get()
-    return {
-        "app_version": APP_VERSION,
-        "project_name": config["general"]["project_name"],
-        "site_name": config["general"]["site_name"],
-        "collector_running": collector.is_running(),
-        "device_types": DEVICE_TYPES,
-        "solar_source_types": {
-            "auto": "Automatisch: Shelly AC, sonst Solakon ONE AC",
-            "shelly_ac": "Shelly PM Mini Gen 3 – AC-Ausgang",
-            "solakon_ac": "Solakon ONE – AC-Wirkleistung",
-            "solakon_pv": "Solakon ONE – PV-Eingangsleistung (DC)",
-        },
-        "grid_source_types": {
-            "auto": "Automatisch: separate Hausmessung, sonst Solakon ONE Meter",
-            "house_meter": "Separate Hausmessung (Shelly 3EM)",
-            "solakon_one": "Solakon ONE – verbundenes Meter/CT",
-        },
-    }
+    return build_template_context(
+        config=config_manager.get(),
+        collector_running=collector.is_running(),
+        app_version=APP_VERSION,
+        device_types=DEVICE_TYPES,
+    )
 
 
 @app.get("/")
