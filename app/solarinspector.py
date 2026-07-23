@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import argparse
 import atexit
-import csv
-import io
 import json
 import math
 import os
@@ -112,6 +110,7 @@ from solarinspector_core.web.configuration import (
     apply_configuration_form,
 )
 from solarinspector_core.web.context import build_template_context
+from solarinspector_core.web.export import build_csv_export
 from solarinspector_core.web.pages import (
     render_acquisition_page,
     render_dashboard_page,
@@ -428,63 +427,20 @@ def api_export_csv():
     end = datetime.combine(end_date, datetime.min.time(), tzinfo=tz)
     rows = database.rows_between(start.timestamp(), end.timestamp())
 
-    output = io.StringIO()
-    fieldnames = [
-        "ts_local",
-        "grid_power_w",
-        "solar_power_w",
-        "house_power_w",
-        "grid_import_w",
-        "feed_in_w",
-        "self_consumption_w",
-        "solar_source",
-        "grid_source",
-        "shelly_solar_power_w",
-        "solakon_pv_power_w",
-        "solakon_ac_power_w",
-        "solakon_battery_power_w",
-        "solakon_battery_soc_pct",
-        "solakon_load_power_w",
-        "solakon_meter_power_w",
-        "solakon_temperature_c",
-        "solakon_daily_pv_kwh",
-        "solakon_total_pv_kwh",
-        "solakon_pv1_power_w",
-        "solakon_pv2_power_w",
-        "solakon_pv3_power_w",
-        "solakon_pv4_power_w",
-        "solar_difference_w",
-        "solar_difference_pct",
-        "solakon_model",
-        "solakon_serial",
-        "solakon_status",
-        "voltage_v",
-        "current_a",
-        "power_factor",
-        "frequency_hz",
-        "grid_import_wh",
-        "feed_in_wh",
-        "solar_wh",
-        "house_wh",
-        "self_consumption_wh",
-        "shelly_solar_wh",
-        "solakon_pv_wh",
-        "solakon_ac_wh",
-        "battery_charge_wh",
-        "battery_discharge_wh",
-        "house_ok",
-        "solar_ok",
-        "solakon_ok",
-        "error_text",
-    ]
-    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore", delimiter=";")
-    writer.writeheader()
-    writer.writerows(rows)
-    filename = f"solarinspector_{start_date.isoformat()}_{(end_date - timedelta(days=1)).isoformat()}.csv"
+    csv_content, filename = build_csv_export(
+        rows,
+        start_date,
+        end_date - timedelta(days=1),
+    )
+
     return Response(
-        output.getvalue(),
+        csv_content,
         mimetype="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{filename}"'
+            )
+        },
     )
 
 
