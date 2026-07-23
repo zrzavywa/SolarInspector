@@ -1,0 +1,21 @@
+{
+  "id": 0,
+  "a_current": 1.0,
+  "a_voltage": 229.0,
+  "a_act_power": 100.0,
+  "a_pf": 0.95,
+  "a_freq": 49.99,
+  "b_current": 2.0,
+  "b_voltage": 230.0,
+  "b_act_power": 200.0,
+  "b_pf": 0.96,
+  "b_freq": 50.0,
+  "c_current": 3.0,
+  "c_voltage": 231.0,
+  "c_act_power": 300.0,
+  "c_pf": 0.97,
+  "c_freq": 50.01,
+  "total_current": 6.0,
+  "total_act_power": 620.0,
+  "is_valid": true
+}

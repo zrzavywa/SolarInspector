@@ -2,11 +2,15 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from updater_service import (
     create_backup,
     read_request,
     run_update,
 )
+
+pytestmark = pytest.mark.release
+
 
 
 def test_read_request(tmp_path: Path):

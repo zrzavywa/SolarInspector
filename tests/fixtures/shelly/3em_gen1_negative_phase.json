@@ -1,0 +1,22 @@
+{
+  "emeters": [
+    {
+      "power": 100.0,
+      "voltage": 229.0,
+      "total": 1000.0,
+      "total_returned": 10.0
+    },
+    {
+      "power": -30.0,
+      "voltage": 230.0,
+      "total": 2000.0,
+      "total_returned": 40.0
+    },
+    {
+      "power": 50.0,
+      "voltage": 231.0,
+      "total": 3000.0,
+      "total_returned": 30.0
+    }
+  ]
+}

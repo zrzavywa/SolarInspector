@@ -1,6 +1,9 @@
 from unittest.mock import Mock, patch
 
+import pytest
 from github_updater import check_for_update
+
+pytestmark = pytest.mark.release
 
 
 @patch("github_updater.requests.get")

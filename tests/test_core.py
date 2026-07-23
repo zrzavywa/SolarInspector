@@ -8,8 +8,12 @@ import unittest
 from datetime import date
 from pathlib import Path
 
+import pytest
 import solarinspector as si
 from modbus_solakon import SolakonOneReader
+
+pytestmark = pytest.mark.integration
+
 
 
 def encode_string(text: str, count: int) -> list[int]:

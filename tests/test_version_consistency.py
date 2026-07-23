@@ -3,6 +3,11 @@
 import json
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.release
+
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = PROJECT_ROOT / "VERSION"
 RELEASE_MANIFEST_FILE = PROJECT_ROOT / "release-manifest.json"

@@ -9,6 +9,8 @@ from github_updater import (
     verify_sha256,
 )
 
+pytestmark = pytest.mark.release
+
 
 def test_calculate_sha256(tmp_path: Path):
     test_file = tmp_path / "release.tar.gz"
