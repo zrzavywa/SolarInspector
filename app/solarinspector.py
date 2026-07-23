@@ -44,38 +44,23 @@ from github_updater import (
 )
 from modbus_solakon import SolakonOneReader, SolakonOneReading
 from requests.auth import HTTPDigestAuth
+from solarinspector_core.paths import (
+    BASE_DIR as _BASE_DIR,
+)
+from solarinspector_core.paths import (
+    CONFIG_PATH,
+    DATA_DIR,
+    DB_PATH,
+    LOG_PATH,
+    PID_PATH,
+    UPDATE_CACHE_DIR,
+    UPDATE_REQUEST_PATH,
+    UPDATE_STATUS_PATH,
+)
 from update_status import read_update_status, write_update_status
 from waitress import serve
 
-BASE_DIR = Path(__file__).resolve().parent
-CONFIG_PATH = BASE_DIR / "config.json"
-DATA_DIR = BASE_DIR / "data"
-DB_PATH = DATA_DIR / "solarinspector.db"
-LOG_PATH = DATA_DIR / "solarinspector.log"
-PID_PATH = DATA_DIR / "solarinspector.pid"
-
-UPDATE_STATUS_PATH = Path(
-    os.environ.get(
-        "SOLARINSPECTOR_UPDATE_STATUS",
-        Path(__file__).resolve().parent / "data" / "update-status.json",
-    )
-)
-
-UPDATE_CACHE_DIR = Path(
-    os.environ.get(
-        "SOLARINSPECTOR_UPDATE_CACHE",
-        Path(__file__).resolve().parent / "data" / "updates",
-    )
-)
-
-UPDATE_REQUEST_PATH = Path(
-    os.environ.get(
-        "SOLARINSPECTOR_UPDATE_REQUEST",
-        Path(__file__).resolve().parent
-        / "data"
-        / "update-request.json",
-    )
-)
+BASE_DIR = _BASE_DIR
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "general": {
