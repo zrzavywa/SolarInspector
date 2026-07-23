@@ -5,11 +5,7 @@ import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SCRIPT_PATH = (
-    PROJECT_ROOT
-    / "scripts"
-    / "Upgrade-SolarInspector-RaspberryPi.sh"
-)
+SCRIPT_PATH = PROJECT_ROOT / "scripts" / "Upgrade-SolarInspector-RaspberryPi.sh"
 
 
 def run_help(script_path: Path) -> subprocess.CompletedProcess[str]:
@@ -26,9 +22,7 @@ def run_help(script_path: Path) -> subprocess.CompletedProcess[str]:
 def test_upgrade_script_uses_project_version() -> None:
     """Ensure the repository layout reads the canonical VERSION file."""
 
-    version = (
-        PROJECT_ROOT / "VERSION"
-    ).read_text(encoding="utf-8").strip()
+    version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
     result = run_help(SCRIPT_PATH)
 
@@ -42,9 +36,7 @@ def test_upgrade_script_supports_root_package_layout(
     """Ensure the historical root-level package layout remains supported."""
 
     version = "4.5.0"
-    package_script = (
-        tmp_path / "Upgrade-SolarInspector-RaspberryPi.sh"
-    )
+    package_script = tmp_path / "Upgrade-SolarInspector-RaspberryPi.sh"
 
     shutil.copy2(SCRIPT_PATH, package_script)
     (tmp_path / "VERSION").write_text(
@@ -66,9 +58,7 @@ def test_upgrade_script_rejects_missing_version(
     scripts_directory = tmp_path / "scripts"
     scripts_directory.mkdir()
 
-    package_script = (
-        scripts_directory / "Upgrade-SolarInspector-RaspberryPi.sh"
-    )
+    package_script = scripts_directory / "Upgrade-SolarInspector-RaspberryPi.sh"
     shutil.copy2(SCRIPT_PATH, package_script)
 
     result = run_help(package_script)
@@ -82,9 +72,7 @@ def test_upgrade_script_rejects_invalid_version(
 ) -> None:
     """Ensure malformed package versions are rejected."""
 
-    package_script = (
-        tmp_path / "Upgrade-SolarInspector-RaspberryPi.sh"
-    )
+    package_script = tmp_path / "Upgrade-SolarInspector-RaspberryPi.sh"
 
     shutil.copy2(SCRIPT_PATH, package_script)
     (tmp_path / "VERSION").write_text(

@@ -17,9 +17,7 @@ def read_project_version() -> str:
 def read_release_manifest() -> dict[str, object]:
     """Read the SolarInspector release manifest."""
 
-    return json.loads(
-        RELEASE_MANIFEST_FILE.read_text(encoding="utf-8")
-    )
+    return json.loads(RELEASE_MANIFEST_FILE.read_text(encoding="utf-8"))
 
 
 def test_release_manifest_matches_project_version() -> None:
