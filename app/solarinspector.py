@@ -80,6 +80,15 @@ from solarinspector_core.paths import (
     LOG_PATH as LOG_PATH,
 )
 from solarinspector_core.persistence.database import Database
+from solarinspector_core.services.periods import (
+    bucket_index as _bucket_index,
+)
+from solarinspector_core.services.periods import (
+    parse_anchor as _parse_anchor,
+)
+from solarinspector_core.services.periods import (
+    period_bounds as _period_bounds,
+)
 from update_status import read_update_status, write_update_status
 from waitress import serve
 
@@ -90,6 +99,9 @@ deep_merge = _deep_merge
 ShellyReader = _ShellyReader
 _float_or_none = _float_or_none_core
 _nested_float = _nested_float_core
+parse_anchor = _parse_anchor
+period_bounds = _period_bounds
+bucket_index = _bucket_index
 
 def write_update_request(
     version: str,
@@ -456,48 +468,10 @@ class Collector:
             elapsed = time.monotonic() - cycle_started
             self._stop_event.wait(max(0.2, interval - elapsed))
 
-def parse_anchor(value: Optional[str]) -> date:
-    if not value:
-        return datetime.now().astimezone().date()
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return datetime.now().astimezone().date()
 
 
-def period_bounds(period: str, anchor: date) -> tuple[datetime, datetime, list[str], str]:
-    tz = datetime.now().astimezone().tzinfo
-    weekdays_short = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
-    weekdays_long = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
-    if period == "week":
-        start_date = anchor - timedelta(days=anchor.weekday())
-        start = datetime.combine(start_date, datetime.min.time(), tzinfo=tz)
-        end = start + timedelta(days=7)
-        labels = [
-            f"{weekdays_short[i]} {(start_date + timedelta(days=i)):%d.%m.}"
-            for i in range(7)
-        ]
-        title = f"Woche {start_date.isocalendar().week} · {start_date:%d.%m.}–{(start_date + timedelta(days=6)):%d.%m.%Y}"
-    elif period == "year":
-        start = datetime(anchor.year, 1, 1, tzinfo=tz)
-        end = datetime(anchor.year + 1, 1, 1, tzinfo=tz)
-        labels = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
-        title = f"Jahr {anchor.year}"
-    else:
-        period = "day"
-        start = datetime.combine(anchor, datetime.min.time(), tzinfo=tz)
-        end = start + timedelta(days=1)
-        labels = [f"{hour:02d}:00" for hour in range(24)]
-        title = f"{weekdays_long[anchor.weekday()]}, {anchor:%d.%m.%Y}"
-    return start, end, labels, title
 
 
-def bucket_index(period: str, start: datetime, sample_dt: datetime) -> int:
-    if period == "week":
-        return (sample_dt.date() - start.date()).days
-    if period == "year":
-        return sample_dt.month - 1
-    return sample_dt.hour
 
 
 def build_dashboard(database: Database, period: str, anchor: date) -> dict[str, Any]:
