@@ -97,6 +97,11 @@ from solarinspector_core.services.periods import (
     period_bounds as _period_bounds,
 )
 from solarinspector_core.web.context import build_template_context
+from solarinspector_core.web.pages import (
+    render_acquisition_page,
+    render_dashboard_page,
+    render_data_page,
+)
 from update_status import read_update_status, write_update_status
 from waitress import serve
 
@@ -245,14 +250,13 @@ def template_context() -> dict[str, Any]:
 
 @app.get("/")
 def dashboard_page():
-    return render_template("dashboard.html", active_page="dashboard")
+    return render_dashboard_page(render_template)
 
 
 @app.get("/acquisition")
 def acquisition_page():
-    return render_template(
-        "acquisition.html",
-        active_page="acquisition",
+    return render_acquisition_page(
+        render_template,
         status=collector.status(),
         config=config_manager.get(),
     )
@@ -314,9 +318,8 @@ def configuration_page():
 
 @app.get("/data")
 def data_page():
-    return render_template(
-        "data.html",
-        active_page="data",
+    return render_data_page(
+        render_template,
         stats=database.stats(),
         db_path=str(DB_PATH),
     )
