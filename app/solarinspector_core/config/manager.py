@@ -15,6 +15,11 @@ from solarinspector_core.config.defaults import (
     DEFAULT_CONFIG,
     DEVICE_TYPES,
 )
+from solarinspector_core.config.shelly import (
+    normalize_direction_factor,
+    normalize_measurement_role,
+    normalize_phase_direction,
+)
 from solarinspector_core.logging import log as default_log
 
 LogFunction = Callable[[str], None]
@@ -223,16 +228,16 @@ class ConfigManager:
                 ),
             )
 
-            try:
-                factor = int(
-                    device.get(
-                        "direction_factor",
-                        1,
-                    )
-                )
-            except (TypeError, ValueError):
-                factor = 1
+            device["direction_factor"] = normalize_direction_factor(
+                device.get("direction_factor", 1)
+            )
 
-            device["direction_factor"] = -1 if factor < 0 else 1
+            if role == "house_meter":
+                device["measurement_role"] = normalize_measurement_role(
+                    device.get("measurement_role")
+                )
+                device["phase_direction"] = normalize_phase_direction(
+                    device.get("phase_direction")
+                )
 
         return config

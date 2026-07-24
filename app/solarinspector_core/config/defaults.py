@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from solarinspector_core.config.shelly import ShellyMeasurementRole
+
 DEFAULT_CONFIG: dict[str, Any] = {
     "general": {
         "project_name": "SolarInspector",
@@ -37,6 +39,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "password": "",
         "timeout_seconds": 3,
         "direction_factor": 1,
+        "measurement_role": ShellyMeasurementRole.HOUSE_TOTAL.value,
+        "phase_direction": {},
     },
     "solakon_meter": {
         "enabled": False,

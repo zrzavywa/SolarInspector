@@ -193,32 +193,44 @@ def build_test_device_api_response(
         }, 404
 
     if payload:
-        root_config[role].update(
-            {
-                "enabled": bool(payload.get("enabled", True)),
-                "type": payload.get(
-                    "type",
-                    root_config[role]["type"],
-                ),
-                "host": payload.get("host", ""),
-                "username": payload.get(
-                    "username",
-                    "",
-                ),
-                "password": payload.get(
-                    "password",
-                    "",
-                ),
-                "timeout_seconds": payload.get(
-                    "timeout_seconds",
-                    3,
-                ),
-                "direction_factor": payload.get(
-                    "direction_factor",
-                    1,
-                ),
-            }
-        )
+        updates: dict[str, Any] = {
+            "enabled": bool(payload.get("enabled", True)),
+            "type": payload.get(
+                "type",
+                root_config[role]["type"],
+            ),
+            "host": payload.get("host", ""),
+            "username": payload.get(
+                "username",
+                "",
+            ),
+            "password": payload.get(
+                "password",
+                "",
+            ),
+            "timeout_seconds": payload.get(
+                "timeout_seconds",
+                3,
+            ),
+            "direction_factor": payload.get(
+                "direction_factor",
+                1,
+            ),
+        }
+        if role == "house_meter":
+            updates.update(
+                {
+                    "measurement_role": payload.get(
+                        "measurement_role",
+                        root_config[role].get("measurement_role"),
+                    ),
+                    "phase_direction": payload.get(
+                        "phase_direction",
+                        root_config[role].get("phase_direction", {}),
+                    ),
+                }
+            )
+        root_config[role].update(updates)
 
         root_config = ConfigManager.validate(root_config)
 
