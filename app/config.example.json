@@ -18,6 +18,37 @@
     "timeout_seconds": 5,
     "simulation": false
   },
+  "grid_meter": {
+    "enabled": false,
+    "adapter": "tasmota_http",
+    "source_id": "grid_meter_primary",
+    "name": "Offizieller Netzstromzähler",
+    "host": "",
+    "port": 80,
+    "scheme": "http",
+    "timeout_seconds": 3,
+    "poll_interval_seconds": 5,
+    "username": "",
+    "password": "",
+    "direction_factor": 1,
+    "mapping": {
+      "grid_power_w": "StatusSNS.strom.Pges",
+      "grid_import_power_w": "",
+      "grid_export_power_w": "",
+      "grid_import_total_kwh": "StatusSNS.strom.VerbrauchT0",
+      "grid_export_total_kwh": "StatusSNS.strom.RetourT0",
+      "frequency_hz": "",
+      "phase_voltage_l1_v": "",
+      "phase_voltage_l2_v": "",
+      "phase_voltage_l3_v": "",
+      "phase_current_l1_a": "",
+      "phase_current_l2_a": "",
+      "phase_current_l3_a": "",
+      "phase_power_l1_w": "",
+      "phase_power_l2_w": "",
+      "phase_power_l3_w": ""
+    }
+  },
   "house_meter": {
     "enabled": false,
     "type": "shelly_3em_gen1",

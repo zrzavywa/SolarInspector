@@ -15,6 +15,9 @@ from solarinspector_core.config.defaults import (
     DEFAULT_CONFIG,
     DEVICE_TYPES,
 )
+from solarinspector_core.config.grid_meter import (
+    normalize_grid_meter_config,
+)
 from solarinspector_core.config.shelly import (
     normalize_direction_factor,
     normalize_measurement_role,
@@ -161,6 +164,8 @@ class ConfigManager:
             "solakon_one",
         }:
             general["grid_power_source"] = "auto"
+
+        config["grid_meter"] = normalize_grid_meter_config(config.get("grid_meter"))
 
         solakon = config["solakon_one"]
         solakon["enabled"] = bool(solakon.get("enabled", False))
