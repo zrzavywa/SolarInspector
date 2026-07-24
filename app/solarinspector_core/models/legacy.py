@@ -47,6 +47,7 @@ class MeterReading:
     returned_energy_total_wh: Optional[float] = None
     source: str = ""
     power_available: bool = True
+    power_is_device_total: bool = False
     phases: tuple[MeterPhaseReading, ...] = ()
     is_valid: Optional[bool] = None
     errors: tuple[str, ...] = ()

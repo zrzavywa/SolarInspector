@@ -16,7 +16,12 @@ from typing import Any, Final, Optional
 import requests
 from requests.auth import HTTPDigestAuth
 
-from solarinspector_core.config.shelly import Phase, phase_direction_factor
+from solarinspector_core.config.shelly import (
+    Phase,
+    normalize_direction_factor,
+    normalize_measurement_role,
+    phase_direction_factor,
+)
 from solarinspector_core.models.device import (
     DeviceConnectionStatus,
     DeviceSnapshot,
@@ -28,6 +33,10 @@ from solarinspector_core.models.metrics import Metric
 from solarinspector_core.models.quality import MeasurementQuality
 from solarinspector_core.models.roles import MeasurementRole
 from solarinspector_core.models.units import unit_for_metric
+from solarinspector_core.services.phase_power import (
+    PhasePowerAnalysis,
+    analyze_phase_power,
+)
 
 
 class ShellyReader:
@@ -99,6 +108,7 @@ class ShellyReader:
             returned_energy_total_wh=_nested_float(data, "ret_aenergy", "total"),
             source="PM1.GetStatus",
             power_available=data.get("apower") is not None,
+            power_is_device_total=data.get("apower") is not None,
         )
 
     def _read_3em_gen1(self, device: dict[str, Any]) -> MeterReading:
@@ -114,6 +124,7 @@ class ShellyReader:
             for phase_index in range(3)
         )
         power = data.get("total_power")
+        power_is_device_total = power is not None
         power_available = power is not None or any(
             item.get("power") is not None for item in emeters
         )
@@ -132,6 +143,7 @@ class ShellyReader:
             returned_energy_total_wh=returned_wh,
             source="/status emeters",
             power_available=power_available,
+            power_is_device_total=power_is_device_total,
             phases=phases,
         )
 
@@ -142,6 +154,7 @@ class ShellyReader:
         )
         phase_power = [phase.power_w for phase in phases]
         power = _float_or_none(data.get("total_act_power"))
+        power_is_device_total = power is not None
         power_available = power is not None or any(
             item is not None for item in phase_power
         )
@@ -182,6 +195,7 @@ class ShellyReader:
             frequency_hz=(sum(valid_freqs) / len(valid_freqs)) if valid_freqs else None,
             source="EM.GetStatus",
             power_available=power_available,
+            power_is_device_total=power_is_device_total,
             phases=phases,
             is_valid=is_valid,
             errors=device_errors,
@@ -232,11 +246,19 @@ class ShellyMeasurementAdapter:
                 f"Unsupported Shelly measurement role: {role.value}"
             ) from exc
 
+        device_type = str(device.get("type") or "")
+        source_roles = {role}
+        if (
+            role is MeasurementRole.GRID_METER
+            and device_type in _MULTI_PHASE_DEVICE_TYPES
+        ):
+            source_roles.add(MeasurementRole.HOUSE_METER)
+
         self._source = MeasurementSource(
             source_id=source_id,
             name=name,
-            device_type=str(device.get("type") or ""),
-            roles=frozenset({role}),
+            device_type=device_type,
+            roles=frozenset(source_roles),
         )
         self._device = dict(device)
         self._role = role
@@ -270,40 +292,290 @@ class ShellyMeasurementAdapter:
                 error=exc,
             )
 
-        quality = (
+        base_quality = (
             MeasurementQuality.CALCULATED
             if self._source.device_type == "simulation"
             else MeasurementQuality.REPORTED
         )
-        measurements = tuple(
+        analysis = _analyze_reading_phase_power(
+            reading,
+            self._role,
+            self._device,
+        )
+        aggregate_quality = (
+            MeasurementQuality.SUSPECT
+            if _aggregate_is_suspect(reading, analysis)
+            else base_quality
+        )
+        aggregate_measurements = tuple(
             _measurement(
                 metric=metric,
                 value=value,
                 source_id=self._source.source_id,
                 role=self._role,
                 received_at=received_at,
-                quality=quality,
+                quality=aggregate_quality,
             )
             for metric, value in _normalized_values(self._role, reading)
             if value is not None
         )
+        phase_measurements = _normalized_phase_measurements(
+            reading=reading,
+            source_id=self._source.source_id,
+            received_at=received_at,
+            base_quality=base_quality,
+            enabled=self._role is MeasurementRole.GRID_METER,
+        )
+        diagnostics = _snapshot_diagnostics(reading, analysis)
         status = (
             DeviceConnectionStatus.ONLINE
-            if reading.power_available
+            if reading.power_available and not diagnostics
             else DeviceConnectionStatus.DEGRADED
-        )
-        error = (
-            None
-            if reading.power_available
-            else "Required power measurement is missing."
         )
         return DeviceSnapshot(
             source_id=self._source.source_id,
             status=status,
-            measurements=measurements,
+            measurements=aggregate_measurements + phase_measurements,
             received_at=received_at,
-            error=error,
+            error=" ".join(diagnostics) if diagnostics else None,
+            metadata=_phase_metadata(self._device, reading, analysis),
         )
+
+
+_MULTI_PHASE_DEVICE_TYPES: Final[frozenset[str]] = frozenset(
+    {"shelly_3em_gen1", "shelly_pro_3em"}
+)
+
+_PHASE_METRICS: Final[dict[str, tuple[Metric, Metric, Metric, Metric]]] = {
+    Phase.L1.value: (
+        Metric.PHASE_POWER_L1,
+        Metric.PHASE_VOLTAGE_L1,
+        Metric.PHASE_CURRENT_L1,
+        Metric.PHASE_POWER_FACTOR_L1,
+    ),
+    Phase.L2.value: (
+        Metric.PHASE_POWER_L2,
+        Metric.PHASE_VOLTAGE_L2,
+        Metric.PHASE_CURRENT_L2,
+        Metric.PHASE_POWER_FACTOR_L2,
+    ),
+    Phase.L3.value: (
+        Metric.PHASE_POWER_L3,
+        Metric.PHASE_VOLTAGE_L3,
+        Metric.PHASE_CURRENT_L3,
+        Metric.PHASE_POWER_FACTOR_L3,
+    ),
+}
+
+
+def _analyze_reading_phase_power(
+    reading: MeterReading,
+    role: MeasurementRole,
+    device: dict[str, Any],
+) -> PhasePowerAnalysis | None:
+    """Analyze phase power only for the compatible house/grid meter."""
+
+    if role is not MeasurementRole.GRID_METER or not reading.phases:
+        return None
+    phase_by_name = {phase.phase: phase for phase in reading.phases}
+    phase_power = tuple(
+        phase_by_name[phase.value].power_w if phase.value in phase_by_name else None
+        for phase in Phase
+    )
+    reported_total_w = (
+        reading.power_w
+        if reading.power_is_device_total and _phase_total_is_comparable(device)
+        else None
+    )
+    return analyze_phase_power(
+        phase_power,
+        reported_total_w=reported_total_w,
+    )
+
+
+def _phase_total_is_comparable(device: dict[str, Any]) -> bool:
+    """Return whether aggregate and phase signs use the same direction."""
+
+    global_factor = normalize_direction_factor(device.get("direction_factor", 1))
+    return all(
+        phase_direction_factor(device, phase) == global_factor for phase in Phase
+    )
+
+
+def _normalized_phase_measurements(
+    *,
+    reading: MeterReading,
+    source_id: str,
+    received_at: datetime,
+    base_quality: MeasurementQuality,
+    enabled: bool,
+) -> tuple[Measurement, ...]:
+    """Map available phase values to HOUSE_METER metrics."""
+
+    if not enabled:
+        return ()
+
+    measurements: list[Measurement] = []
+    for phase in reading.phases:
+        metrics = _PHASE_METRICS.get(phase.phase)
+        if metrics is None:
+            continue
+        quality = (
+            MeasurementQuality.SUSPECT
+            if phase.is_valid is False or phase.errors
+            else base_quality
+        )
+        for metric, value in zip(
+            metrics,
+            (
+                phase.power_w,
+                phase.voltage_v,
+                phase.current_a,
+                phase.power_factor,
+            ),
+            strict=True,
+        ):
+            if value is None:
+                continue
+            measurements.append(
+                _measurement(
+                    metric=metric,
+                    value=value,
+                    source_id=source_id,
+                    role=MeasurementRole.HOUSE_METER,
+                    received_at=received_at,
+                    quality=quality,
+                )
+            )
+    return tuple(measurements)
+
+
+def _aggregate_is_suspect(
+    reading: MeterReading,
+    analysis: PhasePowerAnalysis | None,
+) -> bool:
+    """Return whether aggregate values carry known device diagnostics."""
+
+    return bool(
+        reading.is_valid is False
+        or reading.errors
+        or (analysis is not None and analysis.total_consistent is False)
+    )
+
+
+def _snapshot_diagnostics(
+    reading: MeterReading,
+    analysis: PhasePowerAnalysis | None,
+) -> tuple[str, ...]:
+    """Build stable diagnostics without discarding partial measurements."""
+
+    diagnostics: list[str] = []
+    if not reading.power_available:
+        diagnostics.append("Required power measurement is missing.")
+    if reading.is_valid is False:
+        diagnostics.append("Shelly measurement reported invalid status.")
+    if reading.errors:
+        diagnostics.append(f"Device errors: {', '.join(reading.errors)}.")
+
+    if analysis is not None:
+        for phase in reading.phases:
+            phase_name = phase.phase.upper()
+            if phase.is_valid is False:
+                detail = f" ({', '.join(phase.errors)})" if phase.errors else ""
+                diagnostics.append(f"{phase_name} is invalid{detail}.")
+            elif not phase.power_available:
+                diagnostics.append(f"{phase_name} power measurement is missing.")
+        if analysis.total_consistent is False:
+            delta_w = abs(analysis.total_delta_w or 0.0)
+            diagnostics.append(
+                f"Device total differs from complete phase sum by {delta_w:.1f} W."
+            )
+
+    return tuple(dict.fromkeys(diagnostics))
+
+
+def _phase_metadata(
+    device: dict[str, Any],
+    reading: MeterReading,
+    analysis: PhasePowerAnalysis | None,
+) -> tuple[tuple[str, str], ...]:
+    """Expose deterministic phase analysis for later persistence and APIs."""
+
+    if analysis is None:
+        return ()
+
+    metadata: list[tuple[str, str]] = [
+        (
+            "measurement_role",
+            normalize_measurement_role(device.get("measurement_role")),
+        ),
+        ("phase_power_available_count", str(analysis.available_count)),
+        ("phase_power_complete", _metadata_bool(analysis.complete)),
+        (
+            "phase_power_total_source",
+            (
+                "device"
+                if reading.power_is_device_total and _phase_total_is_comparable(device)
+                else (
+                    "device_uncompared"
+                    if reading.power_is_device_total
+                    else "phase_sum"
+                )
+            ),
+        ),
+    ]
+    if analysis.calculated_total_w is not None:
+        metadata.append(
+            (
+                "phase_power_sum_w",
+                _metadata_number(analysis.calculated_total_w),
+            )
+        )
+    if analysis.spread_w is not None:
+        metadata.append(("phase_power_spread_w", _metadata_number(analysis.spread_w)))
+    for phase, share_pct in zip(Phase, analysis.shares_pct, strict=True):
+        if share_pct is not None:
+            metadata.append(
+                (
+                    f"phase_power_share_{phase.value}_pct",
+                    _metadata_number(share_pct),
+                )
+            )
+    if analysis.total_delta_w is not None:
+        metadata.append(
+            (
+                "phase_power_total_delta_w",
+                _metadata_number(analysis.total_delta_w),
+            )
+        )
+    if analysis.total_delta_pct is not None:
+        metadata.append(
+            (
+                "phase_power_total_delta_pct",
+                _metadata_number(analysis.total_delta_pct),
+            )
+        )
+    if analysis.total_consistent is not None:
+        metadata.append(
+            (
+                "phase_power_total_consistent",
+                _metadata_bool(analysis.total_consistent),
+            )
+        )
+    return tuple(metadata)
+
+
+def _metadata_number(value: float) -> str:
+    """Format one finite number compactly and deterministically."""
+
+    formatted = f"{value:.6f}".rstrip("0").rstrip(".")
+    return formatted if formatted and formatted != "-0" else "0"
+
+
+def _metadata_bool(value: bool) -> str:
+    """Format a boolean for string-only snapshot metadata."""
+
+    return "true" if value else "false"
 
 
 _ROLE_CONFIGURATION: Final[dict[MeasurementRole, tuple[Metric, str]]] = {
