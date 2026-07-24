@@ -1,0 +1,5 @@
+StatusSNS.Time = "2026-07-24T13:42:58"
+StatusSNS.strom.Pges = 4
+StatusSNS.strom.VerbrauchT0 = 12627.644
+StatusSNS.strom.RetourT0 = 19.896
+StatusSNS.strom.ServerID = "<redacted>"

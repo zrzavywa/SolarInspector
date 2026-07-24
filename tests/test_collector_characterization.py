@@ -125,12 +125,15 @@ def collector_config(
     poll_interval_seconds: float = 10,
 ) -> dict[str, Any]:
     return si.deep_merge(
-        si.DEFAULT_CONFIG,
+        deepcopy(si.DEFAULT_CONFIG),
         {
             "general": {
                 "poll_interval_seconds": poll_interval_seconds,
                 "solar_power_source": "auto",
                 "grid_power_source": "auto",
+            },
+            "grid_meter": {
+                "enabled": False,
             },
             "house_meter": {
                 "enabled": enabled,
@@ -198,6 +201,7 @@ def valid_solakon_reading() -> si.SolakonOneReading:
     ("enabled_role", "expected"),
     [
         (None, False),
+        ("grid_meter", True),
         ("house_meter", True),
         ("solakon_meter", True),
         ("solakon_one", True),
@@ -336,6 +340,8 @@ def test_reset_state_clears_runtime_measurement_state() -> None:
     collector._started_at = "2026-07-23T12:00:00+02:00"
     collector._previous_power = {"solar_power_w": 400.0}
     collector._previous_epoch = 123.0
+    collector._last_grid_meter_snapshot = object()
+    collector._last_grid_meter_poll_monotonic = 456.0
 
     collector.reset_state()
     status = collector.status()
@@ -346,6 +352,8 @@ def test_reset_state_clears_runtime_measurement_state() -> None:
     assert status["started_at"] is None
     assert collector._previous_power is None
     assert collector._previous_epoch is None
+    assert collector._last_grid_meter_snapshot is None
+    assert collector._last_grid_meter_poll_monotonic is None
 
 
 def test_collect_once_without_enabled_source_raises_without_insert() -> None:

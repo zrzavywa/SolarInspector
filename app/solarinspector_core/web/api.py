@@ -11,7 +11,15 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any, Protocol
 
+from solarinspector_core.adapters.tasmota_grid_meter import (
+    TasmotaHttpGridMeterAdapter,
+)
 from solarinspector_core.config.manager import ConfigManager
+from solarinspector_core.models.device import (
+    DeviceConnectionStatus,
+    DeviceSnapshot,
+)
+from solarinspector_core.models.metrics import Metric
 from solarinspector_core.persistence.database import Database
 from solarinspector_core.services.dashboard import build_dashboard
 from solarinspector_core.services.periods import (
@@ -155,9 +163,24 @@ def build_live_api_response(
             int(now_epoch - float(latest["ts_epoch"])),
         )
 
+    grid_meter = _latest_grid_meter_api_row(
+        database,
+        now_epoch=now_epoch,
+    )
+    active_source_id = (
+        grid_meter.get("active_source_id")
+        if grid_meter is not None
+        else _legacy_active_grid_source_id(latest)
+    )
+
     return {
         "latest": latest,
         "collector": status,
+        "grid_meter": grid_meter,
+        "active_sources": {
+            "grid_power": active_source_id,
+            "grid_power_label": (latest.get("grid_source") if latest else None),
+        },
     }
 
 
@@ -181,6 +204,96 @@ def build_system_version_api_response(
         "version": installed_version,
         "config_schema": 5,
     }
+
+
+def _latest_grid_meter_api_row(
+    database: DatabaseApi,
+    *,
+    now_epoch: float,
+) -> dict[str, Any] | None:
+    """Read and serialize an optional persisted grid-meter row."""
+
+    latest_method = getattr(
+        database,
+        "latest_grid_meter_sample",
+        None,
+    )
+    if not callable(latest_method):
+        return None
+    row = latest_method()
+    return _grid_meter_api_row(
+        row,
+        now_epoch=now_epoch,
+    )
+
+
+def _grid_meter_api_row(
+    row: dict[str, Any] | None,
+    *,
+    now_epoch: float,
+) -> dict[str, Any] | None:
+    """Convert one persisted grid-meter row to public JSON."""
+
+    if row is None:
+        return None
+
+    metadata: dict[str, Any] = {}
+    raw_metadata = row.get("metadata_json")
+    if isinstance(raw_metadata, str) and raw_metadata:
+        try:
+            parsed = json.loads(raw_metadata)
+            if isinstance(parsed, dict):
+                metadata = parsed
+        except json.JSONDecodeError:
+            metadata = {}
+
+    last_update = row.get("received_at")
+    age_seconds: int | None = None
+    if isinstance(last_update, str):
+        try:
+            age_seconds = max(
+                0,
+                int(now_epoch - datetime.fromisoformat(last_update).timestamp()),
+            )
+        except ValueError:
+            age_seconds = None
+
+    return {
+        "sample_id": row.get("sample_id"),
+        "source_id": row.get("source_id"),
+        "name": row.get("source_name"),
+        "adapter": row.get("adapter"),
+        "status": row.get("device_status"),
+        "quality": row.get("quality"),
+        "last_update": last_update,
+        "measured_at": row.get("measured_at"),
+        "age_seconds": age_seconds,
+        "power_w": _optional_float(row.get("grid_power_w")),
+        "import_power_w": _optional_float(row.get("grid_import_power_w")),
+        "export_power_w": _optional_float(row.get("grid_export_power_w")),
+        "import_total_kwh": _optional_float(row.get("grid_import_total_kwh")),
+        "export_total_kwh": _optional_float(row.get("grid_export_total_kwh")),
+        "active_source_id": row.get("active_source_id"),
+        "error": row.get("error_text"),
+        "metadata": metadata,
+    }
+
+
+def _legacy_active_grid_source_id(
+    latest: dict[str, Any] | None,
+) -> str | None:
+    """Map established source labels to stable identifiers."""
+
+    if not latest:
+        return None
+    label = latest.get("grid_source")
+    if not isinstance(label, str):
+        return None
+    if label.startswith("Separate Hausmessung"):
+        return "house_meter"
+    if label.startswith("Solakon ONE Meter"):
+        return "solakon_one"
+    return None
 
 
 def build_dashboard_api_response(
@@ -413,8 +526,17 @@ def build_test_device_api_response(
     role: str,
     payload: dict[str, Any],
     reader: Any,
+    grid_meter_adapter_factory: Any = (TasmotaHttpGridMeterAdapter),
 ) -> tuple[dict[str, Any], int | None]:
-    """Build the existing Shelly device-test payload."""
+    """Build the device-test payload without persistence."""
+
+    if role == "grid_meter":
+        return _build_test_grid_meter_api_response(
+            root_config,
+            payload,
+            adapter_factory=grid_meter_adapter_factory,
+        )
+
     if role not in {
         "house_meter",
         "solakon_meter",
@@ -486,6 +608,200 @@ def build_test_device_api_response(
             "ok": False,
             "error": str(exc),
         }, 502
+
+
+_GRID_DIAGNOSTIC_METRICS: tuple[
+    tuple[str, Metric, float, str],
+    ...,
+] = (
+    ("grid_power_w", Metric.GRID_POWER, 1.0, "W"),
+    (
+        "grid_import_power_w",
+        Metric.GRID_IMPORT_POWER,
+        1.0,
+        "W",
+    ),
+    (
+        "grid_export_power_w",
+        Metric.GRID_EXPORT_POWER,
+        1.0,
+        "W",
+    ),
+    (
+        "grid_import_total_kwh",
+        Metric.GRID_IMPORT_TOTAL,
+        1000.0,
+        "kWh",
+    ),
+    (
+        "grid_export_total_kwh",
+        Metric.GRID_EXPORT_TOTAL,
+        1000.0,
+        "kWh",
+    ),
+)
+
+
+def _build_test_grid_meter_api_response(
+    root_config: dict[str, Any],
+    payload: dict[str, Any],
+    *,
+    adapter_factory: Any,
+) -> tuple[dict[str, Any], int | None]:
+    """Test Tasmota and return non-sensitive mapping diagnostics."""
+
+    grid_config = root_config.setdefault(
+        "grid_meter",
+        {},
+    )
+    password = payload.get("password", "")
+    updates: dict[str, Any] = {
+        "enabled": bool(payload.get("enabled", True)),
+        "adapter": payload.get(
+            "adapter",
+            grid_config.get(
+                "adapter",
+                "tasmota_http",
+            ),
+        ),
+        "source_id": payload.get(
+            "source_id",
+            grid_config.get(
+                "source_id",
+                "grid_meter_primary",
+            ),
+        ),
+        "name": payload.get(
+            "name",
+            grid_config.get(
+                "name",
+                "Offizieller Netzstromzähler",
+            ),
+        ),
+        "host": payload.get("host", ""),
+        "port": payload.get("port", 80),
+        "scheme": payload.get("scheme", "http"),
+        "timeout_seconds": payload.get(
+            "timeout_seconds",
+            3,
+        ),
+        "poll_interval_seconds": payload.get(
+            "poll_interval_seconds",
+            5,
+        ),
+        "username": payload.get("username", ""),
+        "direction_factor": payload.get(
+            "direction_factor",
+            1,
+        ),
+        "mapping": payload.get(
+            "mapping",
+            grid_config.get("mapping", {}),
+        ),
+    }
+    if password:
+        updates["password"] = password
+    grid_config.update(updates)
+
+    validated = ConfigManager.validate(root_config)
+    config = dict(validated["grid_meter"])
+    config["_include_diagnostic_paths"] = True
+
+    if not config.get("enabled"):
+        return {
+            "ok": False,
+            "error": "Messstelle ist deaktiviert.",
+        }, 400
+
+    try:
+        snapshot = adapter_factory(config).read_snapshot()
+    except Exception:
+        return {
+            "ok": False,
+            "error": ("Unerwarteter Fehler beim Tasmota-Verbindungstest."),
+        }, 502
+
+    diagnostic = _grid_meter_diagnostic(
+        snapshot,
+        config=config,
+    )
+    usable = snapshot.status in {
+        DeviceConnectionStatus.ONLINE,
+        DeviceConnectionStatus.DEGRADED,
+    } and bool(snapshot.measurements)
+    response = {
+        "ok": usable,
+        "diagnostic": diagnostic,
+    }
+    if not usable:
+        response["error"] = snapshot.error or "Keine verwertbaren Messwerte verfügbar."
+        return response, 502
+    return response, None
+
+
+def _grid_meter_diagnostic(
+    snapshot: DeviceSnapshot,
+    *,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    """Serialize one controlled grid-meter diagnostic result."""
+
+    measurements = {
+        measurement.metric: measurement for measurement in snapshot.measurements
+    }
+    metadata = dict(snapshot.metadata)
+    available_fields: list[str] = []
+    encoded_paths = metadata.get("available_scalar_paths_json")
+    if encoded_paths:
+        try:
+            parsed_paths = json.loads(encoded_paths)
+            if isinstance(parsed_paths, list):
+                available_fields = [str(value) for value in parsed_paths][:100]
+        except json.JSONDecodeError:
+            available_fields = []
+
+    values: dict[str, Any] = {}
+    mapping_checks: list[dict[str, Any]] = []
+    mapping = config.get("mapping", {})
+
+    for field, metric, divisor, unit in _GRID_DIAGNOSTIC_METRICS:
+        measurement = measurements.get(metric)
+        path = str(mapping.get(field) or "").strip()
+        value = float(measurement.value) / divisor if measurement is not None else None
+        values[field] = {
+            "value": value,
+            "unit": unit,
+            "quality": (measurement.quality.value if measurement is not None else None),
+        }
+        mapping_checks.append(
+            {
+                "field": field,
+                "path": path,
+                "status": (
+                    "ok"
+                    if path and measurement is not None
+                    else (
+                        "derived"
+                        if (not path and measurement is not None)
+                        else ("missing" if path else "not_configured")
+                    )
+                ),
+            }
+        )
+
+    return {
+        "source_id": snapshot.source_id,
+        "name": config.get("name"),
+        "adapter": config.get("adapter"),
+        "status": snapshot.status.value,
+        "error": snapshot.error,
+        "received_at": snapshot.received_at.isoformat(),
+        "device_time": metadata.get("device_time"),
+        "available_field_count": len(available_fields),
+        "available_fields": available_fields,
+        "values": values,
+        "mapping": mapping_checks,
+    }
 
 
 def build_test_solakon_one_api_response(

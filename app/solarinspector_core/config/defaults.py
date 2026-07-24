@@ -7,8 +7,12 @@ persist configuration files.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 
+from solarinspector_core.config.grid_meter import (
+    DEFAULT_GRID_METER_CONFIG,
+)
 from solarinspector_core.config.shelly import ShellyMeasurementRole
 
 DEFAULT_CONFIG: dict[str, Any] = {
@@ -31,6 +35,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "timeout_seconds": 5,
         "simulation": False,
     },
+    "grid_meter": deepcopy(DEFAULT_GRID_METER_CONFIG),
     "house_meter": {
         "enabled": False,
         "type": "shelly_3em_gen1",
