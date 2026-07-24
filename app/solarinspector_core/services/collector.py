@@ -9,7 +9,7 @@ from __future__ import annotations
 import threading
 import time
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Final, Optional
 
 from solarinspector_core.adapters.compatibility import (
     meter_reading_from_snapshot,
@@ -23,6 +23,7 @@ from solarinspector_core.adapters.solakon import SolakonOneReader, SolakonOneRea
 from solarinspector_core.adapters.solakon_measurement import SolakonMeasurementAdapter
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.logging import log
+from solarinspector_core.models.device import DeviceSnapshot
 from solarinspector_core.models.legacy import MeterReading
 from solarinspector_core.models.roles import MeasurementRole
 from solarinspector_core.persistence.database import Database
@@ -79,15 +80,19 @@ class Collector:
             return None, detail if separator else snapshot.error
         return None, "Keine Solakon-Messwerte verfügbar."
 
-    def _read_shelly_snapshot(
+    def _read_shelly_snapshot_result(
         self,
         config: dict[str, Any],
         *,
         source_id: str,
         name: str,
         role: MeasurementRole,
-    ) -> tuple[Optional[MeterReading], Optional[str]]:
-        """Read Shelly through the normalized adapter and restore legacy data."""
+    ) -> tuple[
+        Optional[MeterReading],
+        Optional[DeviceSnapshot],
+        Optional[str],
+    ]:
+        """Read Shelly and retain the normalized snapshot for persistence."""
 
         try:
             snapshot = ShellyMeasurementAdapter(
@@ -99,15 +104,37 @@ class Collector:
             ).read_snapshot()
         except Exception as exc:
             # Preserve the collector's historical catch-all error behavior.
-            return None, str(exc)
+            return None, None, str(exc)
 
         reading = meter_reading_from_snapshot(snapshot, role)
         if reading is not None:
-            return reading, None
+            return reading, snapshot, None
         if snapshot.error:
             _prefix, separator, detail = snapshot.error.partition(": ")
-            return None, detail if separator else snapshot.error
-        return None, "Keine Shelly-Messwerte verfügbar."
+            return (
+                None,
+                snapshot,
+                detail if separator else snapshot.error,
+            )
+        return None, snapshot, "Keine Shelly-Messwerte verfügbar."
+
+    def _read_shelly_snapshot(
+        self,
+        config: dict[str, Any],
+        *,
+        source_id: str,
+        name: str,
+        role: MeasurementRole,
+    ) -> tuple[Optional[MeterReading], Optional[str]]:
+        """Preserve the existing temporary normalized Shelly bridge API."""
+
+        reading, _snapshot, error = self._read_shelly_snapshot_result(
+            config,
+            source_id=source_id,
+            name=name,
+            role=role,
+        )
+        return reading, error
 
     @staticmethod
     def _now() -> datetime:
@@ -263,6 +290,7 @@ class Collector:
 
         errors: list[str] = []
         house_reading: Optional[MeterReading] = None
+        house_snapshot: Optional[DeviceSnapshot] = None
         solar_reading: Optional[MeterReading] = None
         solakon_reading: Optional[SolakonOneReading] = None
 
@@ -272,7 +300,11 @@ class Collector:
                 errors.append(f"Solakon ONE: {solakon_error}")
 
         if house_cfg.get("enabled"):
-            house_reading, house_error = self._read_shelly_snapshot(
+            (
+                house_reading,
+                house_snapshot,
+                house_error,
+            ) = self._read_shelly_snapshot_result(
                 house_cfg,
                 source_id="house_meter",
                 name="Hausanschluss",
@@ -455,7 +487,16 @@ class Collector:
             "solakon_status": solakon_reading.status if solakon_reading else None,
             "solakon_ok": 1 if solakon_reading else 0,
         }
-        sample_id = self.database.insert_sample(sample)
+        phase_snapshot = (
+            house_snapshot
+            if str(house_cfg.get("type")) in _MULTI_PHASE_SHELLY_TYPES
+            else None
+        )
+        sample_id = self._insert_sample(
+            sample,
+            phase_snapshot=phase_snapshot,
+            measurement_role=str(house_cfg.get("measurement_role", "house_total")),
+        )
         sample["id"] = sample_id
 
         self._previous_power = current_power
@@ -469,6 +510,30 @@ class Collector:
         if errors:
             self._log("Messzyklus mit Warnung: " + " | ".join(errors))
         return sample
+
+    def _insert_sample(
+        self,
+        sample: dict[str, Any],
+        *,
+        phase_snapshot: DeviceSnapshot | None,
+        measurement_role: str,
+    ) -> int:
+        """Persist phases when supported while retaining test-double support."""
+
+        insert_with_phases = getattr(
+            self.database,
+            "insert_sample_with_phase_snapshot",
+            None,
+        )
+        if callable(insert_with_phases):
+            return int(
+                insert_with_phases(
+                    sample,
+                    phase_snapshot,
+                    measurement_role=measurement_role,
+                )
+            )
+        return int(self.database.insert_sample(sample))
 
     def reset_state(self) -> None:
         with self._lock:
@@ -491,3 +556,8 @@ class Collector:
             interval = self.config_manager.get()["general"]["poll_interval_seconds"]
             elapsed = self._monotonic() - cycle_started
             self._stop_event.wait(max(0.2, interval - elapsed))
+
+
+_MULTI_PHASE_SHELLY_TYPES: Final[frozenset[str]] = frozenset(
+    {"shelly_3em_gen1", "shelly_pro_3em"}
+)
