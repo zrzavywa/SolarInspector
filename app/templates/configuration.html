@@ -92,6 +92,27 @@
           <option value="-1" {{ "selected" if device.direction_factor == -1 else "" }}>Vorzeichen umkehren (−1)</option>
         </select>
       </label>
+      {% if role == 'house_meter' %}
+      <label><span>Fachliche Messstellenrolle</span>
+        <select name="{{ role }}_measurement_role">
+          <option value="house_total" {{ "selected" if device.measurement_role == "house_total" else "" }}>Gesamte Hausmessung</option>
+          <option value="distribution" {{ "selected" if device.measurement_role == "distribution" else "" }}>Haupt- oder Unterverteilung</option>
+          <option value="sub_distribution" {{ "selected" if device.measurement_role == "sub_distribution" else "" }}>Abgegrenzte Unterverteilung</option>
+          <option value="consumer_group" {{ "selected" if device.measurement_role == "consumer_group" else "" }}>Verbrauchergruppe</option>
+          <option value="grid_fallback" {{ "selected" if device.measurement_role == "grid_fallback" else "" }}>Späterer Netz-Fallback</option>
+        </select>
+        <small>Die Rolle ist in Phase 05 beschreibend und ändert noch keine Quellenpriorität.</small>
+      </label>
+      {% for phase_key, phase_label in [('l1', 'L1'), ('l2', 'L2'), ('l3', 'L3')] %}
+      <label><span>Messrichtung {{ phase_label }}</span>
+        <select name="{{ role }}_phase_direction_{{ phase_key }}">
+          <option value="" {{ "selected" if device.phase_direction.get(phase_key) is none else "" }}>Global übernehmen ({{ device.direction_factor }})</option>
+          <option value="1" {{ "selected" if device.phase_direction.get(phase_key) == 1 else "" }}>Normal (+1)</option>
+          <option value="-1" {{ "selected" if device.phase_direction.get(phase_key) == -1 else "" }}>Vorzeichen umkehren (−1)</option>
+        </select>
+      </label>
+      {% endfor %}
+      {% endif %}
     </div>
     <div class="test-row">
       <button type="button" class="button secondary test-device" data-role="{{ role }}">Verbindung testen</button>
@@ -170,6 +191,18 @@ document.querySelectorAll(".test-device").forEach(button => {
         timeout_seconds: document.querySelector(`[name="${role}_timeout_seconds"]`).value,
         direction_factor: document.querySelector(`[name="${role}_direction_factor"]`).value
       };
+      if (role === "house_meter") {
+        payload.measurement_role = document.querySelector(
+          `[name="${role}_measurement_role"]`
+        ).value;
+        payload.phase_direction = {};
+        ["l1", "l2", "l3"].forEach(phase => {
+          const value = document.querySelector(
+            `[name="${role}_phase_direction_${phase}"]`
+          ).value;
+          if (value) payload.phase_direction[phase] = Number(value);
+        });
+      }
       const response = await fetch("/api/test-device/" + role, {
         method: "POST",
         headers: {"Content-Type": "application/json"},

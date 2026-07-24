@@ -8,6 +8,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from solarinspector_core.config.shelly import (
+    Phase,
+    ShellyMeasurementRole,
+)
+
 
 def apply_configuration_form(
     current: dict[str, Any],
@@ -50,4 +55,20 @@ def apply_configuration_form(
                 "direction_factor": form.get(f"{role}_direction_factor", "1"),
             }
         )
+
+        if role == "house_meter":
+            current[role]["measurement_role"] = form.get(
+                f"{role}_measurement_role",
+                current[role].get(
+                    "measurement_role",
+                    ShellyMeasurementRole.HOUSE_TOTAL.value,
+                ),
+            )
+            phase_direction: dict[str, int] = {}
+            for phase in Phase:
+                value = form.get(f"{role}_phase_direction_{phase.value}", "")
+                if value in {"1", "-1"}:
+                    phase_direction[phase.value] = int(value)
+            current[role]["phase_direction"] = phase_direction
+
     return current

@@ -6,13 +6,19 @@ the patchable application clock remain in the compatible entry module.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict
+from datetime import datetime
 from typing import Any, Protocol
 
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.persistence.database import Database
 from solarinspector_core.services.dashboard import build_dashboard
-from solarinspector_core.services.periods import parse_anchor
+from solarinspector_core.services.periods import (
+    bucket_index,
+    parse_anchor,
+    period_bounds,
+)
 
 
 class CollectorApi(Protocol):
@@ -42,6 +48,25 @@ class DatabaseApi(Protocol):
 
     def delete_all(self) -> None:
         """Delete all persisted samples."""
+
+
+class PhaseDatabaseApi(Protocol):
+    """Database operations used by the additive phase APIs."""
+
+    def latest_phase_sample(
+        self,
+        source_id: str = "house_meter",
+    ) -> dict[str, Any] | None:
+        """Return the most recent persisted phase sample."""
+
+    def phase_rows_between(
+        self,
+        start_epoch: float,
+        end_epoch: float,
+        *,
+        source_id: str = "house_meter",
+    ) -> list[dict[str, Any]]:
+        """Return persisted phase rows for one source and time range."""
 
 
 def build_start_api_response(
@@ -176,6 +201,213 @@ def build_dashboard_api_response(
     )
 
 
+def build_phase_live_api_response(
+    database: PhaseDatabaseApi,
+    source_id: str = "house_meter",
+) -> dict[str, Any]:
+    """Return the newest phase snapshot in a browser-friendly structure."""
+
+    normalized_source = _phase_source_id(source_id)
+    return {
+        "source_id": normalized_source,
+        "latest": _phase_api_row(database.latest_phase_sample(normalized_source)),
+    }
+
+
+def build_phase_dashboard_api_response(
+    database: PhaseDatabaseApi,
+    period: str,
+    anchor_value: str | None,
+    source_id: str = "house_meter",
+) -> dict[str, Any]:
+    """Aggregate persisted phase power into dashboard period buckets."""
+
+    if period not in {"day", "week", "year"}:
+        period = "day"
+    normalized_source = _phase_source_id(source_id)
+    anchor = parse_anchor(anchor_value)
+    start, end, labels, title = period_bounds(period, anchor)
+    rows = database.phase_rows_between(
+        start.timestamp(),
+        end.timestamp(),
+        source_id=normalized_source,
+    )
+
+    sums = {phase: [0.0] * len(labels) for phase in _PHASE_NAMES}
+    counts = {phase: [0] * len(labels) for phase in _PHASE_NAMES}
+    total_sums = {phase: 0.0 for phase in _PHASE_NAMES}
+    total_counts = {phase: 0 for phase in _PHASE_NAMES}
+    suspect_samples = 0
+    max_spread_w: float | None = None
+
+    for row in rows:
+        sample_time = datetime.fromtimestamp(
+            float(row["ts_epoch"]),
+            tz=start.tzinfo,
+        )
+        index = bucket_index(period, start, sample_time)
+        if not 0 <= index < len(labels):
+            continue
+
+        if any(
+            row.get(f"{phase}_quality")
+            in {"suspect", "rejected", "stale", "unavailable"}
+            for phase in _PHASE_NAMES
+        ):
+            suspect_samples += 1
+
+        spread = _optional_float(row.get("phase_power_spread_w"))
+        if spread is not None:
+            max_spread_w = spread if max_spread_w is None else max(max_spread_w, spread)
+
+        for phase in _PHASE_NAMES:
+            value = _optional_float(row.get(f"{phase}_power_w"))
+            if value is None:
+                continue
+            sums[phase][index] += value
+            counts[phase][index] += 1
+            total_sums[phase] += value
+            total_counts[phase] += 1
+
+    series = {
+        f"{phase}_power_w": [
+            round(sums[phase][index] / counts[phase][index], 3)
+            if counts[phase][index]
+            else None
+            for index in range(len(labels))
+        ]
+        for phase in _PHASE_NAMES
+    }
+    averages = {
+        phase: (
+            round(total_sums[phase] / total_counts[phase], 3)
+            if total_counts[phase]
+            else None
+        )
+        for phase in _PHASE_NAMES
+    }
+
+    return {
+        "period": period,
+        "anchor": anchor.isoformat(),
+        "title": title,
+        "source_id": normalized_source,
+        "labels": labels,
+        "series": series,
+        "summary": {
+            "sample_count": len(rows),
+            "suspect_sample_count": suspect_samples,
+            "average_power_w": averages,
+            "max_spread_w": max_spread_w,
+            "latest": _phase_api_row(rows[-1]) if rows else None,
+        },
+    }
+
+
+def _phase_api_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Convert one flattened persistence row to the public phase shape."""
+
+    if row is None:
+        return None
+
+    metadata: dict[str, Any] = {}
+    metadata_json = row.get("metadata_json")
+    if isinstance(metadata_json, str) and metadata_json:
+        try:
+            parsed = json.loads(metadata_json)
+            if isinstance(parsed, dict):
+                metadata = parsed
+        except json.JSONDecodeError:
+            metadata = {"invalid_metadata_json": metadata_json}
+
+    phases = {
+        phase: {
+            "power_w": _optional_float(row.get(f"{phase}_power_w")),
+            "voltage_v": _optional_float(row.get(f"{phase}_voltage_v")),
+            "current_a": _optional_float(row.get(f"{phase}_current_a")),
+            "power_factor": _optional_float(row.get(f"{phase}_power_factor")),
+            "quality": row.get(f"{phase}_quality"),
+        }
+        for phase in _PHASE_NAMES
+    }
+
+    return {
+        "sample_id": row.get("sample_id"),
+        "source_id": row.get("source_id"),
+        "measurement_role": row.get("measurement_role"),
+        "device_status": row.get("device_status"),
+        "error": row.get("error_text"),
+        "ts_epoch": _optional_float(row.get("ts_epoch")),
+        "ts_local": row.get("ts_local"),
+        "measured_at": row.get("measured_at"),
+        "received_at": row.get("received_at"),
+        "phases": phases,
+        "analysis": {
+            "available_count": _optional_int(row.get("phase_power_available_count")),
+            "complete": _optional_bool(row.get("phase_power_complete")),
+            "total_source": row.get("phase_power_total_source"),
+            "sum_w": _optional_float(row.get("phase_power_sum_w")),
+            "spread_w": _optional_float(row.get("phase_power_spread_w")),
+            "share_pct": {
+                phase: _optional_float(row.get(f"phase_power_share_{phase}_pct"))
+                for phase in _PHASE_NAMES
+            },
+            "total_delta_w": _optional_float(row.get("phase_power_total_delta_w")),
+            "total_delta_pct": _optional_float(row.get("phase_power_total_delta_pct")),
+            "total_consistent": _optional_bool(row.get("phase_power_total_consistent")),
+        },
+        "metadata": metadata,
+    }
+
+
+def _phase_source_id(value: str | None) -> str:
+    """Return a compact source identifier without accepting empty values."""
+
+    normalized = (value or "house_meter").strip()
+    return normalized[:120] or "house_meter"
+
+
+def _optional_float(value: object) -> float | None:
+    """Convert supported SQLite scalar values to float."""
+
+    if isinstance(value, bool) or value is None:
+        return None
+    if not isinstance(value, (int, float, str)):
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _optional_int(value: object) -> int | None:
+    """Convert supported SQLite scalar values to int."""
+
+    if isinstance(value, bool) or value is None:
+        return None
+    if not isinstance(value, (int, float, str)):
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
+def _optional_bool(value: object) -> bool | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if value in {0, "0", "false", "False"}:
+        return False
+    if value in {1, "1", "true", "True"}:
+        return True
+    return None
+
+
+_PHASE_NAMES = ("l1", "l2", "l3")
+
+
 def build_test_device_api_response(
     root_config: dict[str, Any],
     role: str,
@@ -193,32 +425,44 @@ def build_test_device_api_response(
         }, 404
 
     if payload:
-        root_config[role].update(
-            {
-                "enabled": bool(payload.get("enabled", True)),
-                "type": payload.get(
-                    "type",
-                    root_config[role]["type"],
-                ),
-                "host": payload.get("host", ""),
-                "username": payload.get(
-                    "username",
-                    "",
-                ),
-                "password": payload.get(
-                    "password",
-                    "",
-                ),
-                "timeout_seconds": payload.get(
-                    "timeout_seconds",
-                    3,
-                ),
-                "direction_factor": payload.get(
-                    "direction_factor",
-                    1,
-                ),
-            }
-        )
+        updates: dict[str, Any] = {
+            "enabled": bool(payload.get("enabled", True)),
+            "type": payload.get(
+                "type",
+                root_config[role]["type"],
+            ),
+            "host": payload.get("host", ""),
+            "username": payload.get(
+                "username",
+                "",
+            ),
+            "password": payload.get(
+                "password",
+                "",
+            ),
+            "timeout_seconds": payload.get(
+                "timeout_seconds",
+                3,
+            ),
+            "direction_factor": payload.get(
+                "direction_factor",
+                1,
+            ),
+        }
+        if role == "house_meter":
+            updates.update(
+                {
+                    "measurement_role": payload.get(
+                        "measurement_role",
+                        root_config[role].get("measurement_role"),
+                    ),
+                    "phase_direction": payload.get(
+                        "phase_direction",
+                        root_config[role].get("phase_direction", {}),
+                    ),
+                }
+            )
+        root_config[role].update(updates)
 
         root_config = ConfigManager.validate(root_config)
 
