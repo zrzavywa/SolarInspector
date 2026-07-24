@@ -1,0 +1,11 @@
+{
+  "StatusSNS": {
+    "Time": "2026-07-24T13:43:03",
+    "strom": {
+      "Pges": 11,
+      "VerbrauchT0": 12627.644,
+      "RetourT0": 19.896,
+      "ServerID": "<redacted>"
+    }
+  }
+}
