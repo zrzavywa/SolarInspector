@@ -8,6 +8,7 @@
 | Shelly PM Mini Gen 3 | lokale RPC-API | unabhängige AC-Messung der Solakon-Anlage |
 | Shelly 3EM Gen 1 | lokale HTTP-API | dreiphasige Hausanschlussmessung |
 | Shelly Pro 3EM | lokale RPC-API | dreiphasige Hausanschlussmessung |
+| SHRDZM-Kundenschnittstellen-Modul | lokale REST API | offizielle Referenz für Netzbezug und Einspeisung |
 | Simulation | intern | Funktionstest ohne reale Hardware |
 
 ## Solakon ONE
@@ -103,6 +104,27 @@ Prüfung:
 curl --fail "http://<SHELLY-IP>/rpc/EM.GetStatus?id=0"
 ```
 
+## SHRDZM-Kundenschnittstellen-Modul
+
+SolarInspector liest das Modul lokal und ausschließlich lesend über:
+
+```text
+/getLastData
+```
+
+Unterstützt werden direkte OBIS-Schlüssel, numerische JSON-Werte und
+numerische Strings. Der Adapter bevorzugt getrennt gemeldeten Bezug und
+Einspeisung und berechnet daraus die saldierte Netzleistung. `16.7.0`
+bleibt als konfigurierbarer Nettowert beziehungsweise Fallback nutzbar.
+
+Typische Standardwerte sind `1.7.0`, `2.7.0`, `1.8.0`, `2.8.0` sowie
+optionale Spannungs- und Stromwerte der drei Phasen. Welche Felder real
+verfügbar sind, hängt vom offiziellen Zähler und der Freischaltung der
+Kundenschnittstelle ab.
+
+Einrichtung, Authentifizierung, Mapping und Hardwarecheck stehen in
+[SHRDZM als offizieller Netzstromzähler](shrdzm-grid-meter.md).
+
 ## Lokale Authentifizierung
 
 Wenn am Shelly eine Authentifizierung aktiviert ist, müssen Benutzername und Kennwort in der lokalen SolarInspector-Konfiguration hinterlegt werden.
@@ -121,6 +143,7 @@ Empfehlungen:
 | Browser → SolarInspector | TCP `8787` |
 | SolarInspector → Solakon ONE | TCP `502` |
 | SolarInspector → Shelly | TCP `80`, abhängig von Geräteoptionen |
+| SolarInspector → SHRDZM | TCP `80` beziehungsweise konfigurierter HTTPS-Port |
 | SolarInspector → GitHub | HTTPS `443` für Releaseprüfung und Download |
 
 ## Messabweichungen richtig einordnen

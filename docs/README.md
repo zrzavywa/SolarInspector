@@ -7,10 +7,11 @@ Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von Solar
 1. [Installation auf Raspberry Pi](installation-raspberry-pi.md)
 2. [Konfiguration](configuration.md)
 3. [Unterstützte Geräte](devices.md)
-4. [Betrieb, Backup und Wiederherstellung](operation.md)
-5. [Updates und Rollback](updates.md)
-6. [Troubleshooting](troubleshooting.md)
-7. [Sicherheit](security.md)
+4. [SHRDZM-Netzstromzähler](shrdzm-grid-meter.md)
+5. [Betrieb, Backup und Wiederherstellung](operation.md)
+6. [Updates und Rollback](updates.md)
+7. [Troubleshooting](troubleshooting.md)
+8. [Sicherheit](security.md)
 
 ## Für Entwicklung und Integration
 

@@ -690,7 +690,10 @@ def _build_test_grid_meter_api_response(
             "poll_interval_seconds",
             5,
         ),
-        "username": payload.get("username", ""),
+        "username": payload.get(
+            "username",
+            grid_config.get("username", ""),
+        ),
         "direction_factor": payload.get(
             "direction_factor",
             1,
@@ -803,6 +806,8 @@ def _grid_meter_diagnostic(
         "source_id": snapshot.source_id,
         "name": config.get("name"),
         "adapter": config.get("adapter"),
+        "transport": metadata.get("transport"),
+        "endpoint": metadata.get("rest_endpoint"),
         "status": snapshot.status.value,
         "error": snapshot.error,
         "received_at": snapshot.received_at.isoformat(),

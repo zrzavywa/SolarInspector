@@ -28,6 +28,7 @@
 | Unabhängige AC-Messung | Shelly PM Mini Gen 3 |
 | Hausanschluss | Shelly 3EM Gen 1 |
 | Hausanschluss | Shelly Pro 3EM |
+| Offizieller Netzstromzähler | SHRDZM-Kundenschnittstellen-Modul über lokale REST API |
 | Testbetrieb | Integrierte Simulation |
 
 Die tatsächlich verfügbaren Werte hängen von der Gerätefirmware, der lokalen Verdrahtung und der konfigurierten Messquelle ab.
@@ -72,6 +73,7 @@ http://<IP-DES-RASPBERRY-PI>:8787/
 | Übersicht | [Dokumentationsindex](docs/README.md) |
 | Raspberry-Pi-Installation | [Installation](docs/installation-raspberry-pi.md) |
 | Konfiguration | [Konfigurationsreferenz](docs/configuration.md) |
+| SHRDZM-Netzstromzähler | [Einrichtung und Validierung](docs/shrdzm-grid-meter.md) |
 | Solakon und Shelly | [Unterstützte Geräte](docs/devices.md) |
 | Betrieb und Sicherung | [Betriebshandbuch](docs/operation.md) |
 | GitHub-Updates | [Update und Rollback](docs/updates.md) |

@@ -53,7 +53,7 @@
     </div>
     <div class="form-grid">
       <label><span>Adaptertyp</span>
-        <select name="grid_meter_adapter">
+        <select id="grid-meter-adapter" name="grid_meter_adapter">
           <option value="tasmota_http" {{ "selected" if grid.adapter == "tasmota_http" else "" }}>Tasmota HTTP / Status 10</option>
           <option value="shrdzm_rest" {{ "selected" if grid.adapter == "shrdzm_rest" else "" }}>SHRDZM REST / getLastData</option>
         </select>
@@ -79,7 +79,7 @@
         </select>
       </label>
     </div>
-<div class="form-grid shrdzm-rest-config">
+<div id="shrdzm-rest-config" class="form-grid shrdzm-rest-config" {{ "hidden" if grid.adapter != "shrdzm_rest" else "" }}>
   <label><span>SHRDZM REST-Endpunkt</span><input name="grid_meter_shrdzm_endpoint" value="{{ shrdzm.endpoint }}"><small>Dokumentierter Standard: /getLastData</small></label>
   <label><span>SHRDZM Authentifizierung</span>
     <select name="grid_meter_shrdzm_authentication_mode">
@@ -223,7 +223,16 @@ const gridValue = (entry, digits = 1) => entry?.value === null || entry?.value =
   ? "nicht verfügbar"
   : `${Number(entry.value).toLocaleString("de-DE", {maximumFractionDigits: digits})} ${entry.unit}`;
 
+const gridAdapterSelect = document.getElementById("grid-meter-adapter");
+const shrdzmRestConfig = document.getElementById("shrdzm-rest-config");
+const updateGridAdapterFields = () => {
+  shrdzmRestConfig.hidden = gridAdapterSelect.value !== "shrdzm_rest";
+};
+gridAdapterSelect.addEventListener("change", updateGridAdapterFields);
+updateGridAdapterFields();
+
 document.getElementById("test-grid-meter").addEventListener("click", async () => {
+
   const button = document.getElementById("test-grid-meter");
   const result = document.getElementById("test-result-grid-meter");
   const values = document.getElementById("grid-meter-test-values");
@@ -283,6 +292,8 @@ document.getElementById("test-grid-meter").addEventListener("click", async () =>
         : "keine Feldliste verfügbar";
       values.innerHTML = `
         <div><span>Status</span><strong>${escapeHTML(diagnostic.status)}</strong></div>
+        <div><span>Adapter</span><strong>${escapeHTML(diagnostic.adapter)}</strong></div>
+        <div><span>REST-Endpunkt</span><strong>${escapeHTML(diagnostic.endpoint || "–")}</strong></div>
         <div><span>Netzleistung</span><strong>${gridValue(diagnostic.values.grid_power_w)}</strong></div>
         <div><span>Netzbezug</span><strong>${gridValue(diagnostic.values.grid_import_power_w)}</strong></div>
         <div><span>Einspeisung</span><strong>${gridValue(diagnostic.values.grid_export_power_w)}</strong></div>
