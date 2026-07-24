@@ -75,9 +75,10 @@ Represents one device read operation with:
 - Zero or more measurements.
 - Receipt timestamp.
 - Optional technical diagnostic message.
+- Immutable textual device metadata for identity and operating details.
 
 A snapshot may be online with complete values, degraded with partial values, or
-o-value offline/disabled. Duplicate values for the same role and metric are
+zero-value offline/disabled. Duplicate values for the same role and metric are
 rejected because Phase 04 has no hidden rule for choosing between them.
 
 ## Deliberate exclusions
@@ -95,13 +96,25 @@ The model does not implement:
 - A plugin framework, event bus, dependency-injection framework, or abstract
   factory hierarchy.
 
-## Initial integration strategy
+## Implemented Phase 04 integration
 
-Existing public reader behavior remains temporarily available. Normalized read
-methods return `DeviceSnapshot`; explicit compatibility functions convert
-snapshots to the existing `MeterReading`, `SolakonOneReading`, and collector
-sample structures.
+Both production device families now implement the common adapter protocol:
 
-The first implementation commit introduces only the central model and unit
-tests. It does not modify Shelly, Solakon, collector, persistence, API,
-dashboard, or CSV behavior.
+- `ShellyMeasurementAdapter` normalizes configured grid and plant meters.
+- `SolakonMeasurementAdapter` normalizes grid, solar-system, and battery values.
+- The collector reads both device families through `DeviceSnapshot`.
+- Explicit compatibility functions restore the existing `MeterReading` and
+  `SolakonOneReading` structures before the established source-selection,
+  balance, energy-integration, persistence, API, dashboard, and CSV logic runs.
+
+The compatibility boundary is temporary and intentional. It allows Phase 04 to
+replace device-dependent acquisition without changing the public schema or
+historical calculation behavior. A later phase may migrate the remaining
+consumers to normalized measurements and then remove the legacy mappings.
+
+## Completion boundary
+
+Phase 04 is complete when adapter and collector contract tests, characterization
+tests, Ruff, mypy, compilation, imports, and the full regression suite pass.
+Device-specific plausibility limits, cross-source validation, stale detection,
+new source-priority rules, and public-schema changes remain outside this phase.

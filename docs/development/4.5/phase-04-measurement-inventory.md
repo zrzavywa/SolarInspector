@@ -134,3 +134,25 @@ follow-up phases.
 | MM-006 | Current devices provide no consistently used measurement timestamp | Use `measured_at = received_at` until an adapter has a trustworthy device timestamp | Later timestamp enhancement |
 | MM-007 | Device status and measurement status are conflated in legacy flags | Introduce `DeviceSnapshot` separately from `MeasurementQuality` | Phase 04 model |
 | MM-008 | Legacy database and APIs depend on a flat sample dictionary | Add an explicit compatibility mapping; do not change public output yet | Phase 04 collector migration |
+
+
+## Phase 04 closure status
+
+The initial inventory remains the Phase 03 behavioral baseline. Phase 04
+resolved or bounded its findings as follows:
+
+| ID | Closure status |
+| --- | --- |
+| MM-001 | Resolved in the normalized path. Legacy `power_w=0.0` compatibility remains, but `power_available=False` causes the adapter to omit the required power metric and return `DEGRADED`. |
+| MM-002 | Bounded. Existing aggregate fallback behavior remains; no unavailable phase measurement is invented in the normalized model. |
+| MM-003 | Deferred deliberately. No new Pro 3EM counters or validity interpretation was introduced. |
+| MM-004 | Resolved with separate non-negative battery charge and discharge metrics. |
+| MM-005 | Resolved through multi-role `MeasurementSource` metadata and role-specific measurements. |
+| MM-006 | Bounded. Adapters use timezone-aware receipt time as measurement time until trustworthy device timestamps are adopted. |
+| MM-007 | Resolved through separate `DeviceConnectionStatus` and `MeasurementQuality` concepts. |
+| MM-008 | Resolved through explicit snapshot-to-legacy mappings and collector bridges without a public-schema change. |
+
+The Solakon adapter normalizes the grid sign and energy units. The compatibility
+mapping restores the legacy Solakon representation before the unchanged
+collector calculations run. Shelly and Solakon collector reads now both cross
+the normalized snapshot boundary.
