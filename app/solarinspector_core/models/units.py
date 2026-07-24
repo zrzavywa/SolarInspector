@@ -27,6 +27,8 @@ METRIC_UNITS: Final[dict[Metric, Unit]] = {
     Metric.GRID_EXPORT_POWER: Unit.WATT,
     Metric.GRID_IMPORT_TOTAL: Unit.WATT_HOUR,
     Metric.GRID_EXPORT_TOTAL: Unit.WATT_HOUR,
+    Metric.GRID_VOLTAGE: Unit.VOLT,
+    Metric.GRID_CURRENT: Unit.AMPERE,
     Metric.HOUSE_POWER: Unit.WATT,
     Metric.PHASE_POWER_L1: Unit.WATT,
     Metric.PHASE_POWER_L2: Unit.WATT,

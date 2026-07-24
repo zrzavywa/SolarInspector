@@ -28,6 +28,8 @@ def meter_reading_from_snapshot(
             return None
         return MeterReading(
             power_w=power,
+            voltage_v=_value(snapshot, role, Metric.GRID_VOLTAGE),
+            current_a=_value(snapshot, role, Metric.GRID_CURRENT),
             power_factor=_value(snapshot, role, Metric.POWER_FACTOR),
             frequency_hz=_value(snapshot, role, Metric.FREQUENCY),
             energy_total_wh=_value(

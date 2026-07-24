@@ -13,6 +13,8 @@ class Metric(str, Enum):
     GRID_EXPORT_POWER = "grid_export_power"
     GRID_IMPORT_TOTAL = "grid_import_total"
     GRID_EXPORT_TOTAL = "grid_export_total"
+    GRID_VOLTAGE = "grid_voltage"
+    GRID_CURRENT = "grid_current"
 
     HOUSE_POWER = "house_power"
 

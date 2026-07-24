@@ -280,6 +280,8 @@ def _normalized_values(
             [
                 (Metric.GRID_IMPORT_TOTAL, reading.energy_total_wh),
                 (Metric.GRID_EXPORT_TOTAL, reading.returned_energy_total_wh),
+                (Metric.GRID_VOLTAGE, reading.voltage_v),
+                (Metric.GRID_CURRENT, reading.current_a),
                 (Metric.POWER_FACTOR, reading.power_factor),
             ]
         )
