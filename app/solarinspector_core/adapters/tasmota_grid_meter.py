@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -197,7 +198,15 @@ class TasmotaHttpGridMeterAdapter:
             measurements=measurements,
             received_at=received_at,
             error=" ".join(dict.fromkeys(diagnostics)) or None,
-            metadata=_snapshot_metadata(reading),
+            metadata=_snapshot_metadata(
+                reading,
+                include_paths=bool(
+                    self._config.get(
+                        "_include_diagnostic_paths",
+                        False,
+                    )
+                ),
+            ),
         )
 
     def _read_status_10(self) -> dict[str, Any]:
@@ -548,6 +557,8 @@ def _numeric_value(value: object) -> float | None:
 
 def _snapshot_metadata(
     reading: TasmotaGridMeterReading,
+    *,
+    include_paths: bool = False,
 ) -> tuple[tuple[str, str], ...]:
     """Retain non-secret parser information for later diagnostics."""
 
@@ -559,6 +570,17 @@ def _snapshot_metadata(
             str(len(reading.available_paths)),
         ),
     ]
+    if include_paths:
+        metadata.append(
+            (
+                "available_scalar_paths_json",
+                json.dumps(
+                    reading.available_paths,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+            )
+        )
     if reading.device_time:
         metadata.append(("device_time", reading.device_time))
     if reading.grid_import_total_kwh is not None:

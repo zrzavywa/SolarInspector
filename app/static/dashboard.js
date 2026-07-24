@@ -100,6 +100,11 @@ async function loadLive() {
       ? "–"
       : `${formatNumber(latest.solar_difference_w, 1)} W · ${formatNumber(latest.solar_difference_pct, 1)} %`;
     document.getElementById("live-source").textContent = latest?.solar_source || "–";
+    renderGridMeter(
+      data.grid_meter,
+      data.active_sources,
+      latest
+    );
 
     const batteryPower = latest?.solakon_battery_power_w;
     document.getElementById("battery-direction").textContent = batteryPower === null || batteryPower === undefined
@@ -127,6 +132,48 @@ async function loadLive() {
   } catch (error) {
     document.getElementById("live-meta").textContent = "Livewerte konnten nicht geladen werden.";
   }
+}
+
+function renderGridMeter(gridMeter, activeSources, latest) {
+  const importPower = gridMeter?.import_power_w ?? latest?.grid_import_w;
+  const exportPower = gridMeter?.export_power_w ?? latest?.feed_in_w;
+  setText("grid-meter-import", importPower);
+  setText("grid-meter-export", exportPower);
+  document.getElementById("grid-meter-import-total").textContent =
+    gridMeter?.import_total_kwh === null || gridMeter?.import_total_kwh === undefined
+      ? "–"
+      : formatNumber(gridMeter.import_total_kwh, 3);
+  document.getElementById("grid-meter-export-total").textContent =
+    gridMeter?.export_total_kwh === null || gridMeter?.export_total_kwh === undefined
+      ? "–"
+      : formatNumber(gridMeter.export_total_kwh, 3);
+
+  const status = document.getElementById("grid-meter-status");
+  const statusValue = gridMeter?.status || "nicht verfügbar";
+  status.className = `mini-pill ${statusValue === "online" ? "on" : "off"}`;
+  status.textContent = statusValue;
+
+  const details = [
+    gridMeter?.name,
+    gridMeter?.adapter,
+    gridMeter?.source_id
+  ].filter(Boolean).join(" · ");
+  const warning = gridMeter?.error ? ` · ${gridMeter.error}` : "";
+  document.getElementById("grid-meter-device-info").textContent =
+    details ? `${details}${warning}` : "Noch keine offizielle Zählermessung vorhanden.";
+
+  document.getElementById("grid-meter-source").textContent =
+    activeSources?.grid_power_label || activeSources?.grid_power || "keine Quelle";
+  document.getElementById("grid-meter-quality").textContent =
+    gridMeter?.quality || "nicht verfügbar";
+  document.getElementById("grid-meter-update").textContent =
+    gridMeter?.last_update
+      ? new Date(gridMeter.last_update).toLocaleString("de-DE")
+      : "nicht verfügbar";
+  document.getElementById("grid-meter-age").textContent =
+    gridMeter?.age_seconds === null || gridMeter?.age_seconds === undefined
+      ? "nicht verfügbar"
+      : `vor ${gridMeter.age_seconds} s`;
 }
 
 async function loadPhaseLive() {

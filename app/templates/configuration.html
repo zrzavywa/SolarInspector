@@ -37,6 +37,72 @@
     </div>
   </section>
 
+  {% set grid = config.grid_meter %}
+  <section class="panel device-config grid-meter-config">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">ÖFFENTLICHES NETZ</p>
+        <h2>Offizieller Netzstromzähler</h2>
+        <p>Lokaler, ausschließlich lesender Zugriff über Hichi/Tasmota HTTP.</p>
+      </div>
+      <label class="switch"><input type="checkbox" name="grid_meter_enabled" {{ "checked" if grid.enabled else "" }}><span></span><b>Aktiv</b></label>
+    </div>
+    <div class="readonly-note">
+      <strong>Primäre Netzreferenz:</strong> Bei gültigen Daten werden Netzbezug und Einspeisung aus diesem Zähler verwendet. Bestehende Quellen bleiben als gekennzeichneter Fallback erhalten.
+    </div>
+    <div class="form-grid">
+      <label><span>Adaptertyp</span>
+        <select name="grid_meter_adapter">
+          <option value="tasmota_http" {{ "selected" if grid.adapter == "tasmota_http" else "" }}>Tasmota HTTP / Status 10</option>
+        </select>
+      </label>
+      <label><span>Bezeichnung</span><input name="grid_meter_name" value="{{ grid.name }}"></label>
+      <label><span>Stabile Source-ID</span><input name="grid_meter_source_id" value="{{ grid.source_id }}"><small>Bleibt auch bei Änderung der IP-Adresse unverändert.</small></label>
+      <label><span>Protokoll</span>
+        <select name="grid_meter_scheme">
+          <option value="http" {{ "selected" if grid.scheme == "http" else "" }}>HTTP</option>
+          <option value="https" {{ "selected" if grid.scheme == "https" else "" }}>HTTPS</option>
+        </select>
+      </label>
+      <label><span>IP-Adresse / Hostname</span><input name="grid_meter_host" placeholder="192.168.x.x" value="{{ grid.host }}"></label>
+      <label><span>Port</span><input type="number" min="1" max="65535" name="grid_meter_port" value="{{ grid.port }}"></label>
+      <label><span>Benutzername (optional)</span><input name="grid_meter_username" autocomplete="username" value="{{ grid.username }}"></label>
+      <label><span>Passwort (optional)</span><input type="password" name="grid_meter_password" autocomplete="new-password" value="" placeholder="{{ 'gespeichert – leer lassen zum Beibehalten' if grid.password else 'nicht gesetzt' }}"><small>Das gespeicherte Passwort wird nicht im Browser angezeigt.</small></label>
+      <label><span>Timeout in Sekunden</span><input type="number" min="1" max="30" name="grid_meter_timeout_seconds" value="{{ grid.timeout_seconds }}"></label>
+      <label><span>Pollingintervall in Sekunden</span><input type="number" min="2" max="3600" name="grid_meter_poll_interval_seconds" value="{{ grid.poll_interval_seconds }}"></label>
+      <label><span>Messrichtung</span>
+        <select name="grid_meter_direction_factor">
+          <option value="1" {{ "selected" if grid.direction_factor == 1 else "" }}>Normal: Bezug positiv (+1)</option>
+          <option value="-1" {{ "selected" if grid.direction_factor == -1 else "" }}>Vorzeichen umkehren (−1)</option>
+        </select>
+      </label>
+    </div>
+    <div class="panel-head" style="margin-top:24px">
+      <div>
+        <p class="eyebrow">FELDMAPPING</p>
+        <h2>Tasmota- und OBIS-Felder</h2>
+        <p>Einfache Punktpfade, zum Beispiel <code>StatusSNS.strom.Pges</code>.</p>
+      </div>
+    </div>
+    <div class="form-grid">
+      {% for field, label in [
+        ('grid_power_w', 'Netzleistung netto (W)'),
+        ('grid_import_power_w', 'Netzbezug direkt (W, optional)'),
+        ('grid_export_power_w', 'Einspeisung direkt (W, optional)'),
+        ('grid_import_total_kwh', 'Netzbezug gesamt (kWh)'),
+        ('grid_export_total_kwh', 'Einspeisung gesamt (kWh)'),
+        ('frequency_hz', 'Netzfrequenz (Hz, optional)')
+      ] %}
+      <label><span>{{ label }}</span><input name="grid_meter_mapping_{{ field }}" value="{{ grid.mapping.get(field, '') }}" placeholder="nicht konfiguriert"></label>
+      {% endfor %}
+    </div>
+    <div class="test-row">
+      <button type="button" class="button secondary" id="test-grid-meter">Verbindung und Mapping testen</button>
+      <span id="test-result-grid-meter" class="test-result"></span>
+    </div>
+    <div id="grid-meter-test-values" class="test-values hidden"></div>
+  </section>
+
   {% set one = config.solakon_one %}
   <section class="panel device-config modbus-config">
     <div class="panel-head">
@@ -130,6 +196,85 @@
 <script>
 const numberDE = value => value === null || value === undefined ? "–" : Number(value).toLocaleString("de-DE", {maximumFractionDigits: 1});
 const escapeHTML = value => String(value ?? "–").replace(/[&<>'"]/g, character => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;"}[character]));
+
+const gridValue = (entry, digits = 1) => entry?.value === null || entry?.value === undefined
+  ? "nicht verfügbar"
+  : `${Number(entry.value).toLocaleString("de-DE", {maximumFractionDigits: digits})} ${entry.unit}`;
+
+document.getElementById("test-grid-meter").addEventListener("click", async () => {
+  const button = document.getElementById("test-grid-meter");
+  const result = document.getElementById("test-result-grid-meter");
+  const values = document.getElementById("grid-meter-test-values");
+  result.className = "test-result";
+  result.textContent = "Tasmota-Verbindung und Mapping werden geprüft …";
+  values.classList.add("hidden");
+  button.disabled = true;
+  try {
+    const mapping = {};
+    [
+      "grid_power_w",
+      "grid_import_power_w",
+      "grid_export_power_w",
+      "grid_import_total_kwh",
+      "grid_export_total_kwh",
+      "frequency_hz"
+    ].forEach(field => {
+      mapping[field] = document.querySelector(
+        `[name="grid_meter_mapping_${field}"]`
+      ).value;
+    });
+    const payload = {
+      enabled: document.querySelector('[name="grid_meter_enabled"]').checked,
+      adapter: document.querySelector('[name="grid_meter_adapter"]').value,
+      source_id: document.querySelector('[name="grid_meter_source_id"]').value,
+      name: document.querySelector('[name="grid_meter_name"]').value,
+      scheme: document.querySelector('[name="grid_meter_scheme"]').value,
+      host: document.querySelector('[name="grid_meter_host"]').value,
+      port: document.querySelector('[name="grid_meter_port"]').value,
+      username: document.querySelector('[name="grid_meter_username"]').value,
+      password: document.querySelector('[name="grid_meter_password"]').value,
+      timeout_seconds: document.querySelector('[name="grid_meter_timeout_seconds"]').value,
+      poll_interval_seconds: document.querySelector('[name="grid_meter_poll_interval_seconds"]').value,
+      direction_factor: document.querySelector('[name="grid_meter_direction_factor"]').value,
+      mapping
+    };
+    const response = await fetch("/api/test-device/grid_meter", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    const diagnostic = data.diagnostic;
+    if (diagnostic) {
+      const mappingRows = diagnostic.mapping.map(item => `
+        <div><span>${escapeHTML(item.field)}</span><strong>${escapeHTML(item.path || "abgeleitet / nicht konfiguriert")} · ${escapeHTML(item.status)}</strong></div>
+      `).join("");
+      const fields = diagnostic.available_fields.length
+        ? diagnostic.available_fields.slice(0, 20).map(path => `<code>${escapeHTML(path)}</code>`).join(" · ")
+        : "keine Feldliste verfügbar";
+      values.innerHTML = `
+        <div><span>Status</span><strong>${escapeHTML(diagnostic.status)}</strong></div>
+        <div><span>Netzleistung</span><strong>${gridValue(diagnostic.values.grid_power_w)}</strong></div>
+        <div><span>Netzbezug</span><strong>${gridValue(diagnostic.values.grid_import_power_w)}</strong></div>
+        <div><span>Einspeisung</span><strong>${gridValue(diagnostic.values.grid_export_power_w)}</strong></div>
+        <div><span>Bezug gesamt</span><strong>${gridValue(diagnostic.values.grid_import_total_kwh, 3)}</strong></div>
+        <div><span>Einspeisung gesamt</span><strong>${gridValue(diagnostic.values.grid_export_total_kwh, 3)}</strong></div>
+        ${mappingRows}
+        <div><span>Erkannte Felder (${diagnostic.available_field_count})</span><strong>${fields}</strong></div>`;
+      values.classList.remove("hidden");
+    }
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || "Tasmota-Test fehlgeschlagen");
+    }
+    result.className = "test-result success";
+    result.textContent = `Erfolgreich: ${diagnostic.name} · ${diagnostic.status}`;
+  } catch (error) {
+    result.className = "test-result error";
+    result.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
 
 document.getElementById("test-solakon-one").addEventListener("click", async () => {
   const button = document.getElementById("test-solakon-one");
