@@ -294,3 +294,109 @@ code { background: #e7ecea; border-radius: 6px; padding: 3px 6px; }
 #download-message {
   margin-top: 0.75rem;
 }
+
+
+/* SolarInspector 4.5 – Shelly phases */
+.phase-panel { border-color: #cfe0d9; }
+.phase-live-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.phase-card {
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--green);
+  border-radius: 15px;
+  padding: 17px;
+  background: var(--surface-soft);
+}
+.phase-card.l2 { border-top-color: var(--blue); }
+.phase-card.l3 { border-top-color: var(--yellow); }
+.phase-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.phase-card-head > span {
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: .08em;
+}
+.phase-card > div > strong { font-size: 29px; letter-spacing: -.03em; }
+.phase-card > div > small { margin-left: 4px; color: var(--muted); font-weight: 700; }
+.phase-card dl { margin: 15px 0 0; }
+.phase-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+.phase-card dt { color: var(--muted); font-size: 11px; }
+.phase-card dd { margin: 0; font-size: 12px; font-weight: 750; }
+.phase-quality {
+  border-radius: 999px;
+  padding: 4px 7px;
+  background: #edf1ef;
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.phase-quality.reported, .phase-quality.validated, .phase-quality.measured {
+  background: #e4f5ec;
+  color: var(--green-dark);
+}
+.phase-quality.suspect, .phase-quality.stale {
+  background: #fff3d8;
+  color: #8a6511;
+}
+.phase-quality.rejected, .phase-quality.unavailable {
+  background: #f7e6e6;
+  color: #9b3737;
+}
+.phase-analysis-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 13px;
+  background: #f4f8f6;
+}
+.phase-analysis-strip span,
+.phase-analysis-strip strong { display: block; }
+.phase-analysis-strip span {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.phase-analysis-strip strong { margin-top: 4px; font-size: 13px; overflow-wrap: anywhere; }
+.phase-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 22px;
+}
+.phase-chart-head > div > span,
+.phase-chart-head > div > strong { display: block; }
+.phase-chart-head > div > span { color: var(--muted); font-size: 11px; }
+.phase-chart-head > div > strong { margin-top: 4px; font-size: 13px; }
+.phase-legend .legend-phase-l1 { background: var(--green); }
+.phase-legend .legend-phase-l2 { background: var(--blue); }
+.phase-legend .legend-phase-l3 { background: var(--yellow); }
+.phase-chart-wrap { position: relative; min-height: 280px; margin-top: 8px; }
+#phase-power-chart { width: 100%; display: block; }
+
+@media (max-width: 900px) {
+  .phase-analysis-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 650px) {
+  .phase-live-grid, .phase-analysis-strip { grid-template-columns: 1fr; }
+  .phase-chart-head { align-items: stretch; flex-direction: column; }
+}

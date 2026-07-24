@@ -5,7 +5,12 @@ function localISODate(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-const state = { period: "day", anchor: localISODate(), dashboard: null };
+const state = {
+  period: "day",
+  anchor: localISODate(),
+  dashboard: null,
+  phaseDashboard: null
+};
 const anchorInput = document.getElementById("anchor-date");
 anchorInput.value = state.anchor;
 
@@ -67,6 +72,7 @@ async function loadDashboard() {
   document.getElementById("period-source").textContent = k.solar_source || "Keine Quelle";
   document.getElementById("kpi-grid-source").textContent = k.grid_source || "–";
   drawChart();
+  await loadPhaseDashboard();
 }
 
 function setText(id, value, digits = 0) {
@@ -117,9 +123,186 @@ async function loadLive() {
     const header = document.getElementById("header-status");
     header.className = "status-pill " + (data.collector.running ? "running" : "stopped");
     header.innerHTML = `<span></span>${data.collector.running ? "Erfassung aktiv" : "Erfassung gestoppt"}`;
+    await loadPhaseLive();
   } catch (error) {
     document.getElementById("live-meta").textContent = "Livewerte konnten nicht geladen werden.";
   }
+}
+
+async function loadPhaseLive() {
+  const response = await fetch("/api/phases/live?source=house_meter");
+  if (!response.ok) throw new Error("Phasen-Livewerte konnten nicht geladen werden.");
+  const payload = await response.json();
+  const latest = payload.latest;
+  const status = document.getElementById("phase-live-status");
+
+  if (!latest) {
+    status.className = "mini-pill off";
+    status.textContent = "nicht verfügbar";
+    document.getElementById("phase-device-info").textContent = "Noch keine Phasenmessung vorhanden.";
+    renderPhaseLive(null);
+    return;
+  }
+
+  const isOnline = latest.device_status === "online";
+  status.className = `mini-pill ${isOnline ? "on" : "off"}`;
+  status.textContent = latest.device_status || "unbekannt";
+  const details = [latest.source_id, latest.ts_local].filter(Boolean).join(" · ");
+  document.getElementById("phase-device-info").textContent = details || "Phasenmessung vorhanden.";
+  renderPhaseLive(latest);
+}
+
+function renderPhaseLive(latest) {
+  ["l1", "l2", "l3"].forEach(phase => {
+    const values = latest?.phases?.[phase];
+    setText(`phase-${phase}-power`, values?.power_w);
+    document.getElementById(`phase-${phase}-voltage`).textContent = values?.voltage_v === null || values?.voltage_v === undefined
+      ? "–"
+      : `${formatNumber(values.voltage_v, 1)} V`;
+    document.getElementById(`phase-${phase}-current`).textContent = values?.current_a === null || values?.current_a === undefined
+      ? "–"
+      : `${formatNumber(values.current_a, 2)} A`;
+    document.getElementById(`phase-${phase}-pf`).textContent = formatNumber(values?.power_factor, 3);
+    document.getElementById(`phase-${phase}-share`).textContent = pct(latest?.analysis?.share_pct?.[phase]);
+    const quality = document.getElementById(`phase-${phase}-quality`);
+    quality.textContent = values?.quality || "–";
+    quality.className = `phase-quality ${values?.quality || "unknown"}`;
+  });
+
+  document.getElementById("phase-role").textContent = latest?.measurement_role || "–";
+  document.getElementById("phase-sum").textContent = latest?.analysis?.sum_w === null || latest?.analysis?.sum_w === undefined
+    ? "–"
+    : `${formatNumber(latest.analysis.sum_w, 1)} W`;
+  document.getElementById("phase-spread").textContent = latest?.analysis?.spread_w === null || latest?.analysis?.spread_w === undefined
+    ? "–"
+    : `${formatNumber(latest.analysis.spread_w, 1)} W`;
+
+  const delta = latest?.analysis?.total_delta_w;
+  const deltaPct = latest?.analysis?.total_delta_pct;
+  const consistent = latest?.analysis?.total_consistent;
+  document.getElementById("phase-delta").textContent = delta === null || delta === undefined
+    ? "nicht vergleichbar"
+    : `${formatNumber(delta, 1)} W · ${formatNumber(deltaPct, 1)} % · ${consistent ? "plausibel" : "auffällig"}`;
+}
+
+async function loadPhaseDashboard() {
+  try {
+    const response = await fetch(`/api/phases/dashboard?period=${state.period}&anchor=${state.anchor}&source=house_meter`);
+    if (!response.ok) throw new Error("Phasenverlauf konnte nicht geladen werden.");
+    state.phaseDashboard = await response.json();
+    const summary = state.phaseDashboard.summary;
+    document.getElementById("phase-period-summary").textContent = summary.sample_count
+      ? `${summary.sample_count} Messungen · ${summary.suspect_sample_count} auffällig · maximale Spreizung ${formatNumber(summary.max_spread_w, 1)} W`
+      : "Noch keine Phasendaten.";
+    drawPhaseChart();
+  } catch (error) {
+    state.phaseDashboard = null;
+    document.getElementById("phase-period-summary").textContent = "Phasenverlauf konnte nicht geladen werden.";
+    drawPhaseChart();
+  }
+}
+
+function drawPhaseChart() {
+  const canvas = document.getElementById("phase-power-chart");
+  const empty = document.getElementById("phase-chart-empty");
+  const data = state.phaseDashboard;
+  if (!canvas || !empty) return;
+
+  const values = data
+    ? [
+        ...data.series.l1_power_w,
+        ...data.series.l2_power_w,
+        ...data.series.l3_power_w
+      ].filter(value => value !== null && value !== undefined && Number.isFinite(Number(value)))
+    : [];
+  empty.style.display = values.length ? "none" : "grid";
+
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.parentElement.clientWidth;
+  const cssHeight = 280;
+  canvas.width = Math.floor(cssWidth * dpr);
+  canvas.height = Math.floor(cssHeight * dpr);
+  canvas.style.width = cssWidth + "px";
+  canvas.style.height = cssHeight + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
+  if (!data || !values.length) return;
+
+  const margin = {left: 58, right: 18, top: 18, bottom: 44};
+  const width = cssWidth - margin.left - margin.right;
+  const height = cssHeight - margin.top - margin.bottom;
+  const maxAbs = niceMax(Math.max(...values.map(value => Math.abs(Number(value))), 1));
+  const styles = getComputedStyle(document.documentElement);
+  const series = [
+    {values: data.series.l1_power_w, color: styles.getPropertyValue("--green").trim()},
+    {values: data.series.l2_power_w, color: styles.getPropertyValue("--blue").trim()},
+    {values: data.series.l3_power_w, color: styles.getPropertyValue("--yellow").trim()}
+  ];
+
+  ctx.font = "11px system-ui";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const value = maxAbs - (maxAbs * 2 * i / 4);
+    const y = margin.top + height * i / 4;
+    ctx.strokeStyle = value === 0 ? "#9aaba4" : "#dce5e1";
+    ctx.beginPath();
+    ctx.moveTo(margin.left, y);
+    ctx.lineTo(cssWidth - margin.right, y);
+    ctx.stroke();
+    ctx.fillStyle = "#65736d";
+    ctx.textAlign = "right";
+    ctx.fillText(formatNumber(value, 0), margin.left - 8, y + 4);
+  }
+
+  const xFor = index => margin.left + (data.labels.length <= 1 ? width / 2 : width * index / (data.labels.length - 1));
+  const yFor = value => margin.top + (maxAbs - value) / (maxAbs * 2) * height;
+
+  series.forEach(item => {
+    ctx.strokeStyle = item.color;
+    ctx.fillStyle = item.color;
+    ctx.lineWidth = 2.2;
+    let drawing = false;
+    ctx.beginPath();
+    item.values.forEach((rawValue, index) => {
+      if (rawValue === null || rawValue === undefined) {
+        drawing = false;
+        return;
+      }
+      const x = xFor(index);
+      const y = yFor(Number(rawValue));
+      if (!drawing) {
+        ctx.moveTo(x, y);
+        drawing = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+
+    item.values.forEach((rawValue, index) => {
+      if (rawValue === null || rawValue === undefined) return;
+      ctx.beginPath();
+      ctx.arc(xFor(index), yFor(Number(rawValue)), 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+
+  const showEvery = data.labels.length > 16 ? 3 : 1;
+  data.labels.forEach((label, index) => {
+    if (index % showEvery !== 0) return;
+    ctx.fillStyle = "#65736d";
+    ctx.textAlign = "center";
+    ctx.fillText(label, xFor(index), cssHeight - 18);
+  });
+
+  ctx.save();
+  ctx.translate(15, margin.top + height / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#65736d";
+  ctx.fillText("W", 0, 0);
+  ctx.restore();
 }
 
 function drawChart() {
@@ -230,7 +413,10 @@ function roundedRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-window.addEventListener("resize", () => state.dashboard && drawChart());
+window.addEventListener("resize", () => {
+  if (state.dashboard) drawChart();
+  if (state.phaseDashboard) drawPhaseChart();
+});
 loadDashboard();
 loadLive();
 setInterval(loadLive, 5000);

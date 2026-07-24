@@ -108,6 +108,8 @@ from solarinspector_core.web.api import (
     build_delete_all_api_response,
     build_health_api_response,
     build_live_api_response,
+    build_phase_dashboard_api_response,
+    build_phase_live_api_response,
     build_start_api_response,
     build_status_api_response,
     build_stop_api_response,
@@ -357,6 +359,28 @@ def api_dashboard():
                 "day",
             ),
             request.args.get("anchor"),
+        )
+    )
+
+
+@app.get("/api/phases/live")
+def api_phase_live():
+    return jsonify(
+        build_phase_live_api_response(
+            database,
+            request.args.get("source", "house_meter"),
+        )
+    )
+
+
+@app.get("/api/phases/dashboard")
+def api_phase_dashboard():
+    return jsonify(
+        build_phase_dashboard_api_response(
+            database,
+            request.args.get("period", "day"),
+            request.args.get("anchor"),
+            request.args.get("source", "house_meter"),
         )
     )
 

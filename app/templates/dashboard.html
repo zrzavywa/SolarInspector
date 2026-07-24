@@ -45,6 +45,55 @@
 </section>
 <p id="live-meta" class="live-meta">Noch keine Messung vorhanden.</p>
 
+<section class="panel phase-panel" id="phase-panel">
+  <div class="panel-head">
+    <div>
+      <p class="eyebrow">DREIPHASENMESSUNG</p>
+      <h2>Lastverteilung L1–L3</h2>
+      <p id="phase-device-info">Noch keine Phasenmessung vorhanden.</p>
+    </div>
+    <span id="phase-live-status" class="mini-pill off">nicht verfügbar</span>
+  </div>
+  <div class="phase-live-grid">
+    {% for phase in ["l1", "l2", "l3"] %}
+    <article class="phase-card {{ phase }}">
+      <div class="phase-card-head">
+        <span>{{ phase|upper }}</span>
+        <em id="phase-{{ phase }}-quality" class="phase-quality">–</em>
+      </div>
+      <div><strong id="phase-{{ phase }}-power">–</strong><small>W</small></div>
+      <dl>
+        <div><dt>Spannung</dt><dd id="phase-{{ phase }}-voltage">–</dd></div>
+        <div><dt>Strom</dt><dd id="phase-{{ phase }}-current">–</dd></div>
+        <div><dt>Leistungsfaktor</dt><dd id="phase-{{ phase }}-pf">–</dd></div>
+        <div><dt>Lastanteil</dt><dd id="phase-{{ phase }}-share">–</dd></div>
+      </dl>
+    </article>
+    {% endfor %}
+  </div>
+  <div class="phase-analysis-strip">
+    <div><span>Messrolle</span><strong id="phase-role">–</strong></div>
+    <div><span>Phasensumme</span><strong id="phase-sum">–</strong></div>
+    <div><span>Spreizung</span><strong id="phase-spread">–</strong></div>
+    <div><span>Abweichung zum Gesamtwert</span><strong id="phase-delta">–</strong></div>
+  </div>
+  <div class="phase-chart-head">
+    <div>
+      <span>Mittlere Phasenleistung im gewählten Zeitraum</span>
+      <strong id="phase-period-summary">Noch keine Phasendaten.</strong>
+    </div>
+    <div class="legend phase-legend">
+      <span><i class="legend-phase-l1"></i>L1</span>
+      <span><i class="legend-phase-l2"></i>L2</span>
+      <span><i class="legend-phase-l3"></i>L3</span>
+    </div>
+  </div>
+  <div class="phase-chart-wrap">
+    <canvas id="phase-power-chart" height="280"></canvas>
+    <div id="phase-chart-empty" class="chart-empty">Für diesen Zeitraum sind keine Phasenwerte vorhanden.</div>
+  </div>
+</section>
+
 <section class="panel solakon-panel" id="solakon-one-panel">
   <div class="panel-head">
     <div>
