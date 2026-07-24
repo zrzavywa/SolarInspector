@@ -11,11 +11,20 @@ import time
 from datetime import datetime
 from typing import Any, Optional
 
-from solarinspector_core.adapters.shelly import ShellyReader
+from solarinspector_core.adapters.compatibility import (
+    meter_reading_from_snapshot,
+    solakon_reading_from_snapshot,
+)
+from solarinspector_core.adapters.shelly import (
+    ShellyMeasurementAdapter,
+    ShellyReader,
+)
 from solarinspector_core.adapters.solakon import SolakonOneReader, SolakonOneReading
+from solarinspector_core.adapters.solakon_measurement import SolakonMeasurementAdapter
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.logging import log
 from solarinspector_core.models.legacy import MeterReading
+from solarinspector_core.models.roles import MeasurementRole
 from solarinspector_core.persistence.database import Database
 
 
@@ -44,6 +53,61 @@ class Collector:
     def _create_solakon_reader() -> SolakonOneReader:
         """Create the existing default Solakon reader."""
         return SolakonOneReader()
+
+    def _read_solakon_snapshot(
+        self,
+        config: dict[str, Any],
+    ) -> tuple[Optional[SolakonOneReading], Optional[str]]:
+        """Read Solakon through the normalized adapter and restore legacy data."""
+
+        try:
+            snapshot = SolakonMeasurementAdapter(
+                source_id="solakon_one",
+                name="Solakon ONE",
+                config=config,
+                reader=self.solakon_reader,
+            ).read_snapshot()
+        except Exception as exc:
+            # Preserve the collector's historical catch-all error behavior.
+            return None, str(exc)
+
+        reading = solakon_reading_from_snapshot(snapshot)
+        if reading is not None:
+            return reading, None
+        if snapshot.error:
+            _prefix, separator, detail = snapshot.error.partition(": ")
+            return None, detail if separator else snapshot.error
+        return None, "Keine Solakon-Messwerte verfügbar."
+
+    def _read_shelly_snapshot(
+        self,
+        config: dict[str, Any],
+        *,
+        source_id: str,
+        name: str,
+        role: MeasurementRole,
+    ) -> tuple[Optional[MeterReading], Optional[str]]:
+        """Read Shelly through the normalized adapter and restore legacy data."""
+
+        try:
+            snapshot = ShellyMeasurementAdapter(
+                source_id=source_id,
+                name=name,
+                device=config,
+                role=role,
+                reader=self.reader,
+            ).read_snapshot()
+        except Exception as exc:
+            # Preserve the collector's historical catch-all error behavior.
+            return None, str(exc)
+
+        reading = meter_reading_from_snapshot(snapshot, role)
+        if reading is not None:
+            return reading, None
+        if snapshot.error:
+            _prefix, separator, detail = snapshot.error.partition(": ")
+            return None, detail if separator else snapshot.error
+        return None, "Keine Shelly-Messwerte verfügbar."
 
     @staticmethod
     def _now() -> datetime:
@@ -203,22 +267,29 @@ class Collector:
         solakon_reading: Optional[SolakonOneReading] = None
 
         if one_cfg.get("enabled"):
-            try:
-                solakon_reading = self.solakon_reader.read(one_cfg)
-            except Exception as exc:
-                errors.append(f"Solakon ONE: {exc}")
+            solakon_reading, solakon_error = self._read_solakon_snapshot(one_cfg)
+            if solakon_error:
+                errors.append(f"Solakon ONE: {solakon_error}")
 
         if house_cfg.get("enabled"):
-            try:
-                house_reading = self.reader.read(house_cfg, "house_meter")
-            except Exception as exc:
-                errors.append(f"Hausanschluss: {exc}")
+            house_reading, house_error = self._read_shelly_snapshot(
+                house_cfg,
+                source_id="house_meter",
+                name="Hausanschluss",
+                role=MeasurementRole.GRID_METER,
+            )
+            if house_error:
+                errors.append(f"Hausanschluss: {house_error}")
 
         if solar_cfg.get("enabled"):
-            try:
-                solar_reading = self.reader.read(solar_cfg, "solakon_meter")
-            except Exception as exc:
-                errors.append(f"Shelly AC-Erzeugung: {exc}")
+            solar_reading, solar_error = self._read_shelly_snapshot(
+                solar_cfg,
+                source_id="solakon_meter",
+                name="Shelly AC-Erzeugung",
+                role=MeasurementRole.PLANT_METER,
+            )
+            if solar_error:
+                errors.append(f"Shelly AC-Erzeugung: {solar_error}")
 
         shelly_solar_power = max(0.0, solar_reading.power_w) if solar_reading else None
         solar_power, solar_source = self._select_solar_power(
@@ -242,11 +313,14 @@ class Collector:
         # For the household balance always prefer an AC measurement. The DC PV
         # input is useful as a production source, but must not be added directly
         # to the household grid balance while the battery is charging.
-        balance_generation = shelly_solar_power
+        balance_generation: Optional[float] = shelly_solar_power
         if balance_generation is None and solakon_ac is not None:
             balance_generation = max(0.0, solakon_ac)
         if balance_generation is None:
             balance_generation = solar_power
+
+        house_power: Optional[float]
+        self_consumption: Optional[float]
 
         if grid_power is not None and balance_generation is not None:
             house_power = max(0.0, grid_power + balance_generation)

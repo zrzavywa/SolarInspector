@@ -23,3 +23,4 @@ class MeterReading:
     energy_total_wh: Optional[float] = None
     returned_energy_total_wh: Optional[float] = None
     source: str = ""
+    power_available: bool = True
