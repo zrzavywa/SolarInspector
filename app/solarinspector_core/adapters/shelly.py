@@ -137,41 +137,41 @@ class ShellyReader:
 
     def _read_pro_3em(self, device: dict[str, Any]) -> MeterReading:
         data = self._get_json(device, "/rpc/EM.GetStatus?id=0")
-        phase_power = [
-            _float_or_none(data.get("a_act_power")),
-            _float_or_none(data.get("b_act_power")),
-            _float_or_none(data.get("c_act_power", data.get("c_active_power"))),
-        ]
+        phases = tuple(
+            _parse_pro_phase(data, prefix, phase) for prefix, phase in _PRO_PHASES
+        )
+        phase_power = [phase.power_w for phase in phases]
         power = _float_or_none(data.get("total_act_power"))
         power_available = power is not None or any(
             item is not None for item in phase_power
         )
         if power is None:
             power = sum(item or 0.0 for item in phase_power)
-        voltages = [
-            _float_or_none(data.get("a_voltage")),
-            _float_or_none(data.get("b_voltage")),
-            _float_or_none(data.get("c_voltage")),
+
+        valid_voltages = [
+            phase.voltage_v for phase in phases if phase.voltage_v is not None
         ]
-        valid_voltages = [item for item in voltages if item is not None]
-        currents = [
-            _float_or_none(data.get("a_current")),
-            _float_or_none(data.get("b_current")),
-            _float_or_none(data.get("c_current")),
+        valid_currents = [
+            phase.current_a for phase in phases if phase.current_a is not None
         ]
-        valid_currents = [item for item in currents if item is not None]
-        pfs = [
-            _float_or_none(data.get("a_pf")),
-            _float_or_none(data.get("b_pf")),
-            _float_or_none(data.get("c_pf")),
+        valid_pfs = [
+            phase.power_factor for phase in phases if phase.power_factor is not None
         ]
-        valid_pfs = [item for item in pfs if item is not None]
-        freqs = [
-            _float_or_none(data.get("a_freq")),
-            _float_or_none(data.get("b_freq")),
-            _float_or_none(data.get("c_freq")),
+        valid_freqs = [
+            phase.frequency_hz for phase in phases if phase.frequency_hz is not None
         ]
-        valid_freqs = [item for item in freqs if item is not None]
+
+        device_errors = _string_tuple(data.get("errors"))
+        raw_validity = data.get("is_valid")
+        if isinstance(raw_validity, bool):
+            is_valid = raw_validity
+        elif device_errors or any(phase.is_valid is False for phase in phases):
+            is_valid = False
+        elif any(_phase_has_measurement(phase) for phase in phases):
+            is_valid = True
+        else:
+            is_valid = None
+
         return MeterReading(
             power_w=float(power),
             voltage_v=(sum(valid_voltages) / len(valid_voltages))
@@ -182,6 +182,9 @@ class ShellyReader:
             frequency_hz=(sum(valid_freqs) / len(valid_freqs)) if valid_freqs else None,
             source="EM.GetStatus",
             power_available=power_available,
+            phases=phases,
+            is_valid=is_valid,
+            errors=device_errors,
         )
 
     def _simulate(self, role: str) -> MeterReading:
@@ -391,6 +394,97 @@ def _error_snapshot(
         measurements=(),
         received_at=received_at,
         error=f"{type(error).__name__}: {error}",
+    )
+
+
+_PRO_PHASES: Final[tuple[tuple[str, Phase], ...]] = (
+    ("a", Phase.L1),
+    ("b", Phase.L2),
+    ("c", Phase.L3),
+)
+
+
+def _parse_pro_phase(
+    data: dict[str, Any],
+    prefix: str,
+    phase: Phase,
+) -> MeterPhaseReading:
+    """Parse one Pro 3EM phase and retain device diagnostics."""
+
+    power_key = f"{prefix}_act_power"
+    raw_power = data.get(power_key)
+    if raw_power is None and prefix == "c":
+        raw_power = data.get("c_active_power")
+
+    raw_values: tuple[tuple[str, Any], ...] = (
+        (power_key, raw_power),
+        (f"{prefix}_voltage", data.get(f"{prefix}_voltage")),
+        (f"{prefix}_current", data.get(f"{prefix}_current")),
+        (f"{prefix}_pf", data.get(f"{prefix}_pf")),
+        (f"{prefix}_freq", data.get(f"{prefix}_freq")),
+    )
+    parsed_values = tuple(
+        (field_name, raw_value, _float_or_none(raw_value))
+        for field_name, raw_value in raw_values
+    )
+    invalid_fields = tuple(
+        f"invalid_value:{field_name}"
+        for field_name, raw_value, parsed_value in parsed_values
+        if raw_value is not None and parsed_value is None
+    )
+    parsed_by_name = {
+        field_name: parsed_value
+        for field_name, _raw_value, parsed_value in parsed_values
+    }
+
+    errors = _string_tuple(data.get(f"{prefix}_errors")) + invalid_fields
+    flags = _string_tuple(data.get(f"{prefix}_flags"))
+    has_measurement = any(
+        parsed_value is not None
+        for _field_name, _raw_value, parsed_value in parsed_values
+    )
+    if errors:
+        is_valid = False
+    elif has_measurement:
+        is_valid = True
+    else:
+        is_valid = None
+
+    return MeterPhaseReading(
+        phase=phase.value,
+        power_w=parsed_by_name[power_key],
+        voltage_v=parsed_by_name[f"{prefix}_voltage"],
+        current_a=parsed_by_name[f"{prefix}_current"],
+        power_factor=parsed_by_name[f"{prefix}_pf"],
+        frequency_hz=parsed_by_name[f"{prefix}_freq"],
+        is_valid=is_valid,
+        errors=errors,
+        flags=flags,
+    )
+
+
+def _phase_has_measurement(phase: MeterPhaseReading) -> bool:
+    """Return whether at least one instantaneous phase value is available."""
+
+    return any(
+        value is not None
+        for value in (
+            phase.power_w,
+            phase.voltage_v,
+            phase.current_a,
+            phase.power_factor,
+            phase.frequency_hz,
+        )
+    )
+
+
+def _string_tuple(value: Any) -> tuple[str, ...]:
+    """Normalize a JSON string array while preserving its order."""
+
+    if not isinstance(value, list):
+        return ()
+    return tuple(
+        item.strip() for item in value if isinstance(item, str) and item.strip()
     )
 
 

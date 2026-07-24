@@ -20,9 +20,12 @@ class MeterPhaseReading:
     voltage_v: Optional[float] = None
     current_a: Optional[float] = None
     power_factor: Optional[float] = None
+    frequency_hz: Optional[float] = None
     energy_total_wh: Optional[float] = None
     returned_energy_total_wh: Optional[float] = None
     is_valid: Optional[bool] = None
+    errors: tuple[str, ...] = ()
+    flags: tuple[str, ...] = ()
 
     @property
     def power_available(self) -> bool:
@@ -45,3 +48,5 @@ class MeterReading:
     source: str = ""
     power_available: bool = True
     phases: tuple[MeterPhaseReading, ...] = ()
+    is_valid: Optional[bool] = None
+    errors: tuple[str, ...] = ()
