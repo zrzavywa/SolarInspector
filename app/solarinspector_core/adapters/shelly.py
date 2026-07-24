@@ -9,18 +9,20 @@ from __future__ import annotations
 import math
 import random
 import time
+from dataclasses import replace
 from datetime import datetime
 from typing import Any, Final, Optional
 
 import requests
 from requests.auth import HTTPDigestAuth
 
+from solarinspector_core.config.shelly import Phase, phase_direction_factor
 from solarinspector_core.models.device import (
     DeviceConnectionStatus,
     DeviceSnapshot,
     MeasurementSource,
 )
-from solarinspector_core.models.legacy import MeterReading
+from solarinspector_core.models.legacy import MeterPhaseReading, MeterReading
 from solarinspector_core.models.measurement import Measurement
 from solarinspector_core.models.metrics import Metric
 from solarinspector_core.models.quality import MeasurementQuality
@@ -70,6 +72,19 @@ class ShellyReader:
             raise ValueError(f"Nicht unterstützter Gerätetyp: {device_type}")
 
         reading.power_w *= factor
+        if reading.phases:
+            reading.phases = tuple(
+                replace(
+                    phase,
+                    power_w=(
+                        phase.power_w
+                        * phase_direction_factor(device, Phase(phase.phase))
+                        if phase.power_w is not None
+                        else None
+                    ),
+                )
+                for phase in reading.phases
+            )
         return reading
 
     def _read_pm1(self, device: dict[str, Any]) -> MeterReading:
@@ -91,6 +106,13 @@ class ShellyReader:
         emeters = data.get("emeters") or []
         if not isinstance(emeters, list) or not emeters:
             raise ValueError("Keine emeters-Daten in der Shelly-3EM-Antwort.")
+        phases = tuple(
+            _parse_gen1_phase(
+                phase_index,
+                emeters[phase_index] if phase_index < len(emeters) else {},
+            )
+            for phase_index in range(3)
+        )
         power = data.get("total_power")
         power_available = power is not None or any(
             item.get("power") is not None for item in emeters
@@ -110,6 +132,7 @@ class ShellyReader:
             returned_energy_total_wh=returned_wh,
             source="/status emeters",
             power_available=power_available,
+            phases=phases,
         )
 
     def _read_pro_3em(self, device: dict[str, Any]) -> MeterReading:
@@ -368,6 +391,40 @@ def _error_snapshot(
         measurements=(),
         received_at=received_at,
         error=f"{type(error).__name__}: {error}",
+    )
+
+
+_GEN1_PHASE_NAMES: Final[tuple[Phase, Phase, Phase]] = (
+    Phase.L1,
+    Phase.L2,
+    Phase.L3,
+)
+
+
+def _parse_gen1_phase(
+    phase_index: int,
+    payload: Any,
+) -> MeterPhaseReading:
+    """Parse one positional Gen 1 emeter without affecting aggregate values."""
+
+    if not isinstance(payload, dict):
+        raise ValueError(
+            f"Ungültige emeters-Daten für Phase "
+            f"{_GEN1_PHASE_NAMES[phase_index].upper()}."
+        )
+
+    raw_validity = payload.get("is_valid")
+    is_valid = raw_validity if isinstance(raw_validity, bool) else None
+
+    return MeterPhaseReading(
+        phase=_GEN1_PHASE_NAMES[phase_index],
+        power_w=_float_or_none(payload.get("power")),
+        voltage_v=_float_or_none(payload.get("voltage")),
+        current_a=_float_or_none(payload.get("current")),
+        power_factor=_float_or_none(payload.get("pf")),
+        energy_total_wh=_float_or_none(payload.get("total")),
+        returned_energy_total_wh=_float_or_none(payload.get("total_returned")),
+        is_valid=is_valid,
     )
 
 

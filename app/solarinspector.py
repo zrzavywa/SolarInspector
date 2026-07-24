@@ -55,6 +55,9 @@ from solarinspector_core.config.manager import (
     deep_merge as _deep_merge,
 )
 from solarinspector_core.logging import log
+from solarinspector_core.models.legacy import (
+    MeterPhaseReading as MeterPhaseReading,
+)
 from solarinspector_core.models.legacy import MeterReading as MeterReading
 from solarinspector_core.paths import (
     BASE_DIR as _BASE_DIR,

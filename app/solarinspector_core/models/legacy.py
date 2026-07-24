@@ -11,6 +11,26 @@ from dataclasses import dataclass
 from typing import Optional
 
 
+@dataclass(frozen=True, slots=True)
+class MeterPhaseReading:
+    """Represent one phase reported by a multi-phase Shelly meter."""
+
+    phase: str
+    power_w: Optional[float] = None
+    voltage_v: Optional[float] = None
+    current_a: Optional[float] = None
+    power_factor: Optional[float] = None
+    energy_total_wh: Optional[float] = None
+    returned_energy_total_wh: Optional[float] = None
+    is_valid: Optional[bool] = None
+
+    @property
+    def power_available(self) -> bool:
+        """Return whether the phase contained a numeric active-power value."""
+
+        return self.power_w is not None
+
+
 @dataclass
 class MeterReading:
     """Represent a normalized reading from an existing Shelly device."""
@@ -24,3 +44,4 @@ class MeterReading:
     returned_energy_total_wh: Optional[float] = None
     source: str = ""
     power_available: bool = True
+    phases: tuple[MeterPhaseReading, ...] = ()
