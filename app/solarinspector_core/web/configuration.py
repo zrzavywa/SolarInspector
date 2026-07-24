@@ -82,6 +82,44 @@ def apply_configuration_form(
         grid_updates["password"] = grid_password
     grid_meter.update(grid_updates)
 
+    shrdzm_rest = grid_meter.setdefault("shrdzm_rest", {})
+    shrdzm_rest.update(
+        {
+            "endpoint": form.get(
+                "grid_meter_shrdzm_endpoint",
+                shrdzm_rest.get("endpoint", "/getLastData"),
+            ),
+            "authentication_mode": form.get(
+                "grid_meter_shrdzm_authentication_mode",
+                shrdzm_rest.get(
+                    "authentication_mode",
+                    "query",
+                ),
+            ),
+            "username_parameter": form.get(
+                "grid_meter_shrdzm_username_parameter",
+                shrdzm_rest.get(
+                    "username_parameter",
+                    "user",
+                ),
+            ),
+            "password_parameter": form.get(
+                "grid_meter_shrdzm_password_parameter",
+                shrdzm_rest.get(
+                    "password_parameter",
+                    "password",
+                ),
+            ),
+            "energy_total_unit": form.get(
+                "grid_meter_shrdzm_energy_total_unit",
+                shrdzm_rest.get(
+                    "energy_total_unit",
+                    "auto",
+                ),
+            ),
+        }
+    )
+
     mapping = grid_meter.setdefault("mapping", {})
     for field in (
         "grid_power_w",

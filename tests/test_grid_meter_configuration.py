@@ -10,6 +10,8 @@ from solarinspector_core.config.defaults import DEFAULT_CONFIG
 from solarinspector_core.config.grid_meter import (
     DEFAULT_GRID_METER_CONFIG,
     DEFAULT_GRID_METER_MAPPING,
+    DEFAULT_SHRDZM_REST_CONFIG,
+    DEFAULT_SHRDZM_REST_MAPPING,
 )
 from solarinspector_core.config.manager import ConfigManager
 
@@ -86,7 +88,7 @@ def test_complete_grid_meter_configuration_is_normalized(
     grid_meter = ConfigManager(config_path).get()["grid_meter"]
 
     assert grid_meter["enabled"] is True
-    assert grid_meter["adapter"] == "tasmota_http"
+    assert grid_meter["adapter"] == "unsupported"
     assert grid_meter["source_id"] == "official-grid"
     assert grid_meter["name"] == "Hauptzähler"
     assert grid_meter["host"] == "192.0.2.50"
@@ -176,3 +178,40 @@ def test_example_configuration_contains_disabled_grid_meter() -> None:
     assert example["grid_meter"]["adapter"] == "tasmota_http"
     assert example["grid_meter"]["direction_factor"] == 1
     assert example["grid_meter"]["mapping"] == DEFAULT_GRID_METER_MAPPING
+    assert example["grid_meter"]["shrdzm_rest"] == DEFAULT_SHRDZM_REST_CONFIG
+
+
+def test_shrdzm_configuration_uses_documented_defaults(
+    tmp_path: Path,
+) -> None:
+    """SHRDZM receives its independent REST and OBIS profile."""
+
+    config_path = tmp_path / "config.json"
+    _write_config(
+        config_path,
+        {
+            "grid_meter": {
+                "enabled": True,
+                "adapter": "shrdzm_rest",
+                "shrdzm_rest": {
+                    "endpoint": "getLastData?ignored=true",
+                    "authentication_mode": "QUERY",
+                    "username_parameter": "",
+                    "password_parameter": "",
+                    "energy_total_unit": "invalid",
+                    "future_option": {"preserve": True},
+                },
+            }
+        },
+    )
+
+    grid_meter = ConfigManager(config_path).get()["grid_meter"]
+
+    assert grid_meter["adapter"] == "shrdzm_rest"
+    assert grid_meter["mapping"] == DEFAULT_SHRDZM_REST_MAPPING
+    assert grid_meter["shrdzm_rest"]["endpoint"] == "/getLastData"
+    assert grid_meter["shrdzm_rest"]["authentication_mode"] == "query"
+    assert grid_meter["shrdzm_rest"]["username_parameter"] == "user"
+    assert grid_meter["shrdzm_rest"]["password_parameter"] == "password"
+    assert grid_meter["shrdzm_rest"]["energy_total_unit"] == "auto"
+    assert grid_meter["shrdzm_rest"]["future_option"] == {"preserve": True}

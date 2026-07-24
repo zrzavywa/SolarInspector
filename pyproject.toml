@@ -36,6 +36,8 @@ files = [
     "app/modbus_solakon.py",
     "app/release_installer.py",
     "app/solarinspector_core/adapters/base.py",
+    "app/solarinspector_core/adapters/grid_meter_factory.py",
+    "app/solarinspector_core/config/grid_meter.py",
     "app/solarinspector_core/adapters/compatibility.py",
     "app/solarinspector_core/adapters/shelly.py",
     "app/solarinspector_core/adapters/solakon_measurement.py",

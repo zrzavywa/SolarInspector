@@ -197,9 +197,28 @@ def test_grid_meter_connection_failure_is_controlled() -> None:
     assert status == 502
     assert response == {
         "ok": False,
-        "error": ("Unerwarteter Fehler beim Tasmota-Verbindungstest."),
+        "error": ("Unerwarteter Fehler beim Grid-Meter-Verbindungstest."),
     }
     assert "secret request details" not in repr(response)
+
+
+def test_invalid_grid_adapter_is_rejected_without_network() -> None:
+    """Invalid adapters return a controlled client error."""
+
+    response, status = build_test_device_api_response(
+        deepcopy(DEFAULT_CONFIG),
+        "grid_meter",
+        {
+            "enabled": True,
+            "adapter": "unsupported",
+            "host": "192.0.2.50",
+        },
+        reader=None,
+    )
+
+    assert status == 400
+    assert response["ok"] is False
+    assert "Unbekannter Grid-Meter-Adapter" in response["error"]
 
 
 def test_templates_contain_grid_configuration_and_dashboard_contract() -> None:
@@ -214,6 +233,9 @@ def test_templates_contain_grid_configuration_and_dashboard_contract() -> None:
     assert "Offizieller Netzstromzähler" in configuration
     assert 'name="grid_meter_source_id"' in configuration
     assert 'name="grid_meter_password"' in configuration
+    assert 'value="shrdzm_rest"' in configuration
+    assert 'name="grid_meter_shrdzm_endpoint"' in configuration
+    assert 'name="grid_meter_shrdzm_authentication_mode"' in configuration
     assert 'value=""' in configuration
     assert 'id="test-grid-meter"' in configuration
     assert "/api/test-device/grid_meter" in configuration

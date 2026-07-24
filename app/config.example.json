@@ -47,6 +47,13 @@
       "phase_power_l1_w": "",
       "phase_power_l2_w": "",
       "phase_power_l3_w": ""
+    },
+    "shrdzm_rest": {
+      "endpoint": "/getLastData",
+      "authentication_mode": "query",
+      "username_parameter": "user",
+      "password_parameter": "password",
+      "energy_total_unit": "auto"
     }
   },
   "house_meter": {

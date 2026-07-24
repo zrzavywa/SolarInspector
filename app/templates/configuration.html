@@ -38,12 +38,13 @@
   </section>
 
   {% set grid = config.grid_meter %}
+  {% set shrdzm = grid.shrdzm_rest %}
   <section class="panel device-config grid-meter-config">
     <div class="panel-head">
       <div>
         <p class="eyebrow">ÖFFENTLICHES NETZ</p>
         <h2>Offizieller Netzstromzähler</h2>
-        <p>Lokaler, ausschließlich lesender Zugriff über Hichi/Tasmota HTTP.</p>
+        <p>Lokaler, ausschließlich lesender Zugriff über Tasmota HTTP oder SHRDZM REST.</p>
       </div>
       <label class="switch"><input type="checkbox" name="grid_meter_enabled" {{ "checked" if grid.enabled else "" }}><span></span><b>Aktiv</b></label>
     </div>
@@ -54,6 +55,7 @@
       <label><span>Adaptertyp</span>
         <select name="grid_meter_adapter">
           <option value="tasmota_http" {{ "selected" if grid.adapter == "tasmota_http" else "" }}>Tasmota HTTP / Status 10</option>
+          <option value="shrdzm_rest" {{ "selected" if grid.adapter == "shrdzm_rest" else "" }}>SHRDZM REST / getLastData</option>
         </select>
       </label>
       <label><span>Bezeichnung</span><input name="grid_meter_name" value="{{ grid.name }}"></label>
@@ -77,11 +79,31 @@
         </select>
       </label>
     </div>
+<div class="form-grid shrdzm-rest-config">
+  <label><span>SHRDZM REST-Endpunkt</span><input name="grid_meter_shrdzm_endpoint" value="{{ shrdzm.endpoint }}"><small>Dokumentierter Standard: /getLastData</small></label>
+  <label><span>SHRDZM Authentifizierung</span>
+    <select name="grid_meter_shrdzm_authentication_mode">
+      <option value="query" {{ "selected" if shrdzm.authentication_mode == "query" else "" }}>Query-Parameter</option>
+      <option value="basic" {{ "selected" if shrdzm.authentication_mode == "basic" else "" }}>HTTP Basic</option>
+      <option value="none" {{ "selected" if shrdzm.authentication_mode == "none" else "" }}>Keine</option>
+    </select>
+  </label>
+  <label><span>SHRDZM Benutzer-Parameter</span><input name="grid_meter_shrdzm_username_parameter" value="{{ shrdzm.username_parameter }}"></label>
+  <label><span>SHRDZM Passwort-Parameter</span><input name="grid_meter_shrdzm_password_parameter" value="{{ shrdzm.password_parameter }}"></label>
+  <label><span>SHRDZM Energieeinheit</span>
+    <select name="grid_meter_shrdzm_energy_total_unit">
+      <option value="auto" {{ "selected" if shrdzm.energy_total_unit == "auto" else "" }}>Automatisch aus Antwort</option>
+      <option value="wh" {{ "selected" if shrdzm.energy_total_unit == "wh" else "" }}>Wh</option>
+      <option value="kwh" {{ "selected" if shrdzm.energy_total_unit == "kwh" else "" }}>kWh</option>
+      <option value="mwh" {{ "selected" if shrdzm.energy_total_unit == "mwh" else "" }}>MWh</option>
+    </select>
+  </label>
+</div>
     <div class="panel-head" style="margin-top:24px">
       <div>
         <p class="eyebrow">FELDMAPPING</p>
-        <h2>Tasmota- und OBIS-Felder</h2>
-        <p>Einfache Punktpfade, zum Beispiel <code>StatusSNS.strom.Pges</code>.</p>
+        <h2>Tasmota-Pfade und SHRDZM-OBIS-Felder</h2>
+        <p>Punktpfade oder direkte OBIS-Schlüssel, zum Beispiel <code>StatusSNS.strom.Pges</code> oder <code>1.7.0</code>.</p>
       </div>
     </div>
     <div class="form-grid">
@@ -206,7 +228,7 @@ document.getElementById("test-grid-meter").addEventListener("click", async () =>
   const result = document.getElementById("test-result-grid-meter");
   const values = document.getElementById("grid-meter-test-values");
   result.className = "test-result";
-  result.textContent = "Tasmota-Verbindung und Mapping werden geprüft …";
+  result.textContent = "Grid-Meter-Verbindung und Mapping werden geprüft …";
   values.classList.add("hidden");
   button.disabled = true;
   try {
@@ -236,6 +258,13 @@ document.getElementById("test-grid-meter").addEventListener("click", async () =>
       timeout_seconds: document.querySelector('[name="grid_meter_timeout_seconds"]').value,
       poll_interval_seconds: document.querySelector('[name="grid_meter_poll_interval_seconds"]').value,
       direction_factor: document.querySelector('[name="grid_meter_direction_factor"]').value,
+      shrdzm_rest: {
+        endpoint: document.querySelector('[name="grid_meter_shrdzm_endpoint"]').value,
+        authentication_mode: document.querySelector('[name="grid_meter_shrdzm_authentication_mode"]').value,
+        username_parameter: document.querySelector('[name="grid_meter_shrdzm_username_parameter"]').value,
+        password_parameter: document.querySelector('[name="grid_meter_shrdzm_password_parameter"]').value,
+        energy_total_unit: document.querySelector('[name="grid_meter_shrdzm_energy_total_unit"]').value
+      },
       mapping
     };
     const response = await fetch("/api/test-device/grid_meter", {
@@ -264,7 +293,7 @@ document.getElementById("test-grid-meter").addEventListener("click", async () =>
       values.classList.remove("hidden");
     }
     if (!response.ok || !data.ok) {
-      throw new Error(data.error || "Tasmota-Test fehlgeschlagen");
+      throw new Error(data.error || "Grid-Meter-Test fehlgeschlagen");
     }
     result.className = "test-result success";
     result.textContent = `Erfolgreich: ${diagnostic.name} · ${diagnostic.status}`;
