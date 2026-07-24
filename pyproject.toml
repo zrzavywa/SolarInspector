@@ -37,6 +37,7 @@ files = [
     "app/release_installer.py",
     "app/solarinspector_core/adapters/base.py",
     "app/solarinspector_core/adapters/grid_meter_factory.py",
+    "app/solarinspector_core/adapters/shrdzm_grid_meter.py",
     "app/solarinspector_core/config/grid_meter.py",
     "app/solarinspector_core/adapters/compatibility.py",
     "app/solarinspector_core/adapters/shelly.py",

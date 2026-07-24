@@ -6,6 +6,9 @@ from collections.abc import Mapping
 from typing import Any
 
 from solarinspector_core.adapters.base import MeasurementAdapter
+from solarinspector_core.adapters.shrdzm_grid_meter import (
+    ShrdzmRestGridMeterAdapter,
+)
 from solarinspector_core.adapters.tasmota_grid_meter import (
     TasmotaHttpGridMeterAdapter,
 )
@@ -30,10 +33,7 @@ def create_grid_meter_adapter(
         return TasmotaHttpGridMeterAdapter(config)
 
     if adapter_name == GridMeterAdapter.SHRDZM_REST.value:
-        raise GridMeterAdapterConfigurationError(
-            "SHRDZM REST ist konfiguriert; der eigentliche "
-            "REST-Adapter folgt in Block 07.3."
-        )
+        return ShrdzmRestGridMeterAdapter(config)
 
     supported = ", ".join(adapter.value for adapter in GridMeterAdapter)
     raise GridMeterAdapterConfigurationError(
