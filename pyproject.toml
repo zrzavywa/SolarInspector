@@ -40,11 +40,14 @@ files = [
     "app/solarinspector_core/adapters/shelly.py",
     "app/solarinspector_core/adapters/solakon_measurement.py",
     "app/solarinspector_core/models/device.py",
+    "app/solarinspector_core/models/legacy.py",
     "app/solarinspector_core/models/measurement.py",
     "app/solarinspector_core/models/metrics.py",
     "app/solarinspector_core/models/quality.py",
     "app/solarinspector_core/models/roles.py",
     "app/solarinspector_core/models/units.py",
+    "app/solarinspector_core/persistence/database.py",
+    "app/solarinspector_core/services/collector.py",
 ]
 check_untyped_defs = true
 warn_unused_configs = true

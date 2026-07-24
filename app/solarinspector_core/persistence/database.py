@@ -108,7 +108,10 @@ class Database:
         with self.connect() as conn:
             cursor = conn.execute(sql, [sample[column] for column in columns])
             conn.commit()
-            return int(cursor.lastrowid)
+            row_id = cursor.lastrowid
+            if row_id is None:
+                raise RuntimeError("SQLite did not return an inserted sample ID.")
+            return int(row_id)
 
     def latest(self) -> Optional[dict[str, Any]]:
         with self.connect() as conn:

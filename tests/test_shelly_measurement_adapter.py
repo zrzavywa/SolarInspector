@@ -158,6 +158,31 @@ def test_simulated_grid_values_are_marked_as_calculated() -> None:
     reader.read.assert_called_once_with(device, "house_meter")
 
 
+def test_missing_required_power_returns_degraded_partial_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = {
+        "voltage": 229.8,
+        "pf": 0.97,
+        "freq": 50.0,
+    }
+    reader = ShellyReader()
+    monkeypatch.setattr(reader, "_get_json", lambda _device, _path: payload)
+    adapter = make_adapter(
+        role=MeasurementRole.GRID_METER,
+        reader=reader,
+    )
+
+    snapshot, values = measurement_values(adapter)
+
+    assert snapshot.status is DeviceConnectionStatus.DEGRADED
+    assert snapshot.error == "Required power measurement is missing."
+    assert Metric.GRID_POWER not in values
+    assert values[Metric.GRID_VOLTAGE] == pytest.approx(229.8)
+    assert values[Metric.POWER_FACTOR] == pytest.approx(0.97)
+    assert values[Metric.FREQUENCY] == pytest.approx(50.0)
+
+
 def test_network_error_returns_offline_snapshot() -> None:
     reader = Mock(spec=ShellyReader)
     reader.read.side_effect = requests.Timeout("timed out")

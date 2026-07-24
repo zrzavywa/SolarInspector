@@ -83,6 +83,7 @@ class ShellyReader:
             energy_total_wh=_nested_float(data, "aenergy", "total"),
             returned_energy_total_wh=_nested_float(data, "ret_aenergy", "total"),
             source="PM1.GetStatus",
+            power_available=data.get("apower") is not None,
         )
 
     def _read_3em_gen1(self, device: dict[str, Any]) -> MeterReading:
@@ -91,6 +92,9 @@ class ShellyReader:
         if not isinstance(emeters, list) or not emeters:
             raise ValueError("Keine emeters-Daten in der Shelly-3EM-Antwort.")
         power = data.get("total_power")
+        power_available = power is not None or any(
+            item.get("power") is not None for item in emeters
+        )
         if power is None:
             power = sum(float(item.get("power", 0.0)) for item in emeters)
         voltages = [_float_or_none(item.get("voltage")) for item in emeters]
@@ -105,6 +109,7 @@ class ShellyReader:
             energy_total_wh=total_wh,
             returned_energy_total_wh=returned_wh,
             source="/status emeters",
+            power_available=power_available,
         )
 
     def _read_pro_3em(self, device: dict[str, Any]) -> MeterReading:
@@ -115,6 +120,9 @@ class ShellyReader:
             _float_or_none(data.get("c_act_power", data.get("c_active_power"))),
         ]
         power = _float_or_none(data.get("total_act_power"))
+        power_available = power is not None or any(
+            item is not None for item in phase_power
+        )
         if power is None:
             power = sum(item or 0.0 for item in phase_power)
         voltages = [
@@ -150,6 +158,7 @@ class ShellyReader:
             power_factor=(sum(valid_pfs) / len(valid_pfs)) if valid_pfs else None,
             frequency_hz=(sum(valid_freqs) / len(valid_freqs)) if valid_freqs else None,
             source="EM.GetStatus",
+            power_available=power_available,
         )
 
     def _simulate(self, role: str) -> MeterReading:
@@ -252,11 +261,22 @@ class ShellyMeasurementAdapter:
             for metric, value in _normalized_values(self._role, reading)
             if value is not None
         )
+        status = (
+            DeviceConnectionStatus.ONLINE
+            if reading.power_available
+            else DeviceConnectionStatus.DEGRADED
+        )
+        error = (
+            None
+            if reading.power_available
+            else "Required power measurement is missing."
+        )
         return DeviceSnapshot(
             source_id=self._source.source_id,
-            status=DeviceConnectionStatus.ONLINE,
+            status=status,
             measurements=measurements,
             received_at=received_at,
+            error=error,
         )
 
 
@@ -273,7 +293,12 @@ def _normalized_values(
     """Map available legacy fields to role-specific normalized metrics."""
 
     power_metric, _legacy_role = _ROLE_CONFIGURATION[role]
-    values: list[tuple[Metric, Optional[float]]] = [(power_metric, reading.power_w)]
+    values: list[tuple[Metric, Optional[float]]] = [
+        (
+            power_metric,
+            reading.power_w if reading.power_available else None,
+        )
+    ]
 
     if role is MeasurementRole.GRID_METER:
         values.extend(

@@ -313,11 +313,14 @@ class Collector:
         # For the household balance always prefer an AC measurement. The DC PV
         # input is useful as a production source, but must not be added directly
         # to the household grid balance while the battery is charging.
-        balance_generation = shelly_solar_power
+        balance_generation: Optional[float] = shelly_solar_power
         if balance_generation is None and solakon_ac is not None:
             balance_generation = max(0.0, solakon_ac)
         if balance_generation is None:
             balance_generation = solar_power
+
+        house_power: Optional[float]
+        self_consumption: Optional[float]
 
         if grid_power is not None and balance_generation is not None:
             house_power = max(0.0, grid_power + balance_generation)

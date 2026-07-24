@@ -118,6 +118,7 @@ def test_pm_mini_gen3_missing_power_defaults_to_zero(
     )
 
     assert reading.power_w == 0.0
+    assert reading.power_available is False
     assert reading.voltage_v == pytest.approx(229.8)
     assert reading.current_a is None
     assert reading.energy_total_wh is None
