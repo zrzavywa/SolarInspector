@@ -12,9 +12,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Final, Optional
 
+from solarinspector_core.adapters.base import MeasurementAdapter
 from solarinspector_core.adapters.compatibility import (
     meter_reading_from_snapshot,
     solakon_reading_from_snapshot,
+)
+from solarinspector_core.adapters.grid_meter_factory import (
+    GridMeterAdapterConfigurationError,
+    create_grid_meter_adapter,
 )
 from solarinspector_core.adapters.shelly import (
     ShellyMeasurementAdapter,
@@ -22,9 +27,6 @@ from solarinspector_core.adapters.shelly import (
 )
 from solarinspector_core.adapters.solakon import SolakonOneReader, SolakonOneReading
 from solarinspector_core.adapters.solakon_measurement import SolakonMeasurementAdapter
-from solarinspector_core.adapters.tasmota_grid_meter import (
-    TasmotaHttpGridMeterAdapter,
-)
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.logging import log
 from solarinspector_core.models.device import DeviceSnapshot
@@ -76,10 +78,10 @@ class Collector:
     @staticmethod
     def _create_grid_meter_adapter(
         config: dict[str, Any],
-    ) -> TasmotaHttpGridMeterAdapter:
-        """Create the official grid-meter adapter on demand."""
+    ) -> MeasurementAdapter:
+        """Create the selected official adapter."""
 
-        return TasmotaHttpGridMeterAdapter(config)
+        return create_grid_meter_adapter(config)
 
     def _read_solakon_snapshot(
         self,
@@ -130,9 +132,13 @@ class Collector:
 
         try:
             snapshot = self._create_grid_meter_adapter(config).read_snapshot()
+        except GridMeterAdapterConfigurationError as exc:
+            self._last_grid_meter_snapshot = None
+            self._last_grid_meter_poll_monotonic = now_monotonic
+            return None, str(exc)
         except Exception:
-            # Do not expose arbitrary exception text because it may
-            # contain request details or configured credentials.
+            # Do not expose arbitrary exception text because it
+            # may contain request details or credentials.
             self._last_grid_meter_snapshot = None
             self._last_grid_meter_poll_monotonic = now_monotonic
             return (

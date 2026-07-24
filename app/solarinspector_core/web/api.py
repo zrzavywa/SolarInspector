@@ -11,8 +11,9 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any, Protocol
 
-from solarinspector_core.adapters.tasmota_grid_meter import (
-    TasmotaHttpGridMeterAdapter,
+from solarinspector_core.adapters.grid_meter_factory import (
+    GridMeterAdapterConfigurationError,
+    create_grid_meter_adapter,
 )
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.models.device import (
@@ -526,7 +527,7 @@ def build_test_device_api_response(
     role: str,
     payload: dict[str, Any],
     reader: Any,
-    grid_meter_adapter_factory: Any = (TasmotaHttpGridMeterAdapter),
+    grid_meter_adapter_factory: Any = create_grid_meter_adapter,
 ) -> tuple[dict[str, Any], int | None]:
     """Build the device-test payload without persistence."""
 
@@ -648,7 +649,7 @@ def _build_test_grid_meter_api_response(
     *,
     adapter_factory: Any,
 ) -> tuple[dict[str, Any], int | None]:
-    """Test Tasmota and return non-sensitive mapping diagnostics."""
+    """Test the selected adapter with safe diagnostics."""
 
     grid_config = root_config.setdefault(
         "grid_meter",
@@ -689,10 +690,17 @@ def _build_test_grid_meter_api_response(
             "poll_interval_seconds",
             5,
         ),
-        "username": payload.get("username", ""),
+        "username": payload.get(
+            "username",
+            grid_config.get("username", ""),
+        ),
         "direction_factor": payload.get(
             "direction_factor",
             1,
+        ),
+        "shrdzm_rest": payload.get(
+            "shrdzm_rest",
+            grid_config.get("shrdzm_rest", {}),
         ),
         "mapping": payload.get(
             "mapping",
@@ -715,10 +723,15 @@ def _build_test_grid_meter_api_response(
 
     try:
         snapshot = adapter_factory(config).read_snapshot()
+    except GridMeterAdapterConfigurationError as exc:
+        return {
+            "ok": False,
+            "error": str(exc),
+        }, 400
     except Exception:
         return {
             "ok": False,
-            "error": ("Unerwarteter Fehler beim Tasmota-Verbindungstest."),
+            "error": ("Unerwarteter Fehler beim Grid-Meter-Verbindungstest."),
         }, 502
 
     diagnostic = _grid_meter_diagnostic(
@@ -793,6 +806,8 @@ def _grid_meter_diagnostic(
         "source_id": snapshot.source_id,
         "name": config.get("name"),
         "adapter": config.get("adapter"),
+        "transport": metadata.get("transport"),
+        "endpoint": metadata.get("rest_endpoint"),
         "status": snapshot.status.value,
         "error": snapshot.error,
         "received_at": snapshot.received_at.isoformat(),
