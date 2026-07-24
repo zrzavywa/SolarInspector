@@ -287,7 +287,7 @@ def test_missing_optional_mapped_value_degrades_but_keeps_power() -> None:
 
 
 def test_invalid_power_is_not_converted_to_zero() -> None:
-    """A malformed required value produces no invented measurement."""
+    """Malformed power is absent while valid counters remain available."""
 
     session = FakeSession(
         FakeResponse(
@@ -308,9 +308,14 @@ def test_invalid_power_is_not_converted_to_zero() -> None:
     )
 
     snapshot = adapter.read_snapshot()
+    values = {measurement.metric: measurement for measurement in snapshot.measurements}
 
     assert snapshot.status is DeviceConnectionStatus.DEGRADED
-    assert snapshot.measurements == ()
+    assert Metric.GRID_POWER not in values
+    assert Metric.GRID_IMPORT_POWER not in values
+    assert Metric.GRID_EXPORT_POWER not in values
+    assert values[Metric.GRID_IMPORT_TOTAL].value == 10_000.0
+    assert values[Metric.GRID_EXPORT_TOTAL].value == 2_000.0
     assert "not numeric for grid power" in (snapshot.error or "")
     assert "Required grid power measurement is missing" in (snapshot.error or "")
 

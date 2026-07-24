@@ -10,6 +10,7 @@ from typing import Any, Final, Protocol, cast
 
 import requests
 
+from solarinspector_core.config.shelly import normalize_direction_factor
 from solarinspector_core.models.device import (
     DeviceConnectionStatus,
     DeviceSnapshot,
@@ -67,12 +68,16 @@ class TasmotaHttpStatusError(TasmotaResponseError):
 
 @dataclass(frozen=True, slots=True)
 class TasmotaGridMeterReading:
-    """Contain parsed raw core values before Phase-06 normalization."""
+    """Contain parsed raw values before canonical normalization."""
 
     grid_power_w: float | None
+    grid_import_power_w: float | None
+    grid_export_power_w: float | None
     grid_import_total_kwh: float | None
     grid_export_total_kwh: float | None
     raw_grid_power: object | None
+    raw_grid_import_power: object | None
+    raw_grid_export_power: object | None
     raw_grid_import_total: object | None
     raw_grid_export_total: object | None
     device_time: str | None
@@ -82,6 +87,8 @@ class TasmotaGridMeterReading:
 
 _CORE_MAPPING: Final[tuple[tuple[str, str], ...]] = (
     ("grid_power_w", "grid power"),
+    ("grid_import_power_w", "grid import power"),
+    ("grid_export_power_w", "grid export power"),
     ("grid_import_total_kwh", "grid import total"),
     ("grid_export_total_kwh", "grid export total"),
 )
@@ -149,24 +156,34 @@ class TasmotaHttpGridMeterAdapter:
             normalized_mapping,
         )
 
-        measurements: tuple[Measurement, ...] = ()
-        if reading.grid_power_w is not None:
-            measurements = (
-                Measurement(
-                    metric=Metric.GRID_POWER,
-                    value=reading.grid_power_w,
-                    unit=unit_for_metric(Metric.GRID_POWER),
-                    source_id=self._source.source_id,
-                    role=MeasurementRole.GRID_METER,
-                    measured_at=received_at,
-                    received_at=received_at,
-                    quality=MeasurementQuality.REPORTED,
-                    raw_value=reading.raw_grid_power,
-                ),
+        (
+            normalized_values,
+            normalization_diagnostics,
+        ) = _normalized_measurement_values(
+            reading,
+            direction_factor=normalize_direction_factor(
+                self._config.get("direction_factor", 1)
+            ),
+        )
+        measurements = tuple(
+            _measurement(
+                metric=metric,
+                value=value,
+                raw_value=raw_value,
+                source_id=self._source.source_id,
+                received_at=received_at,
+                quality=quality,
             )
+            for metric, value, quality, raw_value in normalized_values
+        )
 
-        diagnostics = list(reading.diagnostics)
-        if reading.grid_power_w is None:
+        diagnostics = [
+            *reading.diagnostics,
+            *normalization_diagnostics,
+        ]
+        if not any(
+            measurement.metric is Metric.GRID_POWER for measurement in measurements
+        ):
             diagnostics.append("Required grid power measurement is missing.")
 
         status = (
@@ -230,6 +247,171 @@ class TasmotaHttpGridMeterAdapter:
         return {str(key): value for key, value in payload.items()}
 
 
+_NormalizedMeasurementValue = tuple[
+    Metric,
+    float,
+    MeasurementQuality,
+    object | None,
+]
+
+
+def _normalized_measurement_values(
+    reading: TasmotaGridMeterReading,
+    *,
+    direction_factor: int,
+) -> tuple[
+    tuple[_NormalizedMeasurementValue, ...],
+    tuple[str, ...],
+]:
+    """Convert raw Tasmota values to canonical metrics and units."""
+
+    values: list[_NormalizedMeasurementValue] = []
+    diagnostics: list[str] = []
+
+    signed_grid_power_w = (
+        reading.grid_power_w * direction_factor
+        if reading.grid_power_w is not None
+        else None
+    )
+    if signed_grid_power_w is not None:
+        values.append(
+            (
+                Metric.GRID_POWER,
+                signed_grid_power_w,
+                MeasurementQuality.REPORTED,
+                reading.raw_grid_power,
+            )
+        )
+
+    import_power_w, import_diagnostic = _instant_power_value(
+        reported_value=reading.grid_import_power_w,
+        calculated_value=(
+            max(0.0, signed_grid_power_w) if signed_grid_power_w is not None else None
+        ),
+        label="grid import power",
+    )
+    if import_diagnostic:
+        diagnostics.append(import_diagnostic)
+    if import_power_w is not None:
+        values.append(
+            (
+                Metric.GRID_IMPORT_POWER,
+                import_power_w[0],
+                import_power_w[1],
+                (
+                    reading.raw_grid_import_power
+                    if import_power_w[1] is MeasurementQuality.REPORTED
+                    else reading.raw_grid_power
+                ),
+            )
+        )
+
+    export_power_w, export_diagnostic = _instant_power_value(
+        reported_value=reading.grid_export_power_w,
+        calculated_value=(
+            max(0.0, -signed_grid_power_w) if signed_grid_power_w is not None else None
+        ),
+        label="grid export power",
+    )
+    if export_diagnostic:
+        diagnostics.append(export_diagnostic)
+    if export_power_w is not None:
+        values.append(
+            (
+                Metric.GRID_EXPORT_POWER,
+                export_power_w[0],
+                export_power_w[1],
+                (
+                    reading.raw_grid_export_power
+                    if export_power_w[1] is MeasurementQuality.REPORTED
+                    else reading.raw_grid_power
+                ),
+            )
+        )
+
+    import_total_wh = _kilowatt_hours_to_watt_hours(reading.grid_import_total_kwh)
+    if import_total_wh is not None:
+        values.append(
+            (
+                Metric.GRID_IMPORT_TOTAL,
+                import_total_wh,
+                MeasurementQuality.REPORTED,
+                reading.raw_grid_import_total,
+            )
+        )
+
+    export_total_wh = _kilowatt_hours_to_watt_hours(reading.grid_export_total_kwh)
+    if export_total_wh is not None:
+        values.append(
+            (
+                Metric.GRID_EXPORT_TOTAL,
+                export_total_wh,
+                MeasurementQuality.REPORTED,
+                reading.raw_grid_export_total,
+            )
+        )
+
+    return tuple(values), tuple(diagnostics)
+
+
+def _instant_power_value(
+    *,
+    reported_value: float | None,
+    calculated_value: float | None,
+    label: str,
+) -> tuple[
+    tuple[float, MeasurementQuality] | None,
+    str | None,
+]:
+    """Prefer a non-negative reported magnitude over a calculated value."""
+
+    if reported_value is not None:
+        if reported_value < 0.0:
+            return None, f"Mapped {label} must not be negative."
+        return (
+            reported_value,
+            MeasurementQuality.REPORTED,
+        ), None
+    if calculated_value is None:
+        return None, None
+    return (
+        calculated_value,
+        MeasurementQuality.CALCULATED,
+    ), None
+
+
+def _measurement(
+    *,
+    metric: Metric,
+    value: float,
+    raw_value: object | None,
+    source_id: str,
+    received_at: datetime,
+    quality: MeasurementQuality,
+) -> Measurement:
+    """Build one normalized grid-meter measurement."""
+
+    return Measurement(
+        metric=metric,
+        value=value,
+        unit=unit_for_metric(metric),
+        source_id=source_id,
+        role=MeasurementRole.GRID_METER,
+        measured_at=received_at,
+        received_at=received_at,
+        quality=quality,
+        raw_value=raw_value,
+    )
+
+
+def _kilowatt_hours_to_watt_hours(
+    value: float | None,
+) -> float | None:
+    """Convert a Tasmota kWh counter to canonical watt-hours."""
+
+    return None if value is None else value * 1000.0
+
+
 def parse_tasmota_grid_meter_payload(
     payload: Mapping[str, Any],
     mapping: Mapping[str, Any],
@@ -280,9 +462,13 @@ def parse_tasmota_grid_meter_payload(
 
     return TasmotaGridMeterReading(
         grid_power_w=parsed["grid_power_w"],
+        grid_import_power_w=parsed["grid_import_power_w"],
+        grid_export_power_w=parsed["grid_export_power_w"],
         grid_import_total_kwh=parsed["grid_import_total_kwh"],
         grid_export_total_kwh=parsed["grid_export_total_kwh"],
         raw_grid_power=raw_values["grid_power_w"],
+        raw_grid_import_power=raw_values["grid_import_power_w"],
+        raw_grid_export_power=raw_values["grid_export_power_w"],
         raw_grid_import_total=raw_values["grid_import_total_kwh"],
         raw_grid_export_total=raw_values["grid_export_total_kwh"],
         device_time=device_time,
