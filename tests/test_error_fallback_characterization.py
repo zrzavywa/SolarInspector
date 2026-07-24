@@ -9,6 +9,7 @@ import github_updater as gu
 import pytest
 import requests
 import solarinspector as si
+import solarinspector_core.services.periods as periods
 import update_status as us
 from github_updater import (
     ReleaseInfo,
@@ -163,7 +164,7 @@ def test_parse_anchor_falls_back_to_current_local_date(
 ) -> None:
     """Missing and invalid date parameters resolve to today's date."""
 
-    monkeypatch.setattr(si, "datetime", FrozenDateTime)
+    monkeypatch.setattr(periods, "datetime", FrozenDateTime)
 
     assert si.parse_anchor(value) == datetime(2026, 7, 23).date()
 
