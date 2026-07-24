@@ -42,6 +42,7 @@ class _GridMeasurementSelection:
     grid_import_power_w: Optional[float]
     grid_export_power_w: Optional[float]
     source_label: str
+    source_id: Optional[str]
 
 
 class Collector:
@@ -359,7 +360,7 @@ class Collector:
             official_snapshot,
             Metric.GRID_POWER,
         )
-        if official_power is not None:
+        if official_power is not None and official_snapshot is not None:
             import_power = _snapshot_measurement_value(
                 official_snapshot,
                 Metric.GRID_IMPORT_POWER,
@@ -381,6 +382,7 @@ class Collector:
                     else max(0.0, -official_power)
                 ),
                 source_label=official_name,
+                source_id=official_snapshot.source_id,
             )
 
         fallback_power, fallback_label = Collector._select_grid_power(
@@ -403,6 +405,12 @@ class Collector:
                 max(0.0, -fallback_power) if fallback_power is not None else None
             ),
             source_label=fallback_label,
+            source_id=_legacy_grid_source_id(
+                fallback_source=fallback_source,
+                fallback_power=fallback_power,
+                house_reading=house_reading,
+                solakon=solakon,
+            ),
         )
 
     def collect_once(self) -> dict[str, Any]:
@@ -492,6 +500,11 @@ class Collector:
         )
         grid_power = grid_selection.grid_power_w
         grid_source = grid_selection.source_label
+        grid_meter_persistence_snapshot = _grid_meter_snapshot_for_persistence(
+            grid_meter_snapshot,
+            config=grid_cfg,
+            active_source_id=grid_selection.source_id,
+        )
 
         solakon_ac = solakon_reading.active_power_w if solakon_reading else None
         solakon_pv = solakon_reading.total_pv_power_w if solakon_reading else None
@@ -653,7 +666,13 @@ class Collector:
         sample_id = self._insert_sample(
             sample,
             phase_snapshot=phase_snapshot,
-            measurement_role=str(house_cfg.get("measurement_role", "house_total")),
+            grid_meter_snapshot=(grid_meter_persistence_snapshot),
+            measurement_role=str(
+                house_cfg.get(
+                    "measurement_role",
+                    "house_total",
+                )
+            ),
         )
         sample["id"] = sample_id
 
@@ -674,9 +693,25 @@ class Collector:
         sample: dict[str, Any],
         *,
         phase_snapshot: DeviceSnapshot | None,
+        grid_meter_snapshot: DeviceSnapshot | None,
         measurement_role: str,
     ) -> int:
-        """Persist phases when supported while retaining test-double support."""
+        """Persist normalized details with test-double support."""
+
+        insert_with_snapshots = getattr(
+            self.database,
+            "insert_sample_with_snapshots",
+            None,
+        )
+        if callable(insert_with_snapshots):
+            return int(
+                insert_with_snapshots(
+                    sample,
+                    phase_snapshot=phase_snapshot,
+                    grid_meter_snapshot=grid_meter_snapshot,
+                    measurement_role=measurement_role,
+                )
+            )
 
         insert_with_phases = getattr(
             self.database,
@@ -733,6 +768,68 @@ def _snapshot_measurement_value(
         ):
             return float(measurement.value)
     return None
+
+
+def _legacy_grid_source_id(
+    *,
+    fallback_source: str,
+    fallback_power: Optional[float],
+    house_reading: Optional[MeterReading],
+    solakon: Optional[SolakonOneReading],
+) -> Optional[str]:
+    """Identify the compatible fallback source actually used."""
+
+    if fallback_power is None:
+        return None
+    if fallback_source == "house_meter":
+        return "house_meter"
+    if fallback_source == "solakon_one":
+        return "solakon_one"
+    if house_reading is not None:
+        return "house_meter"
+    if solakon is not None and solakon.meter_power_w is not None:
+        return "solakon_one"
+    return None
+
+
+def _grid_meter_snapshot_for_persistence(
+    snapshot: Optional[DeviceSnapshot],
+    *,
+    config: dict[str, Any],
+    active_source_id: Optional[str],
+) -> Optional[DeviceSnapshot]:
+    """Add non-sensitive identity and selection metadata."""
+
+    if snapshot is None:
+        return None
+
+    metadata = dict(snapshot.metadata)
+    metadata["source_name"] = (
+        str(config.get("name") or "Offizieller Netzstromzähler").strip()
+        or "Offizieller Netzstromzähler"
+    )
+    metadata["adapter"] = (
+        str(config.get("adapter") or "tasmota_http").strip() or "tasmota_http"
+    )
+    if active_source_id is not None:
+        metadata["active_source_id"] = active_source_id
+
+    return DeviceSnapshot(
+        source_id=snapshot.source_id,
+        status=snapshot.status,
+        measurements=snapshot.measurements,
+        received_at=snapshot.received_at,
+        error=snapshot.error,
+        metadata=tuple(
+            sorted(
+                (
+                    str(key),
+                    str(value),
+                )
+                for key, value in metadata.items()
+            )
+        ),
+    )
 
 
 _MULTI_PHASE_SHELLY_TYPES: Final[frozenset[str]] = frozenset(

@@ -155,9 +155,24 @@ def build_live_api_response(
             int(now_epoch - float(latest["ts_epoch"])),
         )
 
+    grid_meter = _latest_grid_meter_api_row(
+        database,
+        now_epoch=now_epoch,
+    )
+    active_source_id = (
+        grid_meter.get("active_source_id")
+        if grid_meter is not None
+        else _legacy_active_grid_source_id(latest)
+    )
+
     return {
         "latest": latest,
         "collector": status,
+        "grid_meter": grid_meter,
+        "active_sources": {
+            "grid_power": active_source_id,
+            "grid_power_label": (latest.get("grid_source") if latest else None),
+        },
     }
 
 
@@ -181,6 +196,96 @@ def build_system_version_api_response(
         "version": installed_version,
         "config_schema": 5,
     }
+
+
+def _latest_grid_meter_api_row(
+    database: DatabaseApi,
+    *,
+    now_epoch: float,
+) -> dict[str, Any] | None:
+    """Read and serialize an optional persisted grid-meter row."""
+
+    latest_method = getattr(
+        database,
+        "latest_grid_meter_sample",
+        None,
+    )
+    if not callable(latest_method):
+        return None
+    row = latest_method()
+    return _grid_meter_api_row(
+        row,
+        now_epoch=now_epoch,
+    )
+
+
+def _grid_meter_api_row(
+    row: dict[str, Any] | None,
+    *,
+    now_epoch: float,
+) -> dict[str, Any] | None:
+    """Convert one persisted grid-meter row to public JSON."""
+
+    if row is None:
+        return None
+
+    metadata: dict[str, Any] = {}
+    raw_metadata = row.get("metadata_json")
+    if isinstance(raw_metadata, str) and raw_metadata:
+        try:
+            parsed = json.loads(raw_metadata)
+            if isinstance(parsed, dict):
+                metadata = parsed
+        except json.JSONDecodeError:
+            metadata = {}
+
+    last_update = row.get("received_at")
+    age_seconds: int | None = None
+    if isinstance(last_update, str):
+        try:
+            age_seconds = max(
+                0,
+                int(now_epoch - datetime.fromisoformat(last_update).timestamp()),
+            )
+        except ValueError:
+            age_seconds = None
+
+    return {
+        "sample_id": row.get("sample_id"),
+        "source_id": row.get("source_id"),
+        "name": row.get("source_name"),
+        "adapter": row.get("adapter"),
+        "status": row.get("device_status"),
+        "quality": row.get("quality"),
+        "last_update": last_update,
+        "measured_at": row.get("measured_at"),
+        "age_seconds": age_seconds,
+        "power_w": _optional_float(row.get("grid_power_w")),
+        "import_power_w": _optional_float(row.get("grid_import_power_w")),
+        "export_power_w": _optional_float(row.get("grid_export_power_w")),
+        "import_total_kwh": _optional_float(row.get("grid_import_total_kwh")),
+        "export_total_kwh": _optional_float(row.get("grid_export_total_kwh")),
+        "active_source_id": row.get("active_source_id"),
+        "error": row.get("error_text"),
+        "metadata": metadata,
+    }
+
+
+def _legacy_active_grid_source_id(
+    latest: dict[str, Any] | None,
+) -> str | None:
+    """Map established source labels to stable identifiers."""
+
+    if not latest:
+        return None
+    label = latest.get("grid_source")
+    if not isinstance(label, str):
+        return None
+    if label.startswith("Separate Hausmessung"):
+        return "house_meter"
+    if label.startswith("Solakon ONE Meter"):
+        return "solakon_one"
+    return None
 
 
 def build_dashboard_api_response(

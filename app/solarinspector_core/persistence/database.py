@@ -154,12 +154,48 @@ class Database:
                 ON phase_samples(source_id, sample_id)
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS grid_meter_samples (
+                    sample_id INTEGER PRIMARY KEY,
+                    source_id TEXT NOT NULL,
+                    source_name TEXT NOT NULL,
+                    adapter TEXT NOT NULL,
+                    active_source_id TEXT,
+                    device_status TEXT NOT NULL,
+                    quality TEXT,
+                    error_text TEXT,
+                    measured_at TEXT NOT NULL,
+                    received_at TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL DEFAULT '{}',
+                    grid_power_w REAL,
+                    grid_power_quality TEXT,
+                    grid_import_power_w REAL,
+                    grid_import_power_quality TEXT,
+                    grid_export_power_w REAL,
+                    grid_export_power_quality TEXT,
+                    grid_import_total_kwh REAL,
+                    grid_import_total_quality TEXT,
+                    grid_export_total_kwh REAL,
+                    grid_export_total_quality TEXT,
+                    FOREIGN KEY (sample_id) REFERENCES samples(id)
+                        ON DELETE CASCADE
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                    idx_grid_meter_samples_source_sample
+                ON grid_meter_samples(source_id, sample_id)
+                """
+            )
             conn.commit()
 
     def insert_sample(self, sample: dict[str, Any]) -> int:
         """Insert one compatible aggregate sample."""
 
-        return self.insert_sample_with_phase_snapshot(sample)
+        return self.insert_sample_with_snapshots(sample)
 
     def insert_sample_with_phase_snapshot(
         self,
@@ -168,7 +204,23 @@ class Database:
         *,
         measurement_role: str = "house_total",
     ) -> int:
-        """Atomically persist an aggregate sample and optional phase snapshot."""
+        """Retain the Phase-05 persistence interface."""
+
+        return self.insert_sample_with_snapshots(
+            sample,
+            phase_snapshot=phase_snapshot,
+            measurement_role=measurement_role,
+        )
+
+    def insert_sample_with_snapshots(
+        self,
+        sample: dict[str, Any],
+        phase_snapshot: DeviceSnapshot | None = None,
+        grid_meter_snapshot: DeviceSnapshot | None = None,
+        *,
+        measurement_role: str = "house_total",
+    ) -> int:
+        """Atomically persist aggregate and normalized details."""
 
         columns = list(sample.keys())
         placeholders = ",".join("?" for _ in columns)
@@ -190,6 +242,12 @@ class Database:
                         sample_id=sample_id,
                         snapshot=phase_snapshot,
                         measurement_role=measurement_role,
+                    )
+                if grid_meter_snapshot is not None:
+                    self._insert_grid_meter_snapshot(
+                        conn,
+                        sample_id=sample_id,
+                        snapshot=grid_meter_snapshot,
                     )
                 conn.commit()
                 return sample_id
@@ -219,6 +277,27 @@ class Database:
             [row[column] for column in columns],
         )
 
+    def _insert_grid_meter_snapshot(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        sample_id: int,
+        snapshot: DeviceSnapshot,
+    ) -> None:
+        """Insert one normalized official grid-meter snapshot."""
+
+        row = _grid_meter_snapshot_row(
+            sample_id=sample_id,
+            snapshot=snapshot,
+        )
+        columns = list(row.keys())
+        placeholders = ",".join("?" for _ in columns)
+        conn.execute(
+            "INSERT INTO grid_meter_samples "
+            f"({','.join(columns)}) VALUES ({placeholders})",
+            [row[column] for column in columns],
+        )
+
     def latest(self) -> Optional[dict[str, Any]]:
         with self.connect() as conn:
             row = conn.execute(
@@ -239,6 +318,30 @@ class Database:
                 (start_epoch, end_epoch),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def latest_grid_meter_sample(
+        self,
+        source_id: str = "grid_meter_primary",
+    ) -> Optional[dict[str, Any]]:
+        """Return the newest official grid-meter detail row."""
+
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT grid_meter_samples.*,
+                       samples.ts_epoch,
+                       samples.ts_local,
+                       samples.grid_source
+                FROM grid_meter_samples
+                JOIN samples
+                  ON samples.id = grid_meter_samples.sample_id
+                WHERE grid_meter_samples.source_id = ?
+                ORDER BY samples.ts_epoch DESC
+                LIMIT 1
+                """,
+                (source_id,),
+            ).fetchone()
+        return dict(row) if row else None
 
     def latest_phase_sample(
         self,
@@ -300,6 +403,7 @@ class Database:
 
     def delete_all(self) -> None:
         with self.connect() as conn:
+            conn.execute("DELETE FROM grid_meter_samples")
             conn.execute("DELETE FROM phase_samples")
             conn.execute("DELETE FROM samples")
             conn.commit()
@@ -338,6 +442,119 @@ _QUALITY_PRIORITY: Final[dict[MeasurementQuality, int]] = {
     MeasurementQuality.REPORTED: 2,
     MeasurementQuality.MEASURED: 1,
 }
+
+
+_GRID_METER_METRICS: Final[
+    tuple[
+        tuple[
+            Metric,
+            str,
+            str,
+            float,
+        ],
+        ...,
+    ]
+] = (
+    (
+        Metric.GRID_POWER,
+        "grid_power_w",
+        "grid_power_quality",
+        1.0,
+    ),
+    (
+        Metric.GRID_IMPORT_POWER,
+        "grid_import_power_w",
+        "grid_import_power_quality",
+        1.0,
+    ),
+    (
+        Metric.GRID_EXPORT_POWER,
+        "grid_export_power_w",
+        "grid_export_power_quality",
+        1.0,
+    ),
+    (
+        Metric.GRID_IMPORT_TOTAL,
+        "grid_import_total_kwh",
+        "grid_import_total_quality",
+        1000.0,
+    ),
+    (
+        Metric.GRID_EXPORT_TOTAL,
+        "grid_export_total_kwh",
+        "grid_export_total_quality",
+        1000.0,
+    ),
+)
+
+
+def _grid_meter_snapshot_row(
+    *,
+    sample_id: int,
+    snapshot: DeviceSnapshot,
+) -> dict[str, Any]:
+    """Flatten one normalized official grid-meter snapshot."""
+
+    metadata = dict(snapshot.metadata)
+    measurements = {
+        measurement.metric: measurement
+        for measurement in snapshot.measurements
+        if measurement.role is MeasurementRole.GRID_METER
+    }
+    measured_at = (
+        min(measurement.measured_at for measurement in measurements.values())
+        if measurements
+        else snapshot.received_at
+    )
+    power_measurement = measurements.get(Metric.GRID_POWER)
+    qualities = [measurement.quality for measurement in measurements.values()]
+    overall_quality = (
+        power_measurement.quality
+        if power_measurement is not None
+        else (
+            max(
+                qualities,
+                key=lambda quality: _QUALITY_PRIORITY[quality],
+            )
+            if qualities
+            else None
+        )
+    )
+
+    row: dict[str, Any] = {
+        "sample_id": sample_id,
+        "source_id": snapshot.source_id,
+        "source_name": (metadata.get("source_name") or "Offizieller Netzstromzähler"),
+        "adapter": (metadata.get("adapter") or "tasmota_http"),
+        "active_source_id": metadata.get("active_source_id"),
+        "device_status": snapshot.status.value,
+        "quality": (overall_quality.value if overall_quality is not None else None),
+        "error_text": snapshot.error,
+        "measured_at": measured_at.isoformat(),
+        "received_at": snapshot.received_at.isoformat(),
+        "metadata_json": json.dumps(
+            metadata,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+    }
+
+    for (
+        metric,
+        value_column,
+        quality_column,
+        divisor,
+    ) in _GRID_METER_METRICS:
+        measurement = measurements.get(metric)
+        row[value_column] = (
+            float(measurement.value) / divisor if measurement is not None else None
+        )
+        row[quality_column] = (
+            measurement.quality.value if measurement is not None else None
+        )
+
+    return row
 
 
 def _phase_snapshot_row(
