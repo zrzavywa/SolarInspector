@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import threading
 import time
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Final, Optional
 
@@ -21,12 +22,26 @@ from solarinspector_core.adapters.shelly import (
 )
 from solarinspector_core.adapters.solakon import SolakonOneReader, SolakonOneReading
 from solarinspector_core.adapters.solakon_measurement import SolakonMeasurementAdapter
+from solarinspector_core.adapters.tasmota_grid_meter import (
+    TasmotaHttpGridMeterAdapter,
+)
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.logging import log
 from solarinspector_core.models.device import DeviceSnapshot
 from solarinspector_core.models.legacy import MeterReading
+from solarinspector_core.models.metrics import Metric
 from solarinspector_core.models.roles import MeasurementRole
 from solarinspector_core.persistence.database import Database
+
+
+@dataclass(frozen=True, slots=True)
+class _GridMeasurementSelection:
+    """Describe the active compatible grid-power values."""
+
+    grid_power_w: Optional[float]
+    grid_import_power_w: Optional[float]
+    grid_export_power_w: Optional[float]
+    source_label: str
 
 
 class Collector:
@@ -44,6 +59,8 @@ class Collector:
         self._cycles = 0
         self._previous_power: Optional[dict[str, Any]] = None
         self._previous_epoch: Optional[float] = None
+        self._last_grid_meter_snapshot: Optional[DeviceSnapshot] = None
+        self._last_grid_meter_poll_monotonic: Optional[float] = None
 
     @staticmethod
     def _create_shelly_reader() -> ShellyReader:
@@ -54,6 +71,14 @@ class Collector:
     def _create_solakon_reader() -> SolakonOneReader:
         """Create the existing default Solakon reader."""
         return SolakonOneReader()
+
+    @staticmethod
+    def _create_grid_meter_adapter(
+        config: dict[str, Any],
+    ) -> TasmotaHttpGridMeterAdapter:
+        """Create the official grid-meter adapter on demand."""
+
+        return TasmotaHttpGridMeterAdapter(config)
 
     def _read_solakon_snapshot(
         self,
@@ -79,6 +104,44 @@ class Collector:
             _prefix, separator, detail = snapshot.error.partition(": ")
             return None, detail if separator else snapshot.error
         return None, "Keine Solakon-Messwerte verfügbar."
+
+    def _read_grid_meter_snapshot(
+        self,
+        config: dict[str, Any],
+    ) -> tuple[Optional[DeviceSnapshot], Optional[str]]:
+        """Read or reuse the official grid-meter snapshot safely."""
+
+        now_monotonic = self._monotonic()
+        poll_interval = max(
+            1.0,
+            float(config.get("poll_interval_seconds", 5)),
+        )
+        if (
+            self._last_grid_meter_snapshot is not None
+            and self._last_grid_meter_poll_monotonic is not None
+            and max(
+                0.0,
+                now_monotonic - self._last_grid_meter_poll_monotonic,
+            )
+            < poll_interval
+        ):
+            return self._last_grid_meter_snapshot, None
+
+        try:
+            snapshot = self._create_grid_meter_adapter(config).read_snapshot()
+        except Exception:
+            # Do not expose arbitrary exception text because it may
+            # contain request details or configured credentials.
+            self._last_grid_meter_snapshot = None
+            self._last_grid_meter_poll_monotonic = now_monotonic
+            return (
+                None,
+                "Unexpected grid-meter adapter failure.",
+            )
+
+        self._last_grid_meter_snapshot = snapshot
+        self._last_grid_meter_poll_monotonic = now_monotonic
+        return snapshot, None
 
     def _read_shelly_snapshot_result(
         self,
@@ -168,8 +231,13 @@ class Collector:
     @staticmethod
     def _has_enabled_source(config: dict[str, Any]) -> bool:
         return any(
-            config[name].get("enabled")
-            for name in ("house_meter", "solakon_meter", "solakon_one")
+            bool(config.get(name, {}).get("enabled"))
+            for name in (
+                "grid_meter",
+                "house_meter",
+                "solakon_meter",
+                "solakon_one",
+            )
         )
 
     def start(self) -> bool:
@@ -275,6 +343,68 @@ class Collector:
             "Solakon ONE Meter (Auto)" if solakon_grid is not None else "Keine Quelle",
         )
 
+    @staticmethod
+    def _select_grid_measurements(
+        *,
+        fallback_source: str,
+        official_enabled: bool,
+        official_name: str,
+        official_snapshot: Optional[DeviceSnapshot],
+        house_reading: Optional[MeterReading],
+        solakon: Optional[SolakonOneReading],
+    ) -> _GridMeasurementSelection:
+        """Prefer valid official values and mark legacy fallback."""
+
+        official_power = _snapshot_measurement_value(
+            official_snapshot,
+            Metric.GRID_POWER,
+        )
+        if official_power is not None:
+            import_power = _snapshot_measurement_value(
+                official_snapshot,
+                Metric.GRID_IMPORT_POWER,
+            )
+            export_power = _snapshot_measurement_value(
+                official_snapshot,
+                Metric.GRID_EXPORT_POWER,
+            )
+            return _GridMeasurementSelection(
+                grid_power_w=official_power,
+                grid_import_power_w=(
+                    import_power
+                    if import_power is not None
+                    else max(0.0, official_power)
+                ),
+                grid_export_power_w=(
+                    export_power
+                    if export_power is not None
+                    else max(0.0, -official_power)
+                ),
+                source_label=official_name,
+            )
+
+        fallback_power, fallback_label = Collector._select_grid_power(
+            fallback_source,
+            house_reading,
+            solakon,
+        )
+        if official_enabled:
+            fallback_label = (
+                f"{fallback_label} (Fallback)"
+                if fallback_power is not None
+                else ("Keine Quelle (offizieller Netzstromzähler nicht verfügbar)")
+            )
+        return _GridMeasurementSelection(
+            grid_power_w=fallback_power,
+            grid_import_power_w=(
+                max(0.0, fallback_power) if fallback_power is not None else None
+            ),
+            grid_export_power_w=(
+                max(0.0, -fallback_power) if fallback_power is not None else None
+            ),
+            source_label=fallback_label,
+        )
+
     def collect_once(self) -> dict[str, Any]:
         config = self.config_manager.get()
         if not self._has_enabled_source(config):
@@ -284,15 +414,32 @@ class Collector:
 
         now = self._now()
         now_epoch = now.timestamp()
+        grid_cfg = config.get("grid_meter", {})
         house_cfg = config["house_meter"]
         solar_cfg = config["solakon_meter"]
         one_cfg = config["solakon_one"]
 
         errors: list[str] = []
+        grid_meter_snapshot: Optional[DeviceSnapshot] = None
         house_reading: Optional[MeterReading] = None
         house_snapshot: Optional[DeviceSnapshot] = None
         solar_reading: Optional[MeterReading] = None
         solakon_reading: Optional[SolakonOneReading] = None
+
+        if grid_cfg.get("enabled"):
+            (
+                grid_meter_snapshot,
+                grid_meter_error,
+            ) = self._read_grid_meter_snapshot(grid_cfg)
+            if grid_meter_error:
+                errors.append(f"Offizieller Netzstromzähler: {grid_meter_error}")
+            elif grid_meter_snapshot is not None and grid_meter_snapshot.error:
+                errors.append(
+                    f"Offizieller Netzstromzähler: {grid_meter_snapshot.error}"
+                )
+        else:
+            self._last_grid_meter_snapshot = None
+            self._last_grid_meter_poll_monotonic = None
 
         if one_cfg.get("enabled"):
             solakon_reading, solakon_error = self._read_solakon_snapshot(one_cfg)
@@ -329,18 +476,29 @@ class Collector:
             shelly_solar_power,
             solakon_reading,
         )
-        grid_power, grid_source = self._select_grid_power(
-            config["general"].get("grid_power_source", "auto"),
-            house_reading,
-            solakon_reading,
+        grid_selection = self._select_grid_measurements(
+            fallback_source=config["general"].get(
+                "grid_power_source",
+                "auto",
+            ),
+            official_enabled=bool(grid_cfg.get("enabled")),
+            official_name=(
+                str(grid_cfg.get("name") or "Offizieller Netzstromzähler").strip()
+                or "Offizieller Netzstromzähler"
+            ),
+            official_snapshot=grid_meter_snapshot,
+            house_reading=house_reading,
+            solakon=solakon_reading,
         )
+        grid_power = grid_selection.grid_power_w
+        grid_source = grid_selection.source_label
 
         solakon_ac = solakon_reading.active_power_w if solakon_reading else None
         solakon_pv = solakon_reading.total_pv_power_w if solakon_reading else None
         solakon_battery = solakon_reading.battery_power_w if solakon_reading else None
 
-        grid_import = max(0.0, grid_power) if grid_power is not None else None
-        feed_in = max(0.0, -grid_power) if grid_power is not None else None
+        grid_import = grid_selection.grid_import_power_w
+        feed_in = grid_selection.grid_export_power_w
 
         # For the household balance always prefer an AC measurement. The DC PV
         # input is useful as a production source, but must not be added directly
@@ -543,6 +701,8 @@ class Collector:
             self._started_at = None
             self._previous_power = None
             self._previous_epoch = None
+            self._last_grid_meter_snapshot = None
+            self._last_grid_meter_poll_monotonic = None
 
     def _run(self) -> None:
         while not self._stop_event.is_set():
@@ -556,6 +716,23 @@ class Collector:
             interval = self.config_manager.get()["general"]["poll_interval_seconds"]
             elapsed = self._monotonic() - cycle_started
             self._stop_event.wait(max(0.2, interval - elapsed))
+
+
+def _snapshot_measurement_value(
+    snapshot: Optional[DeviceSnapshot],
+    metric: Metric,
+) -> Optional[float]:
+    """Return one normalized GRID_METER value if available."""
+
+    if snapshot is None:
+        return None
+    for measurement in snapshot.measurements:
+        if (
+            measurement.role is MeasurementRole.GRID_METER
+            and measurement.metric is metric
+        ):
+            return float(measurement.value)
+    return None
 
 
 _MULTI_PHASE_SHELLY_TYPES: Final[frozenset[str]] = frozenset(
