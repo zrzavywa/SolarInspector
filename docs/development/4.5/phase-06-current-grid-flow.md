@@ -189,3 +189,57 @@ Bis Block 06.6 bleiben unverändert:
 Block 06.1 führt keine Produktivänderung unter `app/` durch. Er ergänzt nur
 Architekturdokumentation, Fixture-Dokumentation und einen lokalen
 Diagnosehelfer zur sicheren Erfassung realer Tasmota-Antworten.
+
+## Implementierter Phase-06-Endstand
+
+Der zuvor dokumentierte Ausgangsfluss wurde in Phase 06 additiv erweitert:
+
+```text
+Hichi/Tasmota Status 10
+    -> TasmotaHttpGridMeterAdapter
+    -> normalisiertes DeviceSnapshot mit GRID_METER
+    -> minimale Quellenpriorität
+    -> kompatible Energieberechnung
+    -> samples plus grid_meter_samples
+    -> /api/live
+    -> Bereich „Öffentliches Netz“
+```
+
+Die aktive Reihenfolge lautet nun:
+
+1. aktivierter offizieller Grid-Meter mit gültiger `GRID_POWER`
+2. bestehende Shelly- oder Solakon-Netzquelle als sichtbarer Fallback
+3. keine aktuelle Netzleistung
+
+Bestehende Installationen mit deaktiviertem `grid_meter` behalten ihre bisherige
+Quellenauswahl und Beschriftung.
+
+### Persistenz
+
+- `samples` bleibt strukturell kompatibel.
+- `grid_meter_samples` speichert Snapshotstatus, Qualität, Zeitstempel,
+  Kernleistungen, kumulierte Zählerstände und die tatsächlich aktive Source-ID.
+- Aggregate, optionale Phasenwerte und Grid-Meter-Details werden atomar
+  geschrieben.
+- Fehlende Werte bleiben `NULL`; echte Nullwerte bleiben `0`.
+
+### API und Dashboard
+
+`/api/live` enthält weiterhin `latest` und `collector` und ergänzt:
+
+```text
+grid_meter
+active_sources.grid_power
+active_sources.grid_power_label
+```
+
+Das Dashboard zeigt Bezug, Einspeisung, beide offiziellen Zählerstände,
+Gerätestatus, Qualität, Aktualisierung, Alter und aktive Netzquelle.
+
+### Abnahmegrenze
+
+Automatisierte Unit-, Integrations-, Web-, Persistenz- und Regressionstests
+decken den implementierten Funktionsumfang ab. Der optionale Hardwaretest wird
+nur mit expliziten lokalen Umgebungsvariablen ausgeführt. Ein 2–4-Stunden-
+Dauerlauf wird mit `scripts/tasmota_grid_meter_soak.py` protokolliert; ein
+24–72-Stunden-Test bleibt späterem Staging vorbehalten.
