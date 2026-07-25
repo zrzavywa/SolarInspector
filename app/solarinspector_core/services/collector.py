@@ -34,6 +34,8 @@ from solarinspector_core.models.legacy import MeterReading
 from solarinspector_core.models.metrics import Metric
 from solarinspector_core.models.roles import MeasurementRole
 from solarinspector_core.persistence.database import Database
+from solarinspector_core.validation.collector import CollectorValidationBridge
+from solarinspector_core.validation.engine import ValidationEvent
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +66,8 @@ class Collector:
         self._previous_epoch: Optional[float] = None
         self._last_grid_meter_snapshot: Optional[DeviceSnapshot] = None
         self._last_grid_meter_poll_monotonic: Optional[float] = None
+        self._validation = CollectorValidationBridge()
+        self._validation_events: tuple[ValidationEvent, ...] = ()
 
     @staticmethod
     def _create_shelly_reader() -> ShellyReader:
@@ -83,11 +87,15 @@ class Collector:
 
         return create_grid_meter_adapter(config)
 
-    def _read_solakon_snapshot(
+    def _read_solakon_snapshot_result(
         self,
         config: dict[str, Any],
-    ) -> tuple[Optional[SolakonOneReading], Optional[str]]:
-        """Read Solakon through the normalized adapter and restore legacy data."""
+    ) -> tuple[
+        Optional[SolakonOneReading],
+        Optional[DeviceSnapshot],
+        Optional[str],
+    ]:
+        """Read Solakon while retaining its normalized snapshot."""
 
         try:
             snapshot = SolakonMeasurementAdapter(
@@ -98,15 +106,32 @@ class Collector:
             ).read_snapshot()
         except Exception as exc:
             # Preserve the collector's historical catch-all error behavior.
-            return None, str(exc)
+            return None, None, str(exc)
 
         reading = solakon_reading_from_snapshot(snapshot)
         if reading is not None:
-            return reading, None
+            return reading, snapshot, None
         if snapshot.error:
             _prefix, separator, detail = snapshot.error.partition(": ")
-            return None, detail if separator else snapshot.error
-        return None, "Keine Solakon-Messwerte verfügbar."
+            return (
+                None,
+                snapshot,
+                detail if separator else snapshot.error,
+            )
+        return (
+            None,
+            snapshot,
+            "Keine Solakon-Messwerte verfügbar.",
+        )
+
+    def _read_solakon_snapshot(
+        self,
+        config: dict[str, Any],
+    ) -> tuple[Optional[SolakonOneReading], Optional[str]]:
+        """Preserve the existing temporary Solakon bridge API."""
+
+        reading, _snapshot, error = self._read_solakon_snapshot_result(config)
+        return reading, error
 
     def _read_grid_meter_snapshot(
         self,
@@ -294,6 +319,12 @@ class Collector:
                 "last_sample": latest,
             }
 
+    def validation_events(self) -> tuple[ValidationEvent, ...]:
+        """Return the latest cycle's actionable validation events."""
+
+        with self._lock:
+            return tuple(self._validation_events)
+
     @staticmethod
     def _select_solar_power(
         source: str,
@@ -438,7 +469,9 @@ class Collector:
         house_reading: Optional[MeterReading] = None
         house_snapshot: Optional[DeviceSnapshot] = None
         solar_reading: Optional[MeterReading] = None
+        solar_snapshot: Optional[DeviceSnapshot] = None
         solakon_reading: Optional[SolakonOneReading] = None
+        solakon_snapshot: Optional[DeviceSnapshot] = None
 
         if grid_cfg.get("enabled"):
             (
@@ -456,7 +489,11 @@ class Collector:
             self._last_grid_meter_poll_monotonic = None
 
         if one_cfg.get("enabled"):
-            solakon_reading, solakon_error = self._read_solakon_snapshot(one_cfg)
+            (
+                solakon_reading,
+                solakon_snapshot,
+                solakon_error,
+            ) = self._read_solakon_snapshot_result(one_cfg)
             if solakon_error:
                 errors.append(f"Solakon ONE: {solakon_error}")
 
@@ -475,7 +512,11 @@ class Collector:
                 errors.append(f"Hausanschluss: {house_error}")
 
         if solar_cfg.get("enabled"):
-            solar_reading, solar_error = self._read_shelly_snapshot(
+            (
+                solar_reading,
+                solar_snapshot,
+                solar_error,
+            ) = self._read_shelly_snapshot_result(
                 solar_cfg,
                 source_id="solakon_meter",
                 name="Shelly AC-Erzeugung",
@@ -483,6 +524,68 @@ class Collector:
             )
             if solar_error:
                 errors.append(f"Shelly AC-Erzeugung: {solar_error}")
+
+        raw_snapshots = tuple(
+            snapshot
+            for snapshot in (
+                grid_meter_snapshot,
+                house_snapshot,
+                solar_snapshot,
+                solakon_snapshot,
+            )
+            if snapshot is not None
+        )
+        validated_cycle = self._validation.validate_cycle(
+            raw_snapshots,
+            config=config,
+            now=now,
+        )
+        validated_by_source = validated_cycle.snapshot_by_source()
+        self._validation_events = validated_cycle.events
+
+        if grid_meter_snapshot is not None:
+            grid_meter_snapshot = validated_by_source.get(
+                grid_meter_snapshot.source_id,
+                grid_meter_snapshot,
+            )
+        if house_snapshot is not None:
+            house_snapshot = validated_by_source.get(
+                house_snapshot.source_id,
+                house_snapshot,
+            )
+            house_reading = meter_reading_from_snapshot(
+                house_snapshot,
+                MeasurementRole.GRID_METER,
+            )
+        if solar_snapshot is not None:
+            solar_snapshot = validated_by_source.get(
+                solar_snapshot.source_id,
+                solar_snapshot,
+            )
+            solar_reading = meter_reading_from_snapshot(
+                solar_snapshot,
+                MeasurementRole.PLANT_METER,
+            )
+        if solakon_snapshot is not None:
+            solakon_snapshot = validated_by_source.get(
+                solakon_snapshot.source_id,
+                solakon_snapshot,
+            )
+            solakon_reading = solakon_reading_from_snapshot(solakon_snapshot)
+
+        if self._validation_events:
+            warning_count = sum(
+                event.decision.value == "accept_with_warning"
+                for event in self._validation_events
+            )
+            rejection_count = sum(
+                event.decision.value == "reject" for event in self._validation_events
+            )
+            errors.append(
+                "Validierung: "
+                f"{warning_count} Warnung(en), "
+                f"{rejection_count} Ablehnung(en)."
+            )
 
         shelly_solar_power = max(0.0, solar_reading.power_w) if solar_reading else None
         solar_power, solar_source = self._select_solar_power(
@@ -744,6 +847,8 @@ class Collector:
             self._previous_epoch = None
             self._last_grid_meter_snapshot = None
             self._last_grid_meter_poll_monotonic = None
+            self._validation_events = ()
+            self._validation.clear()
 
     def _run(self) -> None:
         while not self._stop_event.is_set():

@@ -1,6 +1,10 @@
 """Expose the central validation foundation for SolarInspector 4.5."""
 
 from solarinspector_core.validation.base import ValidationRule
+from solarinspector_core.validation.collector import (
+    CollectorValidationBridge,
+    ValidatedCycle,
+)
 from solarinspector_core.validation.config import (
     DEFAULT_COMPARISON_CONFIG,
     DEFAULT_TIME_CONFIG,
@@ -18,6 +22,12 @@ from solarinspector_core.validation.context import (
     MeasurementCandidate,
     ValidationContext,
     ValidationStateKey,
+)
+from solarinspector_core.validation.engine import (
+    ValidatedDeviceSnapshot,
+    ValidatedMeasurement,
+    ValidationEngine,
+    ValidationEvent,
 )
 from solarinspector_core.validation.profiles import (
     DeviceValidationProfile,
@@ -57,6 +67,12 @@ from solarinspector_core.validation.rules import (
 from solarinspector_core.validation.state import ValidationStateStore
 
 __all__ = [
+    "ValidationEvent",
+    "ValidationEngine",
+    "ValidatedMeasurement",
+    "ValidatedDeviceSnapshot",
+    "ValidatedCycle",
+    "CollectorValidationBridge",
     "CrossSourceComparisonLimits",
     "CrossSourceTimeAlignmentRule",
     "DEFAULT_COMPARISON_CONFIG",
