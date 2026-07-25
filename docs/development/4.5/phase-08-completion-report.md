@@ -149,3 +149,46 @@ selection and integration path.
 Merge Phase 08 after review, perform an observational hardware run without
 changing thresholds, and begin Phase 09 using validated measurements and their
 quality metadata as the only source-selection inputs.
+
+## Finaler Abnahmestatus ohne lokale Solakon-Hardware
+
+Die Code-, Replay-, Persistenz-, API-, Dashboard-, Sicherheits- und
+Performanceabnahme von Phase 08 ist abgeschlossen.
+
+Am lokalen Entwicklungsstandort ist keine Solakon ONE verfügbar. Ein realer
+Solakon-Hardwaretest wird deshalb weder als ausgeführt noch als bestanden
+dargestellt. Die externe Übergabe ist in
+`phase-08-hardware-handoff.md` beschrieben.
+
+Für die technische Phase-08-Abnahme gelten damit:
+
+- automatisierte Tests: abgeschlossen
+- Replay-Szenarien: abgeschlossen
+- Performance- und Speichergrenzen: eingehalten
+- statische Qualitätsprüfungen: abgeschlossen
+- SQLite-ResourceWarnings unter Python 3.14: bereinigt und als Regression
+  abgesichert
+- lokale Solakon-Hardwareprüfung: nicht möglich
+- externe installationsbezogene Hardwareprüfung: dokumentiert und ausstehend
+
+Phase 08 ist damit auf Code- und Dokumentationsebene vollständig. Die externe
+Hardwareprüfung ist eine installationsbezogene Freigabeaktivität und kein
+offener Implementierungsblock.
+
+<!-- phase-08-finalization:start -->
+## Finale lokale Abnahme
+
+Die abschließende lokale Abnahme wurde ohne verfügbare Solakon-ONE-Hardware
+durchgeführt.
+
+- vollständige Testsuite: `633 passed, 1 skipped`
+- `ResourceWarning` wird als Testfehler behandelt
+- SQLite-Testverbindungen werden explizit geschlossen
+- Ruff: bestanden
+- mypy: bestanden
+- `compileall`: bestanden
+- externe Solakon-Hardwareverifikation: separat dokumentiert und ausstehend
+
+Damit sind Implementierung, Replay-Abnahme, Persistenz, API, Dashboard,
+Dokumentation und lokales Hardening von Phase 08 vollständig.
+<!-- phase-08-finalization:end -->

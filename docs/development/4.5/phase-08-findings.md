@@ -72,3 +72,15 @@ This is a regression guard, not a Raspberry Pi capacity certification.
 - machine-learning anomaly detection
 - email, MQTT, or Home Assistant alerting
 - a complex browser rule editor
+
+## Behoben: SQLite-ResourceWarnings unter Python 3.14
+
+Direkte `sqlite3.connect(...)`-Verwendungen in Tests wurden zuvor mit dem
+Connection-Kontextmanager verwendet. Dieser führt Commit oder Rollback aus,
+schließt die Verbindung jedoch nicht. Unter Python 3.14 wurde dies als
+`ResourceWarning` sichtbar.
+
+Die direkten Testverbindungen verwenden nun zusätzlich
+`contextlib.closing`. Ein Regressionstest verhindert neue ungeschlossene
+direkte SQLite-Testverbindungen. Die vollständige Testsuite wird bei der
+finalen Abnahme mit `ResourceWarning` als Fehler ausgeführt.

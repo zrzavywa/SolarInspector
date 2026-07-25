@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import closing
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
@@ -401,7 +402,7 @@ def test_initialization_migrates_existing_database(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "existing-grid.db"
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection:
         connection.execute(
             """
             CREATE TABLE samples (
