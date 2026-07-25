@@ -26,19 +26,26 @@ from solarinspector_core.validation.result import (
     quality_for_decision,
 )
 from solarinspector_core.validation.rules import (
+    EnergyDeltaRule,
     ExpectedUnitRule,
     FiniteNumberRule,
+    MaximumDeltaRule,
     MeasurementAgeRule,
+    MonotonicCounterRule,
     RangeRule,
     TimestampRule,
 )
+from solarinspector_core.validation.state import ValidationStateStore
 
 __all__ = [
     "DEFAULT_TIME_CONFIG",
     "DEFAULT_VALIDATION_CONFIG",
+    "EnergyDeltaRule",
     "ExpectedUnitRule",
     "FiniteNumberRule",
+    "MaximumDeltaRule",
     "MeasurementAgeRule",
+    "MonotonicCounterRule",
     "MeasurementCandidate",
     "RangeRule",
     "RuleEvaluation",
@@ -51,6 +58,7 @@ __all__ = [
     "ValidationSeverity",
     "TimestampRule",
     "ValidationStateKey",
+    "ValidationStateStore",
     "normalize_delta_config",
     "normalize_range_config",
     "normalize_time_config",
