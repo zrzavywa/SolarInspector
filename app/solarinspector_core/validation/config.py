@@ -27,6 +27,18 @@ DEFAULT_TIME_CONFIG: Final[dict[str, float]] = {
     "maximum_future_seconds": 5.0,
 }
 
+DEFAULT_COMPARISON_CONFIG: Final[dict[str, float | int | bool]] = {
+    "warning_absolute_w": 30.0,
+    "reject_absolute_w": 100.0,
+    "warning_relative_percent": 10.0,
+    "reject_relative_percent": 30.0,
+    "window_seconds": 30.0,
+    "minimum_duration_seconds": 30.0,
+    "minimum_reference_w": 100.0,
+    "minimum_samples": 2,
+    "allow_rejection": False,
+}
+
 _RANGE_FIELDS: Final[tuple[str, ...]] = (
     "warning_min",
     "warning_max",
@@ -91,6 +103,11 @@ def normalize_validation_profile(value: object) -> dict[str, Any]:
         raw.get("known_error_values"),
         normalizer=_normalize_known_error_values,
     )
+    normalized["comparisons"] = _normalize_named_mapping(
+        raw.get("comparisons"),
+        item_name="comparison",
+        normalizer=normalize_comparison_config,
+    )
     return normalized
 
 
@@ -104,6 +121,87 @@ def normalize_validation_source(value: object) -> dict[str, Any]:
     normalized["measurement_position_comparable"] = _boolean(
         raw.get("measurement_position_comparable"),
         default=False,
+    )
+    return normalized
+
+
+def normalize_comparison_config(value: object) -> dict[str, Any]:
+    """Normalize one time-window cross-source comparison configuration."""
+
+    raw = dict(value) if isinstance(value, Mapping) else {}
+    normalized = deepcopy(raw)
+    warning_absolute_w = _non_negative_float(
+        raw.get("warning_absolute_w"),
+        default=float(DEFAULT_COMPARISON_CONFIG["warning_absolute_w"]),
+        field_name="warning_absolute_w",
+    )
+    reject_absolute_w = _non_negative_float(
+        raw.get("reject_absolute_w"),
+        default=float(DEFAULT_COMPARISON_CONFIG["reject_absolute_w"]),
+        field_name="reject_absolute_w",
+    )
+    warning_relative_percent = _non_negative_float(
+        raw.get("warning_relative_percent"),
+        default=float(DEFAULT_COMPARISON_CONFIG["warning_relative_percent"]),
+        field_name="warning_relative_percent",
+    )
+    reject_relative_percent = _non_negative_float(
+        raw.get("reject_relative_percent"),
+        default=float(DEFAULT_COMPARISON_CONFIG["reject_relative_percent"]),
+        field_name="reject_relative_percent",
+    )
+    window_seconds = _non_negative_float(
+        raw.get("window_seconds"),
+        default=float(DEFAULT_COMPARISON_CONFIG["window_seconds"]),
+        field_name="window_seconds",
+    )
+    minimum_duration_seconds = _non_negative_float(
+        raw.get("minimum_duration_seconds"),
+        default=float(DEFAULT_COMPARISON_CONFIG["minimum_duration_seconds"]),
+        field_name="minimum_duration_seconds",
+    )
+    minimum_reference_w = _non_negative_float(
+        raw.get("minimum_reference_w"),
+        default=float(DEFAULT_COMPARISON_CONFIG["minimum_reference_w"]),
+        field_name="minimum_reference_w",
+    )
+    minimum_samples = _positive_int(
+        raw.get("minimum_samples"),
+        default=int(DEFAULT_COMPARISON_CONFIG["minimum_samples"]),
+        field_name="minimum_samples",
+    )
+    allow_rejection = _boolean(
+        raw.get("allow_rejection"),
+        default=bool(DEFAULT_COMPARISON_CONFIG["allow_rejection"]),
+    )
+
+    _require_optional_warning_not_above_reject(
+        warning_absolute_w,
+        reject_absolute_w,
+        "absolute_w",
+    )
+    _require_optional_warning_not_above_reject(
+        warning_relative_percent,
+        reject_relative_percent,
+        "relative_percent",
+    )
+    if minimum_duration_seconds > window_seconds:
+        raise ValidationConfigurationError(
+            "minimum_duration_seconds must not exceed window_seconds"
+        )
+
+    normalized.update(
+        {
+            "warning_absolute_w": warning_absolute_w,
+            "reject_absolute_w": reject_absolute_w,
+            "warning_relative_percent": warning_relative_percent,
+            "reject_relative_percent": reject_relative_percent,
+            "window_seconds": window_seconds,
+            "minimum_duration_seconds": minimum_duration_seconds,
+            "minimum_reference_w": minimum_reference_w,
+            "minimum_samples": minimum_samples,
+            "allow_rejection": allow_rejection,
+        }
     )
     return normalized
 
@@ -442,6 +540,34 @@ def _require_optional_warning_not_above_reject(
         raise ValidationConfigurationError(
             f"warning_{label} must not exceed reject_{label}"
         )
+
+
+def _positive_int(
+    value: object,
+    *,
+    default: int,
+    field_name: str,
+) -> int:
+    """Convert one positive integer without truncating fractions."""
+
+    raw_value = default if value is None else value
+    if isinstance(raw_value, bool) or not isinstance(
+        raw_value,
+        (Real, str),
+    ):
+        raise ValidationConfigurationError(f"{field_name} must be a positive integer")
+    try:
+        numeric = float(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise ValidationConfigurationError(
+            f"{field_name} must be a positive integer"
+        ) from exc
+    if not math.isfinite(numeric) or not numeric.is_integer():
+        raise ValidationConfigurationError(f"{field_name} must be a positive integer")
+    normalized = int(numeric)
+    if normalized < 1:
+        raise ValidationConfigurationError(f"{field_name} must be at least 1")
+    return normalized
 
 
 def _string(value: object) -> str:

@@ -60,6 +60,7 @@ files = [
     "app/solarinspector_core/validation/rules/numeric.py",
     "app/solarinspector_core/validation/rules/time.py",
     "app/solarinspector_core/validation/rules/historical.py",
+    "app/solarinspector_core/validation/rules/cross_source.py",
     "app/solarinspector_core/validation/rules/device.py",
     "app/solarinspector_core/validation/rules/phase.py",
     "app/solarinspector_core/validation/profiles.py",

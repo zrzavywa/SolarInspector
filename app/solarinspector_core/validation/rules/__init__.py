@@ -1,5 +1,11 @@
 """Expose the basic validation rules implemented in phase 08 block 08.3."""
 
+from solarinspector_core.validation.rules.cross_source import (
+    CrossSourceComparisonLimits,
+    CrossSourceTimeAlignmentRule,
+    GridMeterCrossCheckRule,
+    PlantPowerCrossCheckRule,
+)
 from solarinspector_core.validation.rules.device import (
     DeviceDiagnosticRule,
     KnownDeviceErrorValueRule,
@@ -24,16 +30,20 @@ from solarinspector_core.validation.rules.time import (
 )
 
 __all__ = [
+    "CrossSourceComparisonLimits",
+    "CrossSourceTimeAlignmentRule",
     "DeviceDiagnosticRule",
     "EnergyDeltaRule",
     "ExpectedUnitRule",
     "FiniteNumberRule",
+    "GridMeterCrossCheckRule",
     "KnownDeviceErrorValueRule",
     "MaximumDeltaRule",
     "MeasurementAgeRule",
     "MonotonicCounterRule",
     "PhaseCompletenessRule",
     "PhaseSumConsistencyRule",
+    "PlantPowerCrossCheckRule",
     "RangeRule",
     "TimestampRule",
 ]

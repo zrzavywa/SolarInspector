@@ -8,13 +8,16 @@ from pathlib import Path
 import pytest
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.validation import (
+    DEFAULT_COMPARISON_CONFIG,
     DEFAULT_TIME_CONFIG,
     DEFAULT_VALIDATION_CONFIG,
     ValidationConfigurationError,
+    normalize_comparison_config,
     normalize_delta_config,
     normalize_range_config,
     normalize_time_config,
     normalize_validation_config,
+    normalize_validation_profile,
 )
 
 
@@ -253,3 +256,79 @@ def test_manager_save_preserves_unknown_validation_fields(
     assert saved["validation"]["enabled"] is True
     assert saved["validation"]["future_field"] == "keep"
     assert saved["validation"]["sources"]["grid_meter_primary"]["profile"] == "official"
+
+
+def test_comparison_configuration_defaults_are_observational() -> None:
+    normalized = normalize_comparison_config(None)
+
+    assert normalized == DEFAULT_COMPARISON_CONFIG
+    assert normalized["allow_rejection"] is False
+
+
+def test_comparison_configuration_normalizes_values() -> None:
+    normalized = normalize_comparison_config(
+        {
+            "warning_absolute_w": "30",
+            "reject_absolute_w": "100",
+            "window_seconds": "60",
+            "minimum_duration_seconds": "30",
+            "minimum_samples": "3",
+            "allow_rejection": "true",
+            "future_field": "preserved",
+        }
+    )
+
+    assert normalized["warning_absolute_w"] == 30.0
+    assert normalized["reject_absolute_w"] == 100.0
+    assert normalized["minimum_samples"] == 3
+    assert normalized["allow_rejection"] is True
+    assert normalized["future_field"] == "preserved"
+
+
+def test_comparison_configuration_rejects_contradictions() -> None:
+    with pytest.raises(
+        ValidationConfigurationError,
+        match="warning_absolute_w must not exceed reject_absolute_w",
+    ):
+        normalize_comparison_config(
+            {
+                "warning_absolute_w": 101,
+                "reject_absolute_w": 100,
+            }
+        )
+
+    with pytest.raises(
+        ValidationConfigurationError,
+        match="minimum_duration_seconds must not exceed window_seconds",
+    ):
+        normalize_comparison_config(
+            {
+                "window_seconds": 10,
+                "minimum_duration_seconds": 11,
+            }
+        )
+
+    with pytest.raises(
+        ValidationConfigurationError,
+        match="minimum_samples must be a positive integer",
+    ):
+        normalize_comparison_config({"minimum_samples": 2.5})
+
+
+def test_profile_normalizes_named_comparisons() -> None:
+    normalized = normalize_validation_profile(
+        {
+            "comparisons": {
+                "plant_meter": {
+                    "window_seconds": 60,
+                    "minimum_duration_seconds": 30,
+                    "minimum_samples": 3,
+                }
+            }
+        }
+    )
+
+    comparison = normalized["comparisons"]["plant_meter"]
+    assert comparison["window_seconds"] == 60.0
+    assert comparison["minimum_duration_seconds"] == 30.0
+    assert comparison["minimum_samples"] == 3

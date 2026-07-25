@@ -2,9 +2,11 @@
 
 from solarinspector_core.validation.base import ValidationRule
 from solarinspector_core.validation.config import (
+    DEFAULT_COMPARISON_CONFIG,
     DEFAULT_TIME_CONFIG,
     DEFAULT_VALIDATION_CONFIG,
     ValidationConfigurationError,
+    normalize_comparison_config,
     normalize_delta_config,
     normalize_range_config,
     normalize_time_config,
@@ -35,22 +37,29 @@ from solarinspector_core.validation.result import (
     quality_for_decision,
 )
 from solarinspector_core.validation.rules import (
+    CrossSourceComparisonLimits,
+    CrossSourceTimeAlignmentRule,
     DeviceDiagnosticRule,
     EnergyDeltaRule,
     ExpectedUnitRule,
     FiniteNumberRule,
+    GridMeterCrossCheckRule,
     KnownDeviceErrorValueRule,
     MaximumDeltaRule,
     MeasurementAgeRule,
     MonotonicCounterRule,
     PhaseCompletenessRule,
     PhaseSumConsistencyRule,
+    PlantPowerCrossCheckRule,
     RangeRule,
     TimestampRule,
 )
 from solarinspector_core.validation.state import ValidationStateStore
 
 __all__ = [
+    "CrossSourceComparisonLimits",
+    "CrossSourceTimeAlignmentRule",
+    "DEFAULT_COMPARISON_CONFIG",
     "DEFAULT_TIME_CONFIG",
     "DEFAULT_VALIDATION_CONFIG",
     "DeviceDiagnosticRule",
@@ -58,6 +67,7 @@ __all__ = [
     "EnergyDeltaRule",
     "ExpectedUnitRule",
     "FiniteNumberRule",
+    "GridMeterCrossCheckRule",
     "KnownDeviceErrorValueRule",
     "MaximumDeltaRule",
     "MeasurementAgeRule",
@@ -66,6 +76,7 @@ __all__ = [
     "PhaseCompletenessRule",
     "PhaseConsistencyLimits",
     "PhaseSumConsistencyRule",
+    "PlantPowerCrossCheckRule",
     "RangeLimits",
     "RangeRule",
     "RuleEvaluation",
@@ -79,6 +90,7 @@ __all__ = [
     "TimestampRule",
     "ValidationStateKey",
     "ValidationStateStore",
+    "normalize_comparison_config",
     "normalize_delta_config",
     "normalize_range_config",
     "normalize_time_config",
