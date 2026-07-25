@@ -29,6 +29,10 @@ from solarinspector_core.validation.engine import (
     ValidationEngine,
     ValidationEvent,
 )
+from solarinspector_core.validation.persistence import (
+    ValidationEventPersistencePolicy,
+    ValidationEventStore,
+)
 from solarinspector_core.validation.profiles import (
     DeviceValidationProfile,
     PhaseConsistencyLimits,
@@ -67,6 +71,8 @@ from solarinspector_core.validation.rules import (
 from solarinspector_core.validation.state import ValidationStateStore
 
 __all__ = [
+    "ValidationEventPersistencePolicy",
+    "ValidationEventStore",
     "ValidationEvent",
     "ValidationEngine",
     "ValidatedMeasurement",

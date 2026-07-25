@@ -190,6 +190,58 @@ class Database:
                 ON grid_meter_samples(source_id, sample_id)
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS validation_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    first_seen_epoch REAL NOT NULL,
+                    first_seen_local TEXT NOT NULL,
+                    last_seen_epoch REAL NOT NULL,
+                    last_seen_local TEXT NOT NULL,
+                    source_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    metric TEXT NOT NULL,
+                    unit TEXT NOT NULL,
+                    rule_id TEXT NOT NULL,
+                    finding_code TEXT NOT NULL,
+                    severity TEXT NOT NULL,
+                    decision TEXT NOT NULL,
+                    quality TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    raw_value_json TEXT NOT NULL DEFAULT 'null',
+                    accepted_value REAL,
+                    details_json TEXT NOT NULL DEFAULT '{}',
+                    occurrence_count INTEGER NOT NULL DEFAULT 1
+                        CHECK (occurrence_count >= 1),
+                    minimum_value REAL,
+                    maximum_value REAL,
+                    first_sample_id INTEGER,
+                    last_sample_id INTEGER
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                    idx_validation_events_last_seen
+                ON validation_events(last_seen_epoch DESC)
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                    idx_validation_events_identity
+                ON validation_events(
+                    source_id,
+                    role,
+                    metric,
+                    rule_id,
+                    finding_code,
+                    decision,
+                    last_seen_epoch
+                )
+                """
+            )
             conn.commit()
 
     def insert_sample(self, sample: dict[str, Any]) -> int:
@@ -403,6 +455,7 @@ class Database:
 
     def delete_all(self) -> None:
         with self.connect() as conn:
+            conn.execute("DELETE FROM validation_events")
             conn.execute("DELETE FROM grid_meter_samples")
             conn.execute("DELETE FROM phase_samples")
             conn.execute("DELETE FROM samples")

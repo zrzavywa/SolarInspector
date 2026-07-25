@@ -36,6 +36,10 @@ from solarinspector_core.models.roles import MeasurementRole
 from solarinspector_core.persistence.database import Database
 from solarinspector_core.validation.collector import CollectorValidationBridge
 from solarinspector_core.validation.engine import ValidationEvent
+from solarinspector_core.validation.persistence import (
+    ValidationEventPersistencePolicy,
+    ValidationEventStore,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +72,7 @@ class Collector:
         self._last_grid_meter_poll_monotonic: Optional[float] = None
         self._validation = CollectorValidationBridge()
         self._validation_events: tuple[ValidationEvent, ...] = ()
+        self._validation_event_store = ValidationEventStore(database)
 
     @staticmethod
     def _create_shelly_reader() -> ShellyReader:
@@ -324,6 +329,41 @@ class Collector:
 
         with self._lock:
             return tuple(self._validation_events)
+
+    def _persist_validation_events(
+        self,
+        *,
+        config: dict[str, Any],
+        sample_id: int,
+        reference_time: datetime,
+    ) -> str | None:
+        """Persist current events without risking aggregate sample loss."""
+
+        if not self._validation_events:
+            return None
+        if not callable(getattr(self.database, "connect", None)):
+            # Lightweight test doubles retain the existing collector contract.
+            return None
+
+        raw_validation = config.get("validation")
+        raw_persistence = (
+            raw_validation.get("persistence")
+            if isinstance(raw_validation, dict)
+            else None
+        )
+        try:
+            policy = ValidationEventPersistencePolicy.from_config(raw_persistence)
+            self._validation_event_store.persist(
+                self._validation_events,
+                sample_id=sample_id,
+                policy=policy,
+                reference_time=reference_time,
+            )
+        except Exception:
+            message = "Validierungsereignisse konnten nicht gespeichert werden."
+            self._log(message)
+            return message
+        return None
 
     @staticmethod
     def _select_solar_power(
@@ -784,6 +824,15 @@ class Collector:
             ),
         )
         sample["id"] = sample_id
+
+        validation_persistence_error = self._persist_validation_events(
+            config=config,
+            sample_id=sample_id,
+            reference_time=now,
+        )
+        if validation_persistence_error is not None:
+            errors.append(validation_persistence_error)
+            sample["error_text"] = " | ".join(errors)
 
         self._previous_power = current_power
         self._previous_epoch = now_epoch
