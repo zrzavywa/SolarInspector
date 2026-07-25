@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Final
 
@@ -31,10 +32,41 @@ class PhasePowerAnalysis:
     shares_pct: PhaseShareValues
 
 
+def phase_total_tolerance_w(
+    reported_total_w: float,
+    calculated_total_w: float,
+    *,
+    absolute_tolerance_w: float,
+    relative_tolerance: float,
+) -> float:
+    """Return the larger configured absolute or relative tolerance."""
+
+    for field_name, value in (
+        ("absolute_tolerance_w", absolute_tolerance_w),
+        ("relative_tolerance", relative_tolerance),
+    ):
+        if not math.isfinite(value):
+            raise ValueError(f"{field_name} must be finite")
+        if value < 0:
+            raise ValueError(f"{field_name} must not be negative")
+
+    reference_w = max(
+        abs(reported_total_w),
+        abs(calculated_total_w),
+        1.0,
+    )
+    return max(
+        float(absolute_tolerance_w),
+        reference_w * float(relative_tolerance),
+    )
+
+
 def analyze_phase_power(
     phase_power_w: PhasePowerValues,
     *,
     reported_total_w: float | None,
+    absolute_total_tolerance_w: float = ABSOLUTE_TOTAL_TOLERANCE_W,
+    relative_total_tolerance: float = RELATIVE_TOTAL_TOLERANCE,
 ) -> PhasePowerAnalysis:
     """Analyze exactly three signed phase-power values.
 
@@ -96,9 +128,11 @@ def analyze_phase_power(
         abs(calculated_total_w),
         1.0,
     )
-    tolerance_w = max(
-        ABSOLUTE_TOTAL_TOLERANCE_W,
-        reference_w * RELATIVE_TOTAL_TOLERANCE,
+    tolerance_w = phase_total_tolerance_w(
+        reported_total_w,
+        calculated_total_w,
+        absolute_tolerance_w=absolute_total_tolerance_w,
+        relative_tolerance=relative_total_tolerance,
     )
     total_delta_pct = total_delta_w / reference_w * 100.0
 

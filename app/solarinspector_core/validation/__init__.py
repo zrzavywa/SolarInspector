@@ -17,6 +17,15 @@ from solarinspector_core.validation.context import (
     ValidationContext,
     ValidationStateKey,
 )
+from solarinspector_core.validation.profiles import (
+    DeviceValidationProfile,
+    PhaseConsistencyLimits,
+    RangeLimits,
+    shelly_house_profile,
+    shelly_plant_profile,
+    shelly_pro_3em_house_profile,
+    solarkon_800w_profile,
+)
 from solarinspector_core.validation.result import (
     RuleEvaluation,
     ValidationDecision,
@@ -26,12 +35,16 @@ from solarinspector_core.validation.result import (
     quality_for_decision,
 )
 from solarinspector_core.validation.rules import (
+    DeviceDiagnosticRule,
     EnergyDeltaRule,
     ExpectedUnitRule,
     FiniteNumberRule,
+    KnownDeviceErrorValueRule,
     MaximumDeltaRule,
     MeasurementAgeRule,
     MonotonicCounterRule,
+    PhaseCompletenessRule,
+    PhaseSumConsistencyRule,
     RangeRule,
     TimestampRule,
 )
@@ -40,13 +53,20 @@ from solarinspector_core.validation.state import ValidationStateStore
 __all__ = [
     "DEFAULT_TIME_CONFIG",
     "DEFAULT_VALIDATION_CONFIG",
+    "DeviceDiagnosticRule",
+    "DeviceValidationProfile",
     "EnergyDeltaRule",
     "ExpectedUnitRule",
     "FiniteNumberRule",
+    "KnownDeviceErrorValueRule",
     "MaximumDeltaRule",
     "MeasurementAgeRule",
     "MonotonicCounterRule",
     "MeasurementCandidate",
+    "PhaseCompletenessRule",
+    "PhaseConsistencyLimits",
+    "PhaseSumConsistencyRule",
+    "RangeLimits",
     "RangeRule",
     "RuleEvaluation",
     "ValidationConfigurationError",
@@ -66,4 +86,8 @@ __all__ = [
     "normalize_validation_profile",
     "normalize_validation_source",
     "quality_for_decision",
+    "shelly_house_profile",
+    "shelly_plant_profile",
+    "shelly_pro_3em_house_profile",
+    "solarkon_800w_profile",
 ]
