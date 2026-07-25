@@ -400,3 +400,113 @@ code { background: #e7ecea; border-radius: 6px; padding: 3px 6px; }
   .phase-live-grid, .phase-analysis-strip { grid-template-columns: 1fr; }
   .phase-chart-head { align-items: stretch; flex-direction: column; }
 }
+
+.validation-subhead {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.validation-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.validation-kpi-grid article {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+.validation-kpi-grid article.warning {
+  background: #fff8e6;
+  border-color: #f0d990;
+}
+.validation-kpi-grid article.error {
+  background: #fbecec;
+  border-color: #ecc1c1;
+}
+.validation-kpi-grid span,
+.validation-kpi-grid strong {
+  display: block;
+}
+.validation-kpi-grid span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.validation-kpi-grid strong {
+  font-size: 25px;
+}
+.mini-pill.validation-ok {
+  background: #e5f5ed;
+  color: var(--green-dark);
+}
+.mini-pill.validation-warning {
+  background: #fff3ce;
+  color: #8a6510;
+}
+.mini-pill.validation-error {
+  background: #f7e6e6;
+  color: #9b3737;
+}
+.mini-pill.validation-disabled {
+  background: #f0f1f1;
+  color: var(--muted);
+}
+.validation-event-table-wrap {
+  overflow-x: auto;
+}
+.validation-event-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.validation-event-table th,
+.validation-event-table td {
+  text-align: left;
+  padding: 11px 10px;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+.validation-event-table th {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.validation-event-table td strong,
+.validation-event-table td small {
+  display: block;
+}
+.validation-event-table td small {
+  color: var(--muted);
+  margin-top: 3px;
+  max-width: 460px;
+}
+.validation-decision {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.validation-decision.accept_with_warning {
+  background: #fff3ce;
+  color: #8a6510;
+}
+.validation-decision.reject {
+  background: #f7e6e6;
+  color: #9b3737;
+}
+.validation-empty {
+  color: var(--muted);
+  text-align: center !important;
+  padding: 24px !important;
+}
+@media (max-width: 900px) {
+  .validation-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

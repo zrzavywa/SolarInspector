@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import threading
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Callable
 
@@ -24,7 +25,13 @@ from solarinspector_core.config.shelly import (
     normalize_phase_direction,
 )
 from solarinspector_core.logging import log as default_log
-from solarinspector_core.validation.config import normalize_validation_config
+from solarinspector_core.validation.config import (
+    normalize_comparison_config,
+    normalize_validation_config,
+)
+from solarinspector_core.validation.persistence import (
+    ValidationEventPersistencePolicy,
+)
 
 LogFunction = Callable[[str], None]
 
@@ -44,6 +51,36 @@ def deep_merge(
         else:
             result[key] = value
     return result
+
+
+def _normalize_validation_runtime_config(
+    config: dict[str, Any],
+) -> None:
+    """Normalize explicit UI comparison and persistence settings."""
+
+    raw_validation = config.get("validation")
+    validation = normalize_validation_config(raw_validation)
+
+    if isinstance(raw_validation, dict) and "persistence" in raw_validation:
+        validation["persistence"] = asdict(
+            ValidationEventPersistencePolicy.from_config(
+                raw_validation.get("persistence")
+            )
+        )
+    else:
+        validation.pop("persistence", None)
+
+    for source_settings in validation["sources"].values():
+        raw_comparisons = source_settings.get("comparisons")
+        if not isinstance(raw_comparisons, dict):
+            continue
+        source_settings["comparisons"] = {
+            str(name): normalize_comparison_config(settings)
+            for name, settings in raw_comparisons.items()
+            if str(name).strip()
+        }
+
+    config["validation"] = validation
 
 
 class ConfigManager:
@@ -247,4 +284,5 @@ class ConfigManager:
                     device.get("phase_direction")
                 )
 
+        _normalize_validation_runtime_config(config)
         return config

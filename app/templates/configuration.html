@@ -209,6 +209,72 @@
   </section>
   {% endfor %}
 
+
+  {% set validation = config.get('validation', {}) %}
+  {% set validation_persistence = validation.get('persistence', {}) %}
+  {% set validation_sources = validation.get('sources', {}) %}
+  {% set plant_validation = validation_sources.get('solakon_one', {}) %}
+  {% set plant_comparisons = plant_validation.get('comparisons', {}) %}
+  {% set plant_limits = plant_comparisons.get('plant_meter', {}) %}
+  {% set grid_validation = validation_sources.get(grid.source_id, {}) %}
+  {% set grid_comparisons = grid_validation.get('comparisons', {}) %}
+  {% set grid_limits = grid_comparisons.get('grid_meter', {}) %}
+  <section class="panel validation-config">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">MESSWERTQUALITÄT</p>
+        <h2>Plausibilitätsprüfung</h2>
+        <p>Messwerte vor Quellenwahl und Energieintegration prüfen. Abgelehnte Werte bleiben als Ereignis nachvollziehbar.</p>
+      </div>
+      <label class="switch">
+        <input type="checkbox" name="validation_enabled" {{ "checked" if validation.get('enabled', false) else "" }}>
+        <span></span><b>Aktiv</b>
+      </label>
+    </div>
+    <div class="readonly-note">
+      <strong>Sicherer Standard:</strong> Die Prüfung verändert oder kalibriert keine Messwerte. Der offizielle Netzstromzähler bleibt auch bei Vergleichsabweichungen die führende Referenz.
+    </div>
+
+    <div class="panel-head validation-subhead">
+      <div><p class="eyebrow">SOLAKON ↔ SHELLY PM</p><h2>AC-Erzeugungsvergleich</h2></div>
+    </div>
+    <div class="form-grid">
+      <label><span>Warnung absolut (W)</span><input type="number" min="0" step="1" name="validation_plant_warning_absolute_w" value="{{ plant_limits.get('warning_absolute_w', 30) }}"></label>
+      <label><span>Ablehnung absolut (W)</span><input type="number" min="0" step="1" name="validation_plant_reject_absolute_w" value="{{ plant_limits.get('reject_absolute_w', 100) }}"></label>
+      <label><span>Warnung relativ (%)</span><input type="number" min="0" step="0.1" name="validation_plant_warning_relative_percent" value="{{ plant_limits.get('warning_relative_percent', 10) }}"></label>
+      <label><span>Ablehnung relativ (%)</span><input type="number" min="0" step="0.1" name="validation_plant_reject_relative_percent" value="{{ plant_limits.get('reject_relative_percent', 30) }}"></label>
+      <label><span>Vergleichsfenster (s)</span><input type="number" min="1" step="1" name="validation_plant_window_seconds" value="{{ plant_limits.get('window_seconds', 30) }}"></label>
+      <label><span>Mindestdauer (s)</span><input type="number" min="0" step="1" name="validation_plant_minimum_duration_seconds" value="{{ plant_limits.get('minimum_duration_seconds', 30) }}"></label>
+      <label><span>Mindestreferenz (W)</span><input type="number" min="0" step="1" name="validation_plant_minimum_reference_w" value="{{ plant_limits.get('minimum_reference_w', 100) }}"></label>
+      <label><span>Mindestanzahl Messwerte</span><input type="number" min="1" step="1" name="validation_plant_minimum_samples" value="{{ plant_limits.get('minimum_samples', 2) }}"></label>
+      <label class="check-label"><input type="checkbox" name="validation_plant_allow_rejection" {{ "checked" if plant_limits.get('allow_rejection', false) else "" }}><span>Dauerhafte große Abweichung der Solakon-AC-Quelle ablehnen</span></label>
+    </div>
+
+    <div class="panel-head validation-subhead">
+      <div><p class="eyebrow">NETZZÄHLER ↔ SHELLY 3EM</p><h2>Netzleistungsvergleich</h2></div>
+    </div>
+    <div class="form-grid">
+      <label class="check-label"><input type="checkbox" name="validation_grid_positions_comparable" {{ "checked" if grid_validation.get('measurement_position_comparable', false) else "" }}><span>Beide Geräte messen dieselbe elektrische Position</span><small>Nur dann wird der Vergleich ausgeführt.</small></label>
+      <label><span>Warnung absolut (W)</span><input type="number" min="0" step="1" name="validation_grid_warning_absolute_w" value="{{ grid_limits.get('warning_absolute_w', 50) }}"></label>
+      <label><span>Ablehnungsschwelle absolut (W)</span><input type="number" min="0" step="1" name="validation_grid_reject_absolute_w" value="{{ grid_limits.get('reject_absolute_w', 250) }}"><small>Erzeugt beim offiziellen Zähler weiterhin nur eine Warnung.</small></label>
+      <label><span>Warnung relativ (%)</span><input type="number" min="0" step="0.1" name="validation_grid_warning_relative_percent" value="{{ grid_limits.get('warning_relative_percent', 10) }}"></label>
+      <label><span>Ablehnungsschwelle relativ (%)</span><input type="number" min="0" step="0.1" name="validation_grid_reject_relative_percent" value="{{ grid_limits.get('reject_relative_percent', 30) }}"></label>
+      <label><span>Vergleichsfenster (s)</span><input type="number" min="1" step="1" name="validation_grid_window_seconds" value="{{ grid_limits.get('window_seconds', 30) }}"></label>
+      <label><span>Mindestdauer (s)</span><input type="number" min="0" step="1" name="validation_grid_minimum_duration_seconds" value="{{ grid_limits.get('minimum_duration_seconds', 30) }}"></label>
+      <label><span>Mindestreferenz (W)</span><input type="number" min="0" step="1" name="validation_grid_minimum_reference_w" value="{{ grid_limits.get('minimum_reference_w', 200) }}"></label>
+      <label><span>Mindestanzahl Messwerte</span><input type="number" min="1" step="1" name="validation_grid_minimum_samples" value="{{ grid_limits.get('minimum_samples', 2) }}"></label>
+    </div>
+
+    <div class="panel-head validation-subhead">
+      <div><p class="eyebrow">EREIGNISSE</p><h2>Deduplizierung und Aufbewahrung</h2></div>
+    </div>
+    <div class="form-grid">
+      <label><span>Deduplizierungsfenster (s)</span><input type="number" min="0" step="1" name="validation_dedup_window_seconds" value="{{ validation_persistence.get('dedup_window_seconds', 300) }}"></label>
+      <label><span>Aufbewahrung (Tage)</span><input type="number" min="1" step="1" name="validation_retention_days" value="{{ validation_persistence.get('retention_days', 90) }}"></label>
+      <label><span>Bereinigungsintervall (s)</span><input type="number" min="1" step="1" name="validation_prune_interval_seconds" value="{{ validation_persistence.get('prune_interval_seconds', 3600) }}"></label>
+    </div>
+  </section>
+
   <div class="sticky-actions">
     <button class="button primary" type="submit">Konfiguration speichern</button>
   </div>

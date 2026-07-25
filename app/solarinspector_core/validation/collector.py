@@ -413,8 +413,20 @@ class CollectorValidationBridge:
     ) -> tuple[ValidationRule, ...]:
         """Build only comparisons matching the candidate's source contract."""
 
-        comparisons = profile.get("comparisons", {})
-        comparison_map = comparisons if isinstance(comparisons, Mapping) else {}
+        profile_comparisons = profile.get("comparisons", {})
+        source_comparisons = source.get("comparisons", {})
+        comparison_map = {
+            **(
+                dict(profile_comparisons)
+                if isinstance(profile_comparisons, Mapping)
+                else {}
+            ),
+            **(
+                dict(source_comparisons)
+                if isinstance(source_comparisons, Mapping)
+                else {}
+            ),
+        }
 
         if (
             measurement.source_id == "solakon_one"
@@ -447,9 +459,12 @@ class CollectorValidationBridge:
             )
 
         if (
-            measurement.source_id == "grid_meter_primary"
-            and measurement.role is MeasurementRole.GRID_METER
+            measurement.role is MeasurementRole.GRID_METER
             and measurement.metric is Metric.GRID_POWER
+            and (
+                measurement.source_id == "grid_meter_primary"
+                or source.get("authoritative_grid_meter") is True
+            )
         ):
             limits = CrossSourceComparisonLimits.from_config(
                 comparison_map.get("grid_meter")

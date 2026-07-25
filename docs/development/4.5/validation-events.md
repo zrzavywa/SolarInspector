@@ -51,3 +51,21 @@ A rejected event stores `NULL` as `accepted_value`.
 The aggregate sample is persisted before its validation events. Therefore an
 event-persistence failure does not discard the measurement sample. The
 collector reports a sanitized persistence warning and continues running.
+
+## API and dashboard
+
+The dashboard reads a bounded 24-hour summary from:
+
+- `GET /api/validation/summary?hours=24&limit=8`
+- `GET /api/validation/events`
+
+The events endpoint supports the optional query parameters `source`,
+`decision`, `severity`, `hours`, and `limit`. Invalid or excessive numeric
+values are replaced with safe bounded defaults.
+
+The configuration page exposes the feature switch, Solakon/Shelly comparison
+limits, explicitly comparable grid-meter positions, and event retention
+settings. The official grid meter remains protected from automatic rejection.
+
+The dashboard shows aggregated warning and rejection occurrences rather than
+repeating one row for every collector cycle.

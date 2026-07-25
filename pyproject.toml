@@ -70,6 +70,8 @@ files = [
     "app/solarinspector_core/validation/state.py",
     "app/solarinspector_core/persistence/database.py",
     "app/solarinspector_core/services/collector.py",
+    "app/solarinspector_core/web/configuration.py",
+    "app/solarinspector_core/web/validation.py",
 ]
 check_untyped_defs = true
 warn_unused_configs = true

@@ -20,6 +20,10 @@ const formatNumber = (value, digits = 0) => {
 };
 const kwh = value => `${formatNumber(value, 3)} kWh`;
 const pct = value => value === null || value === undefined ? "–" : `${formatNumber(value, 1)} %`;
+const escapeHTML = value => String(value ?? "–").replace(
+  /[&<>'"]/g,
+  character => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;"}[character])
+);
 
 function shiftAnchor(direction) {
   const date = new Date(state.anchor + "T12:00:00");
@@ -129,6 +133,7 @@ async function loadLive() {
     header.className = "status-pill " + (data.collector.running ? "running" : "stopped");
     header.innerHTML = `<span></span>${data.collector.running ? "Erfassung aktiv" : "Erfassung gestoppt"}`;
     await loadPhaseLive();
+    await loadValidationSummary();
   } catch (error) {
     document.getElementById("live-meta").textContent = "Livewerte konnten nicht geladen werden.";
   }
@@ -468,3 +473,65 @@ loadDashboard();
 loadLive();
 setInterval(loadLive, 5000);
 setInterval(loadDashboard, 60000);
+
+async function loadValidationSummary() {
+  const status = document.getElementById("validation-status");
+  try {
+    const response = await fetch("/api/validation/summary?hours=24&limit=8");
+    if (!response.ok) throw new Error("Validierungsstatus konnte nicht geladen werden.");
+    const payload = await response.json();
+    const summary = payload.summary;
+
+    const statusLabels = {
+      disabled: "deaktiviert",
+      ok: "unauffällig",
+      warning: "Warnungen",
+      error: "Ablehnungen"
+    };
+    status.className = `mini-pill validation-${payload.status}`;
+    status.textContent = statusLabels[payload.status] || payload.status;
+
+    document.getElementById("validation-group-count").textContent =
+      formatNumber(summary.event_group_count);
+    document.getElementById("validation-occurrence-count").textContent =
+      formatNumber(summary.occurrence_count);
+    document.getElementById("validation-warning-count").textContent =
+      formatNumber(summary.warning_occurrence_count);
+    document.getElementById("validation-rejection-count").textContent =
+      formatNumber(summary.rejection_occurrence_count);
+
+    const latest = summary.latest_event_local
+      ? new Date(summary.latest_event_local).toLocaleString("de-DE")
+      : "kein Ereignis";
+    document.getElementById("validation-meta").textContent = payload.enabled
+      ? `Letzte 24 Stunden · zuletzt ${latest}`
+      : "Plausibilitätsprüfung ist in der Konfiguration deaktiviert.";
+
+    renderValidationEvents(payload.recent_events || []);
+  } catch (error) {
+    status.className = "mini-pill validation-error";
+    status.textContent = "nicht verfügbar";
+    document.getElementById("validation-meta").textContent =
+      "Validierungsstatus konnte nicht geladen werden.";
+    renderValidationEvents([]);
+  }
+}
+
+function renderValidationEvents(events) {
+  const body = document.getElementById("validation-event-body");
+  if (!events.length) {
+    body.innerHTML = '<tr><td colspan="5" class="validation-empty">Noch keine Validierungsereignisse.</td></tr>';
+    return;
+  }
+
+  const decisionLabel = value => value === "reject" ? "abgelehnt" : "Warnung";
+  body.innerHTML = events.map(event => `
+    <tr class="validation-row ${escapeHTML(event.decision)}">
+      <td>${escapeHTML(new Date(event.last_seen_local).toLocaleString("de-DE"))}</td>
+      <td><strong>${escapeHTML(event.source_id)}</strong><small>${escapeHTML(event.metric)} · ${escapeHTML(event.raw_value)} ${escapeHTML(event.unit)}</small></td>
+      <td><strong>${escapeHTML(event.rule_id)}</strong><small>${escapeHTML(event.reason)}</small></td>
+      <td><span class="validation-decision ${escapeHTML(event.decision)}">${escapeHTML(decisionLabel(event.decision))}</span></td>
+      <td>${escapeHTML(event.occurrence_count)}</td>
+    </tr>
+  `).join("");
+}

@@ -127,6 +127,10 @@ from solarinspector_core.web.pages import (
     render_dashboard_page,
     render_data_page,
 )
+from solarinspector_core.web.validation import (
+    build_validation_events_api_response,
+    build_validation_summary_api_response,
+)
 from update_status import read_update_status, write_update_status
 from waitress import serve
 
@@ -359,6 +363,35 @@ def api_dashboard():
                 "day",
             ),
             request.args.get("anchor"),
+        )
+    )
+
+
+@app.get("/api/validation/events")
+def api_validation_events():
+    return jsonify(
+        build_validation_events_api_response(
+            database,
+            limit_value=request.args.get("limit", "100"),
+            source_id=request.args.get("source"),
+            decision=request.args.get("decision"),
+            severity=request.args.get("severity"),
+            hours_value=request.args.get("hours", "24"),
+            now_epoch=time.time(),
+        )
+    )
+
+
+@app.get("/api/validation/summary")
+def api_validation_summary():
+    validation = config_manager.get().get("validation", {})
+    return jsonify(
+        build_validation_summary_api_response(
+            database,
+            enabled=bool(validation.get("enabled", False)),
+            hours_value=request.args.get("hours", "24"),
+            recent_limit_value=request.args.get("limit", "8"),
+            now_epoch=time.time(),
         )
     )
 
