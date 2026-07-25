@@ -56,6 +56,9 @@ files = [
     "app/solarinspector_core/validation/config.py",
     "app/solarinspector_core/validation/context.py",
     "app/solarinspector_core/validation/result.py",
+    "app/solarinspector_core/validation/rules/__init__.py",
+    "app/solarinspector_core/validation/rules/numeric.py",
+    "app/solarinspector_core/validation/rules/time.py",
     "app/solarinspector_core/persistence/database.py",
     "app/solarinspector_core/services/collector.py",
 ]
