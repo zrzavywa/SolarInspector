@@ -24,6 +24,7 @@ from solarinspector_core.config.shelly import (
     normalize_phase_direction,
 )
 from solarinspector_core.logging import log as default_log
+from solarinspector_core.validation.config import normalize_validation_config
 
 LogFunction = Callable[[str], None]
 
@@ -165,6 +166,7 @@ class ConfigManager:
         }:
             general["grid_power_source"] = "auto"
 
+        config["validation"] = normalize_validation_config(config.get("validation"))
         config["grid_meter"] = normalize_grid_meter_config(config.get("grid_meter"))
 
         solakon = config["solakon_one"]
