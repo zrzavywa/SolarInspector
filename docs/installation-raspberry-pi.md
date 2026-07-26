@@ -2,7 +2,7 @@
 
 ## Geltungsbereich
 
-Diese Anleitung beschreibt eine Referenzinstallation der SolarInspector-4.1-Reihe auf Raspberry Pi OS beziehungsweise einem Debian-basierten Linux-System.
+Diese Anleitung beschreibt eine Referenzinstallation von Zrzavy Energy Monitor 4.5 auf Raspberry Pi OS beziehungsweise einem Debian-basierten Linux-System.
 
 Für den produktiven Betrieb wird empfohlen:
 
@@ -14,7 +14,7 @@ Für den produktiven Betrieb wird empfohlen:
 - feste oder reservierte IP-Adresse für den Raspberry Pi
 - korrekte Systemzeit über NTP
 
-> Die älteren Upgrade-Skripte für SolarInspector 3.x und 4.0.x gehören zum Übergangspfad. Die 4.1-Reihe verwendet zusätzlich ein versioniertes Release-Layout und einen getrennten Updater.
+> Für eine vorhandene SolarInspector-4.1.3-Installation gilt ausschließlich die [direkte Migrationsanleitung](migration-from-solarinspector.md). Die folgenden Schritte beschreiben eine neue Installation.
 
 ## 1. Betriebssystem vorbereiten
 
@@ -31,16 +31,16 @@ Die Ausgabe sollte mindestens Python 3.11 zeigen.
 
 ```bash
 sudo useradd --system \
-  --home /var/lib/solarinspector \
+  --home /var/lib/zrzavy-energy-monitor \
   --shell /usr/sbin/nologin \
-  solarinspector 2>/dev/null || true
+  zemonitor 2>/dev/null || true
 
-sudo install -d -o root -g root /opt/solarinspector/releases
-sudo install -d -o solarinspector -g solarinspector /etc/solarinspector
-sudo install -d -o solarinspector -g solarinspector /var/lib/solarinspector/data
-sudo install -d -o solarinspector -g solarinspector /var/lib/solarinspector/backups
-sudo install -d -o solarinspector -g solarinspector /var/cache/solarinspector/updates
-sudo install -d -o solarinspector -g solarinspector /var/log/solarinspector
+sudo install -d -o root -g root /opt/zrzavy-energy-monitor/releases
+sudo install -d -o zemonitor -g zemonitor /etc/zrzavy-energy-monitor
+sudo install -d -o zemonitor -g zemonitor /var/lib/zrzavy-energy-monitor/data
+sudo install -d -o zemonitor -g zemonitor /var/lib/zrzavy-energy-monitor/backups
+sudo install -d -o zemonitor -g zemonitor /var/cache/zrzavy-energy-monitor/updates
+sudo install -d -o zemonitor -g zemonitor /var/log/zrzavy-energy-monitor
 ```
 
 Alternativ kann ein vorhandener Benutzer verwendet werden. In diesem Fall müssen Service-Datei, Dateirechte und Besitzverhältnisse konsistent angepasst werden.
@@ -49,21 +49,21 @@ Alternativ kann ein vorhandener Benutzer verwendet werden. In diesem Fall müsse
 
 Auf der GitHub-Releases-Seite die Dateien der gewünschten Version herunterladen:
 
-- `SolarInspector-<VERSION>.tar.gz`
-- `SolarInspector-<VERSION>.tar.gz.sha256`
+- `zrzavy-energy-monitor-<VERSION>.tar.gz`
+- `zrzavy-energy-monitor-<VERSION>.tar.gz.sha256`
 - `release-manifest.json`
 
-Beispielhaft werden die Dateien zunächst nach `/tmp/solarinspector-release` kopiert.
+Beispielhaft werden die Dateien zunächst nach `/tmp/zrzavy-energy-monitor-release` kopiert.
 
 ```bash
-mkdir -p /tmp/solarinspector-release
-cd /tmp/solarinspector-release
+mkdir -p /tmp/zrzavy-energy-monitor-release
+cd /tmp/zrzavy-energy-monitor-release
 ```
 
 ## 4. Prüfsumme kontrollieren
 
 ```bash
-sha256sum -c SolarInspector-<VERSION>.tar.gz.sha256
+sha256sum -c zrzavy-energy-monitor-<VERSION>.tar.gz.sha256
 ```
 
 Nur fortfahren, wenn die Prüfung erfolgreich ist.
@@ -73,10 +73,10 @@ Nur fortfahren, wenn die Prüfung erfolgreich ist.
 Das veröffentlichte Archiv enthält einen gemeinsamen obersten Projektordner. Für das Side-by-side-Layout wird der Inhalt in einen eindeutig benannten Versionsordner entpackt:
 
 ```bash
-RELEASE_DIR="/opt/solarinspector/releases/<VERSION>"
+RELEASE_DIR="/opt/zrzavy-energy-monitor/releases/<VERSION>"
 
 sudo install -d -o root -g root "$RELEASE_DIR"
-sudo tar -xzf SolarInspector-<VERSION>.tar.gz \
+sudo tar -xzf zrzavy-energy-monitor-<VERSION>.tar.gz \
   --strip-components=1 \
   -C "$RELEASE_DIR"
 ```
@@ -96,19 +96,19 @@ Beim ersten Start:
 
 ```bash
 sudo cp \
-  /opt/solarinspector/releases/<VERSION>/app/config.example.json \
-  /etc/solarinspector/config.json
+  /opt/zrzavy-energy-monitor/releases/<VERSION>/app/config.example.json \
+  /etc/zrzavy-energy-monitor/config.json
 
-sudo chown solarinspector:solarinspector \
-  /etc/solarinspector/config.json
+sudo chown zemonitor:zemonitor \
+  /etc/zrzavy-energy-monitor/config.json
 
-sudo chmod 600 /etc/solarinspector/config.json
+sudo chmod 600 /etc/zrzavy-energy-monitor/config.json
 ```
 
 Die Konfiguration anschließend anhand der [Konfigurationsreferenz](configuration.md) bearbeiten.
 
 ```bash
-sudoedit /etc/solarinspector/config.json
+sudoedit /etc/zrzavy-energy-monitor/config.json
 ```
 
 Für einen Raspberry Pi im Heimnetz typischerweise:
@@ -128,14 +128,14 @@ Die vollständige Datei muss alle benötigten Abschnitte aus `config.example.jso
 ## 7. Persistente Pfade verknüpfen
 
 ```bash
-RELEASE_DIR="/opt/solarinspector/releases/<VERSION>"
+RELEASE_DIR="/opt/zrzavy-energy-monitor/releases/<VERSION>"
 
 sudo rm -f "$RELEASE_DIR/app/config.json"
-sudo ln -s /etc/solarinspector/config.json \
+sudo ln -s /etc/zrzavy-energy-monitor/config.json \
   "$RELEASE_DIR/app/config.json"
 
 sudo rm -rf "$RELEASE_DIR/app/data"
-sudo ln -s /var/lib/solarinspector/data \
+sudo ln -s /var/lib/zrzavy-energy-monitor/data \
   "$RELEASE_DIR/app/data"
 ```
 
@@ -152,36 +152,37 @@ sudo "$RELEASE_DIR/.venv/bin/python" -m pip install \
 ## 9. Release aktivieren
 
 ```bash
-sudo ln -sfn "$RELEASE_DIR" /opt/solarinspector/current
-readlink -f /opt/solarinspector/current
+sudo ln -sfn "$RELEASE_DIR" /opt/zrzavy-energy-monitor/current
+readlink -f /opt/zrzavy-energy-monitor/current
 ```
 
 Die Ausgabe muss auf den erwarteten Release-Ordner zeigen.
 
 ## 10. systemd-Service einrichten
 
-Datei `/etc/systemd/system/solarinspector.service`:
+Die mitgelieferte Datei `systemd/zrzavy-energy-monitor.service` wird nach
+`/etc/systemd/system/zrzavy-energy-monitor.service` installiert.
 
 ```ini
 [Unit]
-Description=SolarInspector
+Description=Zrzavy Energy Monitor
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=solarinspector
-Group=solarinspector
-WorkingDirectory=/opt/solarinspector/current/app
-ExecStart=/opt/solarinspector/current/.venv/bin/python /opt/solarinspector/current/app/solarinspector.py --no-browser
+User=zemonitor
+Group=zemonitor
+WorkingDirectory=/opt/zrzavy-energy-monitor/current
+ExecStart=/opt/zrzavy-energy-monitor/current/.venv/bin/python /opt/zrzavy-energy-monitor/current/app/zrzavy_energy_monitor.py --no-browser
 Restart=on-failure
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
-Environment=SOLARINSPECTOR_CONFIG_PATH=/etc/solarinspector/config.json
-Environment=SOLARINSPECTOR_DATABASE_PATH=/var/lib/solarinspector/data/solarinspector.db
-Environment=SOLARINSPECTOR_UPDATE_STATUS_PATH=/var/lib/solarinspector/update-status.json
-Environment=SOLARINSPECTOR_UPDATE_REQUEST_PATH=/var/lib/solarinspector/update-request.json
-Environment=SOLARINSPECTOR_UPDATE_CACHE_DIR=/var/cache/solarinspector/updates
+Environment=ZRZAVY_ENERGY_MONITOR_CONFIG_PATH=/etc/zrzavy-energy-monitor/config.json
+Environment=ZRZAVY_ENERGY_MONITOR_DATABASE_PATH=/var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db
+Environment=ZRZAVY_ENERGY_MONITOR_UPDATE_STATUS_PATH=/var/lib/zrzavy-energy-monitor/update-status.json
+Environment=ZRZAVY_ENERGY_MONITOR_UPDATE_REQUEST_PATH=/var/lib/zrzavy-energy-monitor/update-request.json
+Environment=ZRZAVY_ENERGY_MONITOR_UPDATE_CACHE_DIR=/var/cache/zrzavy-energy-monitor/updates
 
 [Install]
 WantedBy=multi-user.target
@@ -191,8 +192,8 @@ Aktivieren:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now solarinspector.service
-sudo systemctl status solarinspector.service
+sudo systemctl enable --now zrzavy-energy-monitor.service
+sudo systemctl status zrzavy-energy-monitor.service
 ```
 
 ## 11. Healthcheck und Browserzugriff prüfen
@@ -214,15 +215,15 @@ http://<IP-DES-RASPBERRY-PI>:8787/
 Das Repository enthält dafür das Bootstrap-Skript:
 
 ```bash
-cd /opt/solarinspector/current
+cd /opt/zrzavy-energy-monitor/current
 sudo ./scripts/install-updater-bootstrap.sh
 ```
 
 Danach prüfen:
 
 ```bash
-systemctl status solarinspector-updater.path
-systemctl cat solarinspector-updater.service
+systemctl status zrzavy-energy-monitor-updater.path
+systemctl cat zrzavy-energy-monitor-updater.service
 ```
 
 Der Updater sollte erst aktiviert werden, nachdem der normale Service und der lokale Healthcheck zuverlässig funktionieren.
@@ -242,11 +243,11 @@ Der Updater sollte erst aktiviert werden, nachdem der normale Service und der lo
 Vor jedem manuellen Upgrade:
 
 ```bash
-sudo systemctl stop solarinspector.service
+sudo systemctl stop zrzavy-energy-monitor.service
 sudo tar -czf \
-  "$HOME/solarinspector-backup-$(date +%Y%m%d-%H%M%S).tar.gz" \
-  /etc/solarinspector \
-  /var/lib/solarinspector
+  "$HOME/zrzavy-energy-monitor-backup-$(date +%Y%m%d-%H%M%S).tar.gz" \
+  /etc/zrzavy-energy-monitor \
+  /var/lib/zrzavy-energy-monitor
 ```
 
 Bestehende Installationen der 3.x- oder frühen 4.0-Reihe können das enthaltene Upgrade-Skript verwenden. Vorher sollte dessen Zielversion und Installationspfad kontrolliert werden, da es zum Übergangsmodell gehört.
@@ -256,8 +257,8 @@ Bestehende Installationen der 3.x- oder frühen 4.0-Reihe können das enthaltene
 Vor der Deinstallation immer Konfiguration und Datenbank sichern.
 
 ```bash
-sudo systemctl disable --now solarinspector.service
-sudo systemctl disable --now solarinspector-updater.path
+sudo systemctl disable --now zrzavy-energy-monitor.service
+sudo systemctl disable --now zrzavy-energy-monitor-updater.path
 ```
 
-Anschließend können Programm- und Laufzeitverzeichnisse gezielt entfernt werden. `/etc/solarinspector` und `/var/lib/solarinspector` sollten nur gelöscht werden, wenn Sicherung und Messdaten nicht mehr benötigt werden.
+Anschließend können Programm- und Laufzeitverzeichnisse gezielt entfernt werden. `/etc/zrzavy-energy-monitor` und `/var/lib/zrzavy-energy-monitor` sollten nur gelöscht werden, wenn Sicherung und Messdaten nicht mehr benötigt werden.

@@ -1,0 +1,306 @@
+"""Load, validate, and persist the existing SolarInspector configuration.
+
+This module preserves the configuration behavior of SolarInspector 4.1.3.
+It does not access devices, databases, Flask, or the collector.
+"""
+
+from __future__ import annotations
+
+import json
+import threading
+from dataclasses import asdict
+from pathlib import Path
+from typing import Any, Callable
+
+from zrzavy_energy_monitor_core.branding import LEGACY_PRODUCT_NAME, PRODUCT_NAME
+from zrzavy_energy_monitor_core.config.defaults import (
+    DEFAULT_CONFIG,
+    DEVICE_TYPES,
+)
+from zrzavy_energy_monitor_core.config.energy_balance import (
+    normalize_energy_balance_config,
+)
+from zrzavy_energy_monitor_core.config.grid_meter import (
+    normalize_grid_meter_config,
+)
+from zrzavy_energy_monitor_core.config.shelly import (
+    normalize_direction_factor,
+    normalize_measurement_role,
+    normalize_phase_direction,
+)
+from zrzavy_energy_monitor_core.logging import log as default_log
+from zrzavy_energy_monitor_core.persistence.retention import RetentionPolicy
+from zrzavy_energy_monitor_core.validation.config import (
+    normalize_comparison_config,
+    normalize_validation_config,
+)
+from zrzavy_energy_monitor_core.validation.persistence import (
+    ValidationEventPersistencePolicy,
+)
+
+LogFunction = Callable[[str], None]
+
+
+def deep_merge(
+    base: dict[str, Any],
+    override: dict[str, Any],
+) -> dict[str, Any]:
+    """Recursively merge override values into a shallow copy of base."""
+    result = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(
+            result.get(key),
+            dict,
+        ):
+            result[key] = deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def _normalize_validation_runtime_config(
+    config: dict[str, Any],
+) -> None:
+    """Normalize explicit UI comparison and persistence settings."""
+
+    raw_validation = config.get("validation")
+    validation = normalize_validation_config(raw_validation)
+
+    if isinstance(raw_validation, dict) and "persistence" in raw_validation:
+        validation["persistence"] = asdict(
+            ValidationEventPersistencePolicy.from_config(
+                raw_validation.get("persistence")
+            )
+        )
+    else:
+        validation.pop("persistence", None)
+
+    for source_settings in validation["sources"].values():
+        raw_comparisons = source_settings.get("comparisons")
+        if not isinstance(raw_comparisons, dict):
+            continue
+        source_settings["comparisons"] = {
+            str(name): normalize_comparison_config(settings)
+            for name, settings in raw_comparisons.items()
+            if str(name).strip()
+        }
+
+    config["validation"] = validation
+
+
+class ConfigManager:
+    """Load, validate, copy, and atomically save configuration data."""
+
+    def __init__(
+        self,
+        path: Path,
+        logger: LogFunction = default_log,
+    ) -> None:
+        self.path = path
+        self._logger = logger
+        self._lock = threading.RLock()
+        self._config = self._load()
+
+    def _load(self) -> dict[str, Any]:
+        if not self.path.exists():
+            self.path.write_text(
+                json.dumps(
+                    DEFAULT_CONFIG,
+                    indent=2,
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            return deep_merge(DEFAULT_CONFIG, {})
+
+        try:
+            loaded = json.loads(self.path.read_text(encoding="utf-8"))
+            return self.validate(deep_merge(DEFAULT_CONFIG, loaded))
+        except Exception as exc:
+            self._logger(
+                "Konfiguration konnte nicht gelesen werden: "
+                f"{exc}; Standardwerte werden verwendet."
+            )
+            return deep_merge(DEFAULT_CONFIG, {})
+
+    def get(self) -> dict[str, Any]:
+        """Return an independent copy of the current configuration."""
+        with self._lock:
+            return json.loads(json.dumps(self._config))
+
+    def save(self, config: dict[str, Any]) -> None:
+        """Validate and atomically persist a configuration."""
+        validated = self.validate(deep_merge(DEFAULT_CONFIG, config))
+        with self._lock:
+            temporary = self.path.with_suffix(".tmp")
+            temporary.write_text(
+                json.dumps(
+                    validated,
+                    indent=2,
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            temporary.replace(self.path)
+            self._config = validated
+
+    @staticmethod
+    def validate(
+        config: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Apply the existing SolarInspector validation rules."""
+        general = config["general"]
+        general["poll_interval_seconds"] = max(
+            2,
+            min(
+                3600,
+                int(
+                    general.get(
+                        "poll_interval_seconds",
+                        10,
+                    )
+                ),
+            ),
+        )
+        general["port"] = max(
+            1,
+            min(
+                65535,
+                int(general.get("port", 8787)),
+            ),
+        )
+        general["bind_host"] = (
+            str(
+                general.get(
+                    "bind_host",
+                    "127.0.0.1",
+                )
+            ).strip()
+            or "127.0.0.1"
+        )
+        general["project_name"] = str(
+            general.get(
+                "project_name",
+                PRODUCT_NAME,
+            )
+        ).strip()
+        if general["project_name"] == LEGACY_PRODUCT_NAME:
+            general["project_name"] = PRODUCT_NAME
+        general["site_name"] = str(general.get("site_name", "")).strip()
+        general["auto_start_collection"] = bool(
+            general.get(
+                "auto_start_collection",
+                False,
+            )
+        )
+        general["open_browser"] = bool(general.get("open_browser", True))
+
+        if general.get("solar_power_source") not in {
+            "auto",
+            "shelly_ac",
+            "solakon_ac",
+            "solakon_pv",
+        }:
+            general["solar_power_source"] = "auto"
+
+        if general.get("grid_power_source") not in {
+            "auto",
+            "house_meter",
+            "solakon_one",
+        }:
+            general["grid_power_source"] = "auto"
+
+        config["validation"] = normalize_validation_config(config.get("validation"))
+        persistence = config.get("persistence")
+        if not isinstance(persistence, dict):
+            persistence = {}
+        raw_retention = persistence.get("retention")
+        if not isinstance(raw_retention, dict):
+            raw_retention = None
+        persistence["retention"] = asdict(RetentionPolicy.from_mapping(raw_retention))
+        config["persistence"] = persistence
+        config["energy_balance"] = normalize_energy_balance_config(
+            config.get("energy_balance")
+        )
+        config["grid_meter"] = normalize_grid_meter_config(config.get("grid_meter"))
+
+        solakon = config["solakon_one"]
+        solakon["enabled"] = bool(solakon.get("enabled", False))
+        solakon["host"] = (
+            str(solakon.get("host", ""))
+            .strip()
+            .replace("http://", "")
+            .replace("https://", "")
+            .rstrip("/")
+        )
+        solakon["port"] = max(
+            1,
+            min(
+                65535,
+                int(solakon.get("port", 502)),
+            ),
+        )
+        solakon["device_id"] = max(
+            1,
+            min(
+                247,
+                int(solakon.get("device_id", 1)),
+            ),
+        )
+        solakon["timeout_seconds"] = max(
+            1,
+            min(
+                30,
+                int(
+                    solakon.get(
+                        "timeout_seconds",
+                        5,
+                    )
+                ),
+            ),
+        )
+        solakon["simulation"] = bool(solakon.get("simulation", False))
+
+        for role in ("house_meter", "solakon_meter"):
+            device = config[role]
+
+            if device.get("type") not in DEVICE_TYPES:
+                device["type"] = DEFAULT_CONFIG[role]["type"]
+
+            device["enabled"] = bool(device.get("enabled", False))
+            device["host"] = (
+                str(device.get("host", ""))
+                .strip()
+                .replace("http://", "")
+                .replace("https://", "")
+                .rstrip("/")
+            )
+            device["username"] = str(device.get("username", "")).strip()
+            device["password"] = str(device.get("password", ""))
+            device["timeout_seconds"] = max(
+                1,
+                min(
+                    30,
+                    int(
+                        device.get(
+                            "timeout_seconds",
+                            3,
+                        )
+                    ),
+                ),
+            )
+
+            device["direction_factor"] = normalize_direction_factor(
+                device.get("direction_factor", 1)
+            )
+
+            if role == "house_meter":
+                device["measurement_role"] = normalize_measurement_role(
+                    device.get("measurement_role")
+                )
+                device["phase_direction"] = normalize_phase_direction(
+                    device.get("phase_direction")
+                )
+
+        _normalize_validation_runtime_config(config)
+        return config

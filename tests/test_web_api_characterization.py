@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import pytest
-import solarinspector as si
+import zrzavy_energy_monitor as si
 
 pytestmark = pytest.mark.characterization
 
@@ -503,7 +503,7 @@ def test_csv_export_contract_and_date_range(web_context: Any) -> None:
     assert response.status_code == 200
     assert response.content_type.startswith("text/csv")
     assert response.headers["Content-Disposition"] == (
-        'attachment; filename="solarinspector_2026-07-23_2026-07-24.csv"'
+        'attachment; filename="zrzavy-energy-monitor_2026-07-23_2026-07-24.csv"'
     )
 
     reader = csv.DictReader(

@@ -100,7 +100,7 @@ def test_prepare_release_environment(
     mock_smoke_test,
     tmp_path: Path,
 ):
-    archive_path = tmp_path / "SolarInspector-4.1.0.tar.gz"
+    archive_path = tmp_path / "zrzavy-energy-monitor-4.1.0.tar.gz"
     releases_directory = tmp_path / "releases"
 
     create_valid_archive(archive_path)
@@ -133,12 +133,12 @@ def test_prepare_release_environment(
 
 
 def create_valid_archive(path: Path, version: str = "4.1.0") -> None:
-    root = f"SolarInspector-{version}"
+    root = f"zrzavy-energy-monitor-{version}"
 
     files = {
         f"{root}/VERSION": version.encode(),
         f"{root}/release-manifest.json": b"{}",
-        f"{root}/app/solarinspector.py": b"print('ok')",
+        f"{root}/app/zrzavy_energy_monitor.py": b"print('ok')",
         f"{root}/app/requirements.txt": b"Flask>=3",
     }
 
@@ -150,19 +150,19 @@ def create_valid_archive(path: Path, version: str = "4.1.0") -> None:
 
 
 def test_valid_release_archive(tmp_path: Path):
-    archive_path = tmp_path / "SolarInspector-4.1.0.tar.gz"
+    archive_path = tmp_path / "zrzavy-energy-monitor-4.1.0.tar.gz"
     create_valid_archive(archive_path)
 
     members = validate_release_archive(
         archive_path,
-        "SolarInspector-4.1.0",
+        "zrzavy-energy-monitor-4.1.0",
     )
 
     assert len(members) == 4
 
 
 def test_prepare_release(tmp_path: Path):
-    archive_path = tmp_path / "SolarInspector-4.1.0.tar.gz"
+    archive_path = tmp_path / "zrzavy-energy-monitor-4.1.0.tar.gz"
     releases_directory = tmp_path / "releases"
 
     create_valid_archive(archive_path)
@@ -175,7 +175,7 @@ def test_prepare_release(tmp_path: Path):
 
     assert result == releases_directory / "4.1.0"
     assert (result / "VERSION").read_text() == "4.1.0"
-    assert (result / "app" / "solarinspector.py").exists()
+    assert (result / "app" / "zrzavy_energy_monitor.py").exists()
 
 
 def test_path_traversal_is_rejected(tmp_path: Path):
@@ -184,7 +184,7 @@ def test_path_traversal_is_rejected(tmp_path: Path):
     with tarfile.open(archive_path, "w:gz") as archive:
         content = b"bad"
         info = tarfile.TarInfo(
-            name="SolarInspector-4.1.0/../../evil.txt"
+            name="zrzavy-energy-monitor-4.1.0/../../evil.txt"
         )
         info.size = len(content)
         archive.addfile(info, io.BytesIO(content))
@@ -192,7 +192,7 @@ def test_path_traversal_is_rejected(tmp_path: Path):
     with pytest.raises(ReleaseInstallError):
         validate_release_archive(
             archive_path,
-            "SolarInspector-4.1.0",
+            "zrzavy-energy-monitor-4.1.0",
         )
 
 
@@ -201,7 +201,7 @@ def test_symlink_is_rejected(tmp_path: Path):
 
     with tarfile.open(archive_path, "w:gz") as archive:
         info = tarfile.TarInfo(
-            name="SolarInspector-4.1.0/app/link"
+            name="zrzavy-energy-monitor-4.1.0/app/link"
         )
         info.type = tarfile.SYMTYPE
         info.linkname = "/etc/passwd"
@@ -210,13 +210,13 @@ def test_symlink_is_rejected(tmp_path: Path):
     with pytest.raises(ReleaseInstallError):
         validate_release_archive(
             archive_path,
-            "SolarInspector-4.1.0",
+            "zrzavy-energy-monitor-4.1.0",
         )
 
 
 def test_runtime_config_is_rejected(tmp_path: Path):
     archive_path = tmp_path / "config.tar.gz"
-    root = "SolarInspector-4.1.0"
+    root = "zrzavy-energy-monitor-4.1.0"
 
     with tarfile.open(archive_path, "w:gz") as archive:
         content = b"{}"

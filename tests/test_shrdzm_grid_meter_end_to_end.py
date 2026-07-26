@@ -7,22 +7,22 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from solarinspector_core.adapters.grid_meter_factory import (
+from zrzavy_energy_monitor_core.adapters.grid_meter_factory import (
     create_grid_meter_adapter,
 )
-from solarinspector_core.adapters.shrdzm_grid_meter import (
+from zrzavy_energy_monitor_core.adapters.shrdzm_grid_meter import (
     ShrdzmRestGridMeterAdapter,
 )
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.config.grid_meter import (
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.config.grid_meter import (
     DEFAULT_SHRDZM_REST_MAPPING,
 )
-from solarinspector_core.config.manager import ConfigManager
-from solarinspector_core.services.collector import Collector
-from solarinspector_core.web.api import (
+from zrzavy_energy_monitor_core.config.manager import ConfigManager
+from zrzavy_energy_monitor_core.services.collector import Collector
+from zrzavy_energy_monitor_core.web.api import (
     build_test_device_api_response,
 )
-from solarinspector_core.web.configuration import (
+from zrzavy_energy_monitor_core.web.configuration import (
     apply_configuration_form,
 )
 

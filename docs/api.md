@@ -2,7 +2,7 @@
 
 ## Status
 
-Die REST-Endpunkte der 4.1-Reihe dienen primär der SolarInspector-Weboberfläche und dem lokalen Betrieb. Sie sind noch nicht als dauerhaft stabile öffentliche Integrations-API garantiert.
+Die REST-Endpunkte von Zrzavy Energy Monitor 4.5 dienen primär der Weboberfläche und dem lokalen Betrieb. Sie sind noch nicht als dauerhaft stabile öffentliche Integrations-API garantiert.
 
 - Basis-URL lokal: `http://127.0.0.1:8787`
 - Format: JSON
@@ -24,9 +24,12 @@ Beispiel:
 ```json
 {
   "status": "ok",
-  "version": "4.1.3",
+  "version": "4.5.0",
   "database": "ok",
-  "web": "ok"
+  "web": "ok",
+  "product_name": "Zrzavy Energy Monitor",
+  "product_id": "zrzavy-energy-monitor",
+  "product_description": "Open-source home energy monitoring and validation"
 }
 ```
 
@@ -47,8 +50,11 @@ Beispiel:
 
 ```json
 {
-  "product": "SolarInspector",
-  "version": "4.1.3"
+  "product": "Zrzavy Energy Monitor",
+  "product_name": "Zrzavy Energy Monitor",
+  "product_id": "zrzavy-energy-monitor",
+  "product_description": "Open-source home energy monitoring and validation",
+  "version": "4.5.0"
 }
 ```
 
@@ -132,13 +138,13 @@ Typische Antwortfelder:
 
 ```json
 {
-  "installed_version": "4.1.2",
-  "available_version": "4.1.3",
+  "installed_version": "4.5.0",
+  "available_version": "4.6.0",
   "update_available": true,
   "channel": "stable",
   "published_at": "2026-07-20T00:00:00Z",
   "release_notes": "Release notes",
-  "asset_name": "SolarInspector-4.1.3.tar.gz"
+  "asset_name": "zrzavy-energy-monitor-4.5.0.tar.gz"
 }
 ```
 
@@ -173,8 +179,8 @@ Beispiel:
   "state": "completed",
   "progress": 100,
   "message": "Update erfolgreich installiert.",
-  "installed_version": "4.1.3",
-  "available_version": "4.1.3",
+  "installed_version": "4.5.0",
+  "available_version": "4.5.0",
   "updated_at": "2026-07-20T10:00:00+00:00"
 }
 ```

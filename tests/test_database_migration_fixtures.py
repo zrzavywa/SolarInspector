@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from solarinspector_core.persistence.migrations import (
+from zrzavy_energy_monitor_core.persistence.migrations import (
     apply_migrations,
     get_current_version,
 )

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from solarinspector_core.validation.replay import (
+from zrzavy_energy_monitor_core.validation.replay import (
     load_replay_scenario,
     run_replay_scenario,
 )

@@ -6,12 +6,12 @@ import json
 from pathlib import Path
 
 import pytest
-from solarinspector_core.config.energy_balance import (
+from zrzavy_energy_monitor_core.config.energy_balance import (
     DEFAULT_ENERGY_BALANCE_CONFIG,
     EnergyBalanceConfigurationError,
     normalize_energy_balance_config,
 )
-from solarinspector_core.config.manager import ConfigManager
+from zrzavy_energy_monitor_core.config.manager import ConfigManager
 
 
 def test_defaults_use_existing_stable_source_ids() -> None:

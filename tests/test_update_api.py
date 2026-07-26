@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 import pytest
-import solarinspector as si
+import zrzavy_energy_monitor as si
 from github_updater import ReleaseInfo
 
 pytestmark = pytest.mark.release
@@ -23,6 +23,11 @@ def test_health_endpoint():
     payload = response.get_json()
     assert payload["status"] == "ok"
     assert payload["version"] == si.get_installed_version()
+    assert payload["product_name"] == "Zrzavy Energy Monitor"
+    assert payload["product_id"] == "zrzavy-energy-monitor"
+    assert payload["product_description"] == (
+        "Open-source home energy monitoring and validation"
+    )
 
 def test_system_version_endpoint():
     client = si.app.test_client()
@@ -31,7 +36,12 @@ def test_system_version_endpoint():
 
     assert response.status_code == 200
     payload = response.get_json()
-    assert payload["product"] == "SolarInspector"
+    assert payload["product"] == "Zrzavy Energy Monitor"
+    assert payload["product_name"] == "Zrzavy Energy Monitor"
+    assert payload["product_id"] == "zrzavy-energy-monitor"
+    assert payload["product_description"] == (
+        "Open-source home energy monitoring and validation"
+    )
     assert payload["version"] == si.get_installed_version()
 
 def test_update_page():
@@ -43,8 +53,11 @@ def test_update_page():
     assert b"Software-Update" in response.data
     assert b"Update herunterladen und pr" in response.data
     assert b"Downloadstatus" in response.data
+    assert b"Zrzavy Energy Monitor" in response.data
+    assert b"SolarInspector" in response.data
+    assert b"Hinweis zum Namenswechsel" in response.data
 
-@patch("solarinspector.check_for_update")
+@patch("zrzavy_energy_monitor.check_for_update")
 def test_update_check_endpoint(mock_check):
     mock_check.return_value = ReleaseInfo(
         installed_version="4.1.0",

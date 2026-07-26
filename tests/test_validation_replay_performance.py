@@ -6,16 +6,16 @@ import time
 import tracemalloc
 from datetime import datetime, timedelta, timezone
 
-from solarinspector_core.models.device import (
+from zrzavy_energy_monitor_core.models.device import (
     DeviceConnectionStatus,
     DeviceSnapshot,
 )
-from solarinspector_core.models.measurement import Measurement
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.units import unit_for_metric
-from solarinspector_core.validation import CollectorValidationBridge
+from zrzavy_energy_monitor_core.models.measurement import Measurement
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.units import unit_for_metric
+from zrzavy_energy_monitor_core.validation import CollectorValidationBridge
 
 BASE_TIME = datetime(2026, 7, 25, 14, 0, tzinfo=timezone.utc)
 

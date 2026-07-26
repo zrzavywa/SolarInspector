@@ -4,14 +4,14 @@
 
 Dieses Dokument trennt zwei Ebenen:
 
-1. **Ist-Architektur 4.1** – heute eingesetzte Struktur
+1. **Ist-Architektur 4.5** – heute eingesetzte Struktur
 2. **Zielarchitektur 5.0** – geplante Modularisierung
 
 Damit werden geplante Komponenten nicht versehentlich als bereits implementiert dargestellt.
 
-## Ist-Architektur 4.1
+## Ist-Architektur 4.5
 
-SolarInspector 4.1 ist eine lokale Python-/Flask-Anwendung mit folgenden Hauptbestandteilen:
+Zrzavy Energy Monitor 4.5 ist eine lokale Python-/Flask-Anwendung mit folgenden Hauptbestandteilen:
 
 - Weboberfläche und REST-Endpunkte
 - Gerätezugriff für Solakon ONE und Shelly
@@ -46,30 +46,30 @@ flowchart TD
     WEB --> B[Browser]
 ```
 
-## Deployment-Layout 4.1
+## Deployment-Layout 4.5
 
 ```text
-/opt/solarinspector/
+/opt/zrzavy-energy-monitor/
 ├── current -> releases/<aktive-version>
 ├── releases/
 │   ├── <vorherige-version>/
 │   └── <aktive-version>/
 └── updater/
 
-/etc/solarinspector/
+/etc/zrzavy-energy-monitor/
 └── config.json
 
-/var/lib/solarinspector/
+/var/lib/zrzavy-energy-monitor/
 ├── data/
-│   └── solarinspector.db
+│   └── zrzavy-energy-monitor.db
 ├── backups/
 ├── update-request.json
 └── update-status.json
 
-/var/cache/solarinspector/
+/var/cache/zrzavy-energy-monitor/
 └── updates/
 
-/var/log/solarinspector/
+/var/log/zrzavy-energy-monitor/
 ```
 
 Jedes Release besitzt eine eigene virtuelle Python-Umgebung. Konfiguration und Datenbank liegen außerhalb des Release-Verzeichnisses und werden in das aktive Release eingebunden.
@@ -135,10 +135,10 @@ SQLite ist für eine einzelne lokale Installation angemessen. Datenbankzugriffe 
 
 ## Zielarchitektur 5.0 – geplant
 
-Die geplante Struktur trennt Domänenlogik und technische Adapter deutlicher. Das Modul `mqtt` ist Teil dieses Zielbilds und nicht Bestandteil der dokumentierten 4.1-Laufzeit:
+Die geplante Struktur trennt Domänenlogik und technische Adapter noch weiter. Das Modul `mqtt` ist Teil dieses Zielbilds und nicht Bestandteil der dokumentierten 4.5-Laufzeit:
 
 ```text
-solarinspector/
+zrzavy-energy-monitor/
 ├── api/
 ├── collectors/
 ├── configuration/

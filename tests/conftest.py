@@ -10,11 +10,11 @@ from pathlib import Path
 
 _TEST_APPLICATION_DIRECTORY = Path(tempfile.mkdtemp(prefix="solarinspector-pytest-"))
 os.environ.setdefault(
-    "SOLARINSPECTOR_DATABASE_PATH",
-    str(_TEST_APPLICATION_DIRECTORY / "solarinspector.db"),
+    "ZRZAVY_ENERGY_MONITOR_DATABASE_PATH",
+    str(_TEST_APPLICATION_DIRECTORY / "zrzavy-energy-monitor.db"),
 )
 os.environ.setdefault(
-    "SOLARINSPECTOR_SECRET",
+    "ZRZAVY_ENERGY_MONITOR_SECRET",
     "solarinspector-test-secret",
 )
 atexit.register(shutil.rmtree, _TEST_APPLICATION_DIRECTORY, True)

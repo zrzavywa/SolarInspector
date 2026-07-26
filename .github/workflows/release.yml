@@ -45,7 +45,7 @@ jobs:
 
       - name: Tests ausführen
         env:
-          SOLARINSPECTOR_SECRET: github-actions-release-secret
+          ZRZAVY_ENERGY_MONITOR_SECRET: github-actions-release-secret
         run: |
           python -m pytest -v tests
 
@@ -69,6 +69,6 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            dist/SolarInspector-*.tar.gz
-            dist/SolarInspector-*.sha256
+            dist/zrzavy-energy-monitor-*.tar.gz
+            dist/zrzavy-energy-monitor-*.sha256
             release-manifest.json

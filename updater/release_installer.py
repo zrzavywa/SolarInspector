@@ -18,9 +18,7 @@ def create_release_venv(
     release_directory: Path,
     python_executable: str | None = None,
 ) -> Path:
-    python_executable = os.path.realpath(
-    python_executable or sys.executable
-)
+    python_executable = os.path.realpath(python_executable or sys.executable)
     venv_directory = release_directory / ".venv"
 
     if venv_directory.exists():
@@ -46,6 +44,7 @@ def create_release_venv(
 
     return venv_directory
 
+
 def get_venv_python(venv_directory: Path) -> Path:
     if os.name == "nt":
         return venv_directory / "Scripts" / "python.exe"
@@ -57,14 +56,10 @@ def install_release_dependencies(
     release_directory: Path,
     venv_directory: Path,
 ) -> None:
-    requirements_file = (
-        release_directory / "app" / "requirements.txt"
-    )
+    requirements_file = release_directory / "app" / "requirements.txt"
 
     if not requirements_file.is_file():
-        raise ReleaseInstallError(
-            "requirements.txt fehlt im vorbereiteten Release."
-        )
+        raise ReleaseInstallError("requirements.txt fehlt im vorbereiteten Release.")
 
     venv_python = get_venv_python(venv_directory)
 
@@ -103,7 +98,6 @@ def install_release_dependencies(
         ) from exc
 
 
-
 def _is_safe_member(member: tarfile.TarInfo, target_directory: Path) -> bool:
     member_path = target_directory / member.name
     resolved_target = target_directory.resolve()
@@ -119,6 +113,7 @@ def _is_safe_member(member: tarfile.TarInfo, target_directory: Path) -> bool:
 
     return True
 
+
 def run_release_smoke_test(
     release_directory: Path,
     venv_directory: Path,
@@ -129,15 +124,15 @@ def run_release_smoke_test(
     environment["PYTHONPATH"] = str(release_directory / "app")
     environment.setdefault(
         "SOLARINSPECTOR_SECRET",
-        "solarinspector-release-smoke-test",
+        "zrzavy-energy-monitor-release-smoke-test",
     )
 
     command = [
         str(venv_python),
         "-c",
         (
-            "import solarinspector; "
-            "print(solarinspector.get_installed_version())"
+            "import zrzavy_energy_monitor; "
+            "print(zrzavy_energy_monitor.get_installed_version())"
         ),
     ]
 
@@ -162,8 +157,8 @@ def run_release_smoke_test(
         ) from exc
 
     expected_version = (
-        release_directory / "VERSION"
-    ).read_text(encoding="utf-8").strip()
+        (release_directory / "VERSION").read_text(encoding="utf-8").strip()
+    )
 
     actual_version = result.stdout.strip()
 
@@ -213,9 +208,7 @@ def validate_release_archive(
     expected_top_level: str,
 ) -> list[tarfile.TarInfo]:
     if not archive_path.is_file():
-        raise ReleaseInstallError(
-            f"Release-Archiv nicht gefunden: {archive_path}"
-        )
+        raise ReleaseInstallError(f"Release-Archiv nicht gefunden: {archive_path}")
 
     try:
         with tarfile.open(archive_path, "r:gz") as archive:
@@ -226,44 +219,33 @@ def validate_release_archive(
         ) from exc
 
     if not members:
-        raise ReleaseInstallError(
-            "Das Release-Archiv ist leer."
-        )
+        raise ReleaseInstallError("Das Release-Archiv ist leer.")
 
     target_directory = Path("/validation-root")
 
     for member in members:
         if not _is_safe_member(member, target_directory):
-            raise ReleaseInstallError(
-                f"Unsicherer Archiveintrag: {member.name}"
-            )
+            raise ReleaseInstallError(f"Unsicherer Archiveintrag: {member.name}")
 
         first_component = Path(member.name).parts[0]
 
         if first_component != expected_top_level:
-            raise ReleaseInstallError(
-                f"Unerwartete Verzeichnisstruktur: {member.name}"
-            )
+            raise ReleaseInstallError(f"Unerwartete Verzeichnisstruktur: {member.name}")
 
     required_files = {
         f"{expected_top_level}/VERSION",
         f"{expected_top_level}/release-manifest.json",
-        f"{expected_top_level}/app/solarinspector.py",
+        f"{expected_top_level}/app/zrzavy_energy_monitor.py",
         f"{expected_top_level}/app/requirements.txt",
     }
 
-    available_files = {
-        member.name.rstrip("/")
-        for member in members
-        if member.isfile()
-    }
+    available_files = {member.name.rstrip("/") for member in members if member.isfile()}
 
     missing = required_files - available_files
 
     if missing:
         raise ReleaseInstallError(
-            "Pflichtdateien fehlen im Release: "
-            + ", ".join(sorted(missing))
+            "Pflichtdateien fehlen im Release: " + ", ".join(sorted(missing))
         )
 
     forbidden_names = {
@@ -286,7 +268,7 @@ def prepare_release(
     version: str,
     releases_directory: Path,
 ) -> Path:
-    expected_top_level = f"SolarInspector-{version}"
+    expected_top_level = f"zrzavy-energy-monitor-{version}"
     target_directory = releases_directory / version
     temporary_directory = releases_directory / f".{version}.tmp"
 
@@ -337,9 +319,7 @@ def read_current_release(current_link: Path) -> Path | None:
         return None
 
     if not current_link.is_symlink():
-        raise ReleaseInstallError(
-            f"{current_link} ist kein symbolischer Link."
-        )
+        raise ReleaseInstallError(f"{current_link} ist kein symbolischer Link.")
 
     try:
         return current_link.resolve(strict=True)
@@ -348,22 +328,19 @@ def read_current_release(current_link: Path) -> Path | None:
             "Der current-Link verweist auf kein gültiges Release."
         ) from exc
 
+
 def activate_release(
     release_directory: Path,
     current_link: Path,
 ) -> Path | None:
     if not release_directory.is_dir():
-        raise ReleaseInstallError(
-            f"Release-Verzeichnis fehlt: {release_directory}"
-        )
+        raise ReleaseInstallError(f"Release-Verzeichnis fehlt: {release_directory}")
 
     previous_release = read_current_release(current_link)
 
     current_link.parent.mkdir(parents=True, exist_ok=True)
 
-    temporary_link = current_link.with_name(
-        f".{current_link.name}.tmp"
-    )
+    temporary_link = current_link.with_name(f".{current_link.name}.tmp")
 
     temporary_link.unlink(missing_ok=True)
 
@@ -377,9 +354,7 @@ def activate_release(
     active_release = read_current_release(current_link)
 
     if active_release != release_directory.resolve():
-        raise ReleaseInstallError(
-            "Das Release konnte nicht aktiviert werden."
-        )
+        raise ReleaseInstallError("Das Release konnte nicht aktiviert werden.")
 
     return previous_release
 
@@ -400,7 +375,7 @@ def wait_for_healthcheck(
                 timeout=5,
                 headers={
                     "Accept": "application/json",
-                    "User-Agent": "SolarInspector-Updater",
+                    "User-Agent": "ZrzavyEnergyMonitor-Updater",
                 },
             )
             response.raise_for_status()
@@ -479,9 +454,7 @@ def rollback_release(
     current_link: Path,
 ) -> Path:
     if not previous_release.is_dir():
-        raise ReleaseInstallError(
-            f"Vorheriges Release fehlt: {previous_release}"
-        )
+        raise ReleaseInstallError(f"Vorheriges Release fehlt: {previous_release}")
 
     activate_release(
         release_directory=previous_release,

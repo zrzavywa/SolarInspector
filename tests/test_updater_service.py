@@ -24,7 +24,7 @@ def test_read_request(tmp_path: Path):
                 "version": "4.1.0",
                 "archive_path": (
                     "/tmp/"
-                    "SolarInspector-4.1.0.tar.gz"
+                    "zrzavy-energy-monitor-4.1.0.tar.gz"
                 ),
             }
         ),
@@ -58,7 +58,7 @@ def test_run_update(
 
     archive_path = (
         tmp_path
-        / "SolarInspector-4.1.0.tar.gz"
+        / "zrzavy-energy-monitor-4.1.0.tar.gz"
     )
 
     request_path.write_text(
@@ -81,7 +81,7 @@ def test_run_update(
     app_directory.mkdir(parents=True)
 
     config_path = tmp_path / "config.json"
-    database_path = tmp_path / "solarinspector.db"
+    database_path = tmp_path / "zrzavy-energy-monitor.db"
 
     config_path.write_text(
         '{"test": true}',
@@ -102,7 +102,7 @@ def test_run_update(
         releases_directory=releases,
         current_link=current,
         healthcheck_url="http://127.0.0.1:8787/api/health",
-        service_name="solarinspector.service",
+        service_name="zrzavy-energy-monitor.service",
         backup_directory=tmp_path / "backups",
         config_path=config_path,
         database_path=database_path,
@@ -134,7 +134,7 @@ def test_run_update(
 def test_create_backup(tmp_path: Path):
     backup_directory = tmp_path / "backups"
     config_path = tmp_path / "config.json"
-    database_path = tmp_path / "solarinspector.db"
+    database_path = tmp_path / "zrzavy-energy-monitor.db"
 
     releases = tmp_path / "releases"
     current_release = releases / "4.0.1"
@@ -155,6 +155,6 @@ def test_create_backup(tmp_path: Path):
     )
 
     assert (result / "config.json").exists()
-    assert (result / "solarinspector.db").exists()
+    assert (result / "zrzavy-energy-monitor.db").exists()
     assert (result / "previous-release.txt").exists()
     assert (result / "backup.json").exists()

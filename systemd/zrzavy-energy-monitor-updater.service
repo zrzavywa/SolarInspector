@@ -1,0 +1,28 @@
+
+[Unit]
+Description=Zrzavy Energy Monitor Privileged Updater
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+
+Environment=PYTHONPATH=/opt/zrzavy-energy-monitor/current/app
+
+ExecStart=/opt/zrzavy-energy-monitor/current/.venv/bin/python \
+  /opt/zrzavy-energy-monitor/current/app/updater_service.py
+
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+
+ReadWritePaths=/opt/zrzavy-energy-monitor
+ReadWritePaths=/var/lib/zrzavy-energy-monitor
+ReadWritePaths=/var/cache/zrzavy-energy-monitor
+ReadWritePaths=/var/log/zrzavy-energy-monitor
+
+[Install]
+WantedBy=multi-user.target

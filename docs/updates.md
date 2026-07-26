@@ -2,16 +2,16 @@
 
 ## Grundprinzip
 
-SolarInspector 4.1 trennt den normalen Webprozess vom privilegierten Updatevorgang.
+Zrzavy Energy Monitor 4.5 trennt den normalen Webprozess vom privilegierten Updatevorgang.
 
 ```mermaid
 sequenceDiagram
     participant B as Browser
-    participant A as SolarInspector
+    participant A as Zrzavy Energy Monitor
     participant G as GitHub Release
     participant P as systemd Path Unit
     participant U as privilegierter Updater
-    participant S as solarinspector.service
+    participant S as zrzavy-energy-monitor.service
 
     B->>A: Auf Update prüfen
     A->>G: Release-Metadaten abrufen
@@ -51,8 +51,8 @@ Dadurch werden unter anderem reduziert:
 Vor einem OTA-Update müssen funktionieren:
 
 ```bash
-sudo systemctl status solarinspector.service
-systemctl status solarinspector-updater.path
+sudo systemctl status zrzavy-energy-monitor.service
+systemctl status zrzavy-energy-monitor-updater.path
 curl --fail http://127.0.0.1:8787/api/health
 ```
 
@@ -79,14 +79,14 @@ Ein Update darf nicht unbeaufsichtigt während einer laufenden Diagnose oder Dat
 ## Update-Status prüfen
 
 ```bash
-cat /var/lib/solarinspector/update-status.json
+cat /var/lib/zrzavy-energy-monitor/update-status.json
 ```
 
 Lesbarer formatiert:
 
 ```bash
 python3 -m json.tool \
-  /var/lib/solarinspector/update-status.json
+  /var/lib/zrzavy-energy-monitor/update-status.json
 ```
 
 Über die API:
@@ -113,21 +113,21 @@ Die exakten internen Bezeichnungen können sich zwischen Releases ändern.
 ## Aktives Release prüfen
 
 ```bash
-readlink -f /opt/solarinspector/current
-cat /opt/solarinspector/current/VERSION
+readlink -f /opt/zrzavy-energy-monitor/current
+cat /opt/zrzavy-energy-monitor/current/VERSION
 ```
 
 ## Updater-Logs
 
 ```bash
-journalctl -u solarinspector-updater.service \
+journalctl -u zrzavy-energy-monitor-updater.service \
   -n 200 --no-pager
 ```
 
 Path-Unit:
 
 ```bash
-systemctl status solarinspector-updater.path
+systemctl status zrzavy-energy-monitor-updater.path
 ```
 
 ## Automatisches Rollback
@@ -137,7 +137,7 @@ Das Rollback wird ausgelöst, wenn die neue Version nicht erfolgreich aktiviert 
 Das Rollback soll:
 
 - den vorherigen `current`-Symlink wiederherstellen,
-- den SolarInspector-Service neu starten,
+- den Zrzavy-Energy-Monitor-Service neu starten,
 - den Fehler im Update-Status festhalten,
 - Konfiguration und Messdaten erhalten.
 
@@ -148,20 +148,20 @@ Externe Messgeräte sind kein hartes Rollback-Kriterium. Ein nicht erreichbarer 
 Vorhandene Releases anzeigen:
 
 ```bash
-ls -la /opt/solarinspector/releases
-readlink -f /opt/solarinspector/current
+ls -la /opt/zrzavy-energy-monitor/releases
+readlink -f /opt/zrzavy-energy-monitor/current
 ```
 
 Auf eine bekannte funktionierende Version umschalten:
 
 ```bash
-sudo systemctl stop solarinspector.service
+sudo systemctl stop zrzavy-energy-monitor.service
 
 sudo ln -sfn \
-  /opt/solarinspector/releases/<VORHERIGE-VERSION> \
-  /opt/solarinspector/current
+  /opt/zrzavy-energy-monitor/releases/<VORHERIGE-VERSION> \
+  /opt/zrzavy-energy-monitor/current
 
-sudo systemctl start solarinspector.service
+sudo systemctl start zrzavy-energy-monitor.service
 curl --fail http://127.0.0.1:8787/api/health
 ```
 
@@ -172,7 +172,7 @@ Ein manuelles Rollback sollte im Betriebsprotokoll mit Datum, Ausgangsversion, Z
 Vor einer Wiederherstellung den Service stoppen:
 
 ```bash
-sudo systemctl stop solarinspector.service
+sudo systemctl stop zrzavy-energy-monitor.service
 ```
 
 Backup zunächst in ein temporäres Verzeichnis entpacken und Inhalt prüfen. Nicht ungeprüft über das laufende System extrahieren.
@@ -180,15 +180,15 @@ Backup zunächst in ein temporäres Verzeichnis entpacken und Inhalt prüfen. Ni
 Danach Besitzrechte kontrollieren:
 
 ```bash
-sudo chown -R solarinspector:solarinspector \
-  /etc/solarinspector \
-  /var/lib/solarinspector
+sudo chown -R zemonitor:zemonitor \
+  /etc/zrzavy-energy-monitor \
+  /var/lib/zrzavy-energy-monitor
 ```
 
 Anwendung starten und prüfen:
 
 ```bash
-sudo systemctl start solarinspector.service
+sudo systemctl start zrzavy-energy-monitor.service
 curl --fail http://127.0.0.1:8787/api/health
 ```
 

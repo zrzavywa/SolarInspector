@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from solarinspector_core.web.api import build_live_api_response
+from zrzavy_energy_monitor_core.web.api import build_live_api_response
 
 
 class _Database:

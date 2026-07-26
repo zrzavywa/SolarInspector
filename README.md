@@ -1,12 +1,14 @@
-# SolarInspector
+# Zrzavy Energy Monitor
 
-[![Latest release](https://img.shields.io/github/v/release/zrzavywa/SolarInspector)](https://github.com/zrzavywa/SolarInspector/releases)
+[![Latest release](https://img.shields.io/github/v/release/zrzavywa/zrzavy-energy-monitor)](https://github.com/zrzavywa/zrzavy-energy-monitor/releases)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%20OS-lightgrey)](docs/installation-raspberry-pi.md)
 
-**SolarInspector** ist eine lokal betriebene Webanwendung zur Erfassung, Plausibilisierung und Auswertung einer Solakon-Photovoltaikanlage. Sie kombiniert Messwerte der **Solakon ONE** mit unabhängigen **Shelly-Leistungsmessungen**, speichert Zeitreihen in SQLite und stellt Livewerte sowie Tages-, Wochen- und Jahresauswertungen im Browser bereit.
+**Zrzavy Energy Monitor** ist eine lokal betriebene Open-Source-Webanwendung für Home Energy Monitoring und Validierung. Sie kombiniert Messwerte der **Solakon ONE** mit unabhängigen **Shelly-Leistungsmessungen**, speichert Zeitreihen in SQLite und stellt Livewerte sowie Tages-, Wochen- und Jahresauswertungen im Browser bereit.
 
-> Dokumentationsstand: SolarInspector **4.1.3**  
+> Open-source home energy monitoring and validation
+
+> Dokumentationsstand: Zrzavy Energy Monitor **4.5.0**
 > Primärplattform: Raspberry Pi OS beziehungsweise Debian-basierte Linux-Systeme
 
 ## Hauptfunktionen
@@ -35,7 +37,7 @@ Die tatsächlich verfügbaren Werte hängen von der Gerätefirmware, der lokalen
 
 ## Messmodell
 
-SolarInspector verwendet am Hausanschluss folgende Vorzeichenkonvention:
+Zrzavy Energy Monitor verwendet am Hausanschluss folgende Vorzeichenkonvention:
 
 - **positiver Wert** = Netzbezug
 - **negativer Wert** = Einspeisung
@@ -63,7 +65,7 @@ Liefert ein Messgerät das umgekehrte Vorzeichen, kann die Messrichtung in der K
 1. Die [Installationsanleitung für Raspberry Pi](docs/installation-raspberry-pi.md) lesen.
 2. Solakon ONE und/oder Shelly-Geräte im lokalen Netzwerk vorbereiten.
 3. `config.json` aus `app/config.example.json` ableiten.
-4. SolarInspector starten und im Browser öffnen.
+4. Zrzavy Energy Monitor starten und im Browser öffnen.
 5. Unter **Konfiguration** die Geräteverbindungen testen.
 6. Erst danach die automatische Datenerfassung aktivieren.
 
@@ -106,13 +108,16 @@ flowchart LR
     U -->|Backup, Prüfung, Aktivierung| W
 ```
 
-Die 4.1-Reihe verwendet noch eine überwiegend kompakte Anwendungsstruktur. MQTT/Home-Assistant-Integration und die weitergehende Modularisierung werden in der [Architekturübersicht](docs/architecture.md) ausschließlich als Zielbild für Version 5.0 beschrieben.
+Die 4.5-Reihe verwendet eine modularisierte Core-Struktur mit getrennten
+Adaptern, normalisierten Modellen, Validierung, Persistenz, Quellenauswahl und
+Webdarstellung. MQTT/Home-Assistant-Integration bleibt in der
+[Architekturübersicht](docs/architecture.md) ein Zielbild für Version 5.0.
 
 ## Sicherheitshinweis
 
-SolarInspector ist für den Betrieb in einem vertrauenswürdigen lokalen Netzwerk vorgesehen. Die Weboberfläche sollte **nicht direkt aus dem Internet erreichbar** gemacht werden. Für externen Zugriff sind ein abgesicherter VPN-Zugang, TLS und zusätzliche Authentifizierung erforderlich.
+Zrzavy Energy Monitor ist für den Betrieb in einem vertrauenswürdigen lokalen Netzwerk vorgesehen. Die Weboberfläche sollte **nicht direkt aus dem Internet erreichbar** gemacht werden. Für externen Zugriff sind ein abgesicherter VPN-Zugang, TLS und zusätzliche Authentifizierung erforderlich.
 
-Der Solakon-Zugriff ist ausschließlich lesend ausgelegt. SolarInspector verändert keine Ladeleistung, Betriebsart, SoC-Grenzen oder anderen Anlagenparameter.
+Der Solakon-Zugriff ist ausschließlich lesend ausgelegt. Zrzavy Energy Monitor verändert keine Ladeleistung, Betriebsart, SoC-Grenzen oder anderen Anlagenparameter.
 
 ## Unterstützung und Fehlerberichte
 
@@ -127,7 +132,14 @@ Fehler und Verbesserungsvorschläge können über die GitHub-Issues des Projekts
 
 ## Markenhinweise
 
-SolarInspector ist ein unabhängiges Projekt und steht in keiner offiziellen Verbindung zu Solakon GmbH, Shelly Group oder Raspberry Pi Ltd. Die Produkt- und Markennamen werden ausschließlich zur Beschreibung der unterstützten Geräte und Plattformen verwendet.
+Zrzavy Energy Monitor ist ein unabhängiges Projekt und steht in keiner offiziellen Verbindung zu Solakon GmbH, Shelly Group oder Raspberry Pi Ltd. Die Produkt- und Markennamen werden ausschließlich zur Beschreibung der unterstützten Geräte und Plattformen verwendet.
+
+## Namenswechsel von SolarInspector
+
+Zrzavy Energy Monitor hieß bis Version 4.1.3 **SolarInspector**. Bestehende
+Installationen werden direkt auf 4.5.0 migriert; Konfiguration, SQLite-Datenbank
+und Messhistorie bleiben erhalten. Siehe
+[Migrationsanleitung](docs/migration-from-solarinspector.md).
 
 **Raspberry Pi is a trademark of Raspberry Pi Ltd.**
 

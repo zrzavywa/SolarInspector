@@ -11,7 +11,7 @@ import requests
 from packaging.version import InvalidVersion, Version
 
 GITHUB_OWNER = "zrzavywa"
-GITHUB_REPOSITORY = "SolarInspector"
+GITHUB_REPOSITORY = "zrzavy-energy-monitor"
 
 LATEST_RELEASE_URL = (
     f"https://api.github.com/repos/"
@@ -56,7 +56,7 @@ def check_for_update(
 ) -> ReleaseInfo:
     headers = {
         "Accept": "application/vnd.github+json",
-        "User-Agent": f"SolarInspector/{installed_version}",
+        "User-Agent": f"ZrzavyEnergyMonitor/{installed_version}",
     }
 
     try:
@@ -84,7 +84,7 @@ def check_for_update(
             f"Invalid version returned by GitHub: {tag_name}"
         ) from exc
 
-    archive_name = f"SolarInspector-{available_version}.tar.gz"
+    archive_name = f"zrzavy-energy-monitor-{available_version}.tar.gz"
     checksum_name = f"{archive_name}.sha256"
 
     assets = payload.get("assets", [])
@@ -125,7 +125,7 @@ def download_file(
             timeout=timeout,
             headers={
                 "Accept": "application/octet-stream",
-                "User-Agent": "SolarInspector-Updater",
+                "User-Agent": "ZrzavyEnergyMonitor-Updater",
             },
         ) as response:
             response.raise_for_status()
@@ -228,7 +228,7 @@ def download_and_verify_release(
 
     if target_directory is None:
         target_directory = Path(
-            tempfile.mkdtemp(prefix="solarinspector-update-")
+            tempfile.mkdtemp(prefix="zrzavy-energy-monitor-update-")
         )
 
     archive_path = target_directory / release.asset_name

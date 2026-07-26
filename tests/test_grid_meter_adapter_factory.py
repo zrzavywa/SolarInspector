@@ -5,19 +5,19 @@ from __future__ import annotations
 from copy import deepcopy
 
 import pytest
-from solarinspector_core.adapters.base import MeasurementAdapter
-from solarinspector_core.adapters.grid_meter_factory import (
+from zrzavy_energy_monitor_core.adapters.base import MeasurementAdapter
+from zrzavy_energy_monitor_core.adapters.grid_meter_factory import (
     GridMeterAdapterConfigurationError,
     create_grid_meter_adapter,
 )
-from solarinspector_core.adapters.shrdzm_grid_meter import (
+from zrzavy_energy_monitor_core.adapters.shrdzm_grid_meter import (
     ShrdzmRestGridMeterAdapter,
 )
-from solarinspector_core.adapters.tasmota_grid_meter import (
+from zrzavy_energy_monitor_core.adapters.tasmota_grid_meter import (
     TasmotaHttpGridMeterAdapter,
 )
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.config.grid_meter import (
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.config.grid_meter import (
     DEFAULT_SHRDZM_REST_MAPPING,
 )
 

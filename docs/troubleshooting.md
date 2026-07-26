@@ -5,20 +5,20 @@
 Diese Befehle liefern den wichtigsten Überblick:
 
 ```bash
-sudo systemctl status solarinspector.service --no-pager
-journalctl -u solarinspector.service -n 100 --no-pager
+sudo systemctl status zrzavy-energy-monitor.service --no-pager
+journalctl -u zrzavy-energy-monitor.service -n 100 --no-pager
 curl -v http://127.0.0.1:8787/api/health
-readlink -f /opt/solarinspector/current
-cat /opt/solarinspector/current/VERSION
+readlink -f /opt/zrzavy-energy-monitor/current
+cat /opt/zrzavy-energy-monitor/current/VERSION
 df -h /
 ```
 
 Updater zusätzlich:
 
 ```bash
-systemctl status solarinspector-updater.path --no-pager
-journalctl -u solarinspector-updater.service -n 200 --no-pager
-python3 -m json.tool /var/lib/solarinspector/update-status.json
+systemctl status zrzavy-energy-monitor-updater.path --no-pager
+journalctl -u zrzavy-energy-monitor-updater.service -n 200 --no-pager
+python3 -m json.tool /var/lib/zrzavy-energy-monitor/update-status.json
 ```
 
 ## Weboberfläche ist nicht erreichbar
@@ -30,7 +30,7 @@ Browser meldet Zeitüberschreitung oder Verbindung abgelehnt.
 ### Prüfungen
 
 ```bash
-sudo systemctl status solarinspector.service
+sudo systemctl status zrzavy-energy-monitor.service
 sudo ss -ltnp | grep 8787
 curl -v http://127.0.0.1:8787/api/health
 ```
@@ -39,7 +39,7 @@ Konfiguration kontrollieren:
 
 ```bash
 grep -n '"bind_host"\|"port"' \
-  /etc/solarinspector/config.json
+  /etc/zrzavy-energy-monitor/config.json
 ```
 
 Typische Ursachen:
@@ -56,23 +56,23 @@ Typische Ursachen:
 Logs:
 
 ```bash
-journalctl -u solarinspector.service -b --no-pager
+journalctl -u zrzavy-energy-monitor.service -b --no-pager
 ```
 
 Python-Umgebung prüfen:
 
 ```bash
-/opt/solarinspector/current/.venv/bin/python --version
-/opt/solarinspector/current/.venv/bin/python \
+/opt/zrzavy-energy-monitor/current/.venv/bin/python --version
+/opt/zrzavy-energy-monitor/current/.venv/bin/python \
   -c "import flask, requests, waitress, packaging; print('OK')"
 ```
 
 Symlinks prüfen:
 
 ```bash
-readlink -f /opt/solarinspector/current
-readlink -f /opt/solarinspector/current/app/config.json
-readlink -f /opt/solarinspector/current/app/data
+readlink -f /opt/zrzavy-energy-monitor/current
+readlink -f /opt/zrzavy-energy-monitor/current/app/config.json
+readlink -f /opt/zrzavy-energy-monitor/current/app/data
 ```
 
 Häufige Ursachen:
@@ -135,7 +135,7 @@ Prüfen:
 
 ## Netzbezug und Einspeisung sind vertauscht
 
-SolarInspector erwartet:
+Zrzavy Energy Monitor erwartet:
 
 - positiv = Netzbezug
 - negativ = Einspeisung
@@ -174,7 +174,7 @@ Eine typische Fehlerquelle ist der Vergleich von Solakon-PV-Eingangsleistung mit
 ```bash
 date
 timedatectl status
-journalctl -u solarinspector.service \
+journalctl -u zrzavy-energy-monitor.service \
   --since "15 minutes ago" --no-pager
 ```
 
@@ -192,12 +192,12 @@ Prüfen:
 
 ```bash
 python3 -m json.tool \
-  /var/lib/solarinspector/update-status.json
+  /var/lib/zrzavy-energy-monitor/update-status.json
 
-journalctl -u solarinspector-updater.service \
+journalctl -u zrzavy-energy-monitor-updater.service \
   -n 250 --no-pager
 
-readlink -f /opt/solarinspector/current
+readlink -f /opt/zrzavy-energy-monitor/current
 ```
 
 Häufige Ursachen:
@@ -217,9 +217,9 @@ Nach einem fehlgeschlagenen Update zuerst prüfen, ob das vorherige Release akti
 ## Healthcheck meldet `Connection refused`
 
 ```bash
-sudo systemctl status solarinspector.service
+sudo systemctl status zrzavy-energy-monitor.service
 sudo ss -ltnp | grep 8787
-journalctl -u solarinspector.service -n 150 --no-pager
+journalctl -u zrzavy-energy-monitor.service -n 150 --no-pager
 ```
 
 Das bedeutet üblicherweise, dass zum Prüfzeitpunkt kein Prozess auf dem konfigurierten Port lauscht. Ursachen können Startfehler, falscher Port, falsche Service-Datei oder eine nicht vorbereitete Python-Umgebung sein.
@@ -229,7 +229,7 @@ Das bedeutet üblicherweise, dass zum Prüfzeitpunkt kein Prozess auf dem konfig
 Integrität prüfen:
 
 ```bash
-sqlite3 /var/lib/solarinspector/data/solarinspector.db \
+sqlite3 /var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db \
   "PRAGMA integrity_check;"
 ```
 
@@ -249,9 +249,9 @@ Aufnehmen:
 uname -a
 cat /etc/os-release
 python3 --version
-cat /opt/solarinspector/current/VERSION
-sudo systemctl status solarinspector.service --no-pager
-journalctl -u solarinspector.service -n 100 --no-pager
+cat /opt/zrzavy-energy-monitor/current/VERSION
+sudo systemctl status zrzavy-energy-monitor.service --no-pager
+journalctl -u zrzavy-energy-monitor.service -n 100 --no-pager
 ```
 
 Vor Veröffentlichung entfernen:

@@ -5,11 +5,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.units import Unit
-from solarinspector_core.validation import (
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.units import Unit
+from zrzavy_energy_monitor_core.validation import (
     DeviceDiagnosticRule,
     KnownDeviceErrorValueRule,
     MeasurementCandidate,

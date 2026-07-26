@@ -6,8 +6,33 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+### Changed
+
+- Das Projekt wird ab Version 4.5.0 unter dem Namen **Zrzavy Energy Monitor**
+  geführt. SolarInspector bleibt ausschließlich als dokumentierter früherer
+  Projektname und in zeitlich begrenzter Upgrade-Kompatibilität erhalten.
+- Das direkte Upgrade von SolarInspector 4.1.3 auf Zrzavy Energy Monitor 4.5.0
+  sichert Installation, Konfiguration, SQLite-Datenbank, Messhistorie und
+  Service-Dateien vor der kontrollierten Umschaltung.
+
 ### Added
 
+- Kanonische Metadaten für Zrzavy Energy Monitor sowie neue
+  `ZRZAVY_ENERGY_MONITOR_*`-Umgebungsvariablen mit priorisierten,
+  wertgeschützten Legacy-Fallbacks ergänzt.
+- Kanonischen Einstiegspunkt `zrzavy_energy_monitor.py` und Core-Namespace
+  `zrzavy_energy_monitor_core` mit schmalen Legacy-Wrappern eingeführt.
+- Kanonische Laufzeitpfade und Datei-Basenamen mit expliziter neuer
+  Variablenpriorität, Legacy-Erkennung und rücksetzbarer Pfadauswahl ergänzt.
+- Direkte, wiederholsichere 4.1.3-zu-4.5.0-Datenmigration mit schreibgeschütztem
+  Dry Run, vollständigem Installationsbackup, atomarer SQLite-Kopie,
+  Integritätsvergleich und geprüftem Rollback ergänzt.
+- Release-Artefakte, Updater, Bootstrap-Installation und konfliktgesicherte
+  systemd-Units auf Zrzavy Energy Monitor umgestellt; die Linux-Migration
+  prüft den Healthcheck und rollt bei Fehlern auf den alten Dienst zurück.
+- Weboberfläche, Laufzeitmeldungen und Exportdateinamen auf den vollständigen
+  Produktnamen umgestellt sowie Health- und Versions-API um kanonische
+  Produktmetadaten ergänzt.
 - Versionierte Phase-10-Schema-Migrationen, normalisierte Messwert- und
   Quellenentscheidungs-Zeitreihen sowie begrenzte, indexgestützte
   Zeitbereichsabfragen ergänzt.

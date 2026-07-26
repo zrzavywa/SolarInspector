@@ -1,0 +1,1281 @@
+schema_version: '1.0'
+task:
+  id: zrzavy-energy-monitor-direct-rebranding
+  title: Direkte Migration von SolarInspector 4.1.3 zu Zrzavy Energy Monitor 4.5.0
+  language: de
+  task_type: software-development
+  execution_mode: blockwise
+  priority: high
+  target_release: 4.5.0
+repository:
+  current:
+    owner: zrzavywa
+    name: SolarInspector
+    full_name: zrzavywa/SolarInspector
+    url: https://github.com/zrzavywa/SolarInspector
+    default_branch: main
+  target:
+    owner: zrzavywa
+    name: zrzavy-energy-monitor
+    full_name: zrzavywa/zrzavy-energy-monitor
+    url: https://github.com/zrzavywa/zrzavy-energy-monitor
+  working_branch: feature/4.5-rebrand-zrzavy-energy-monitor
+  rename_timing: Das GitHub-Repository wird im Rahmen derselben Rebranding-Phase umbenannt, nachdem Quellcode,
+    Update-Mechanismus, Release-Artefakte, Dokumentation und die lokale 4.1.3-Migration vorbereitet und
+    getestet wurden.
+branding:
+  canonical:
+    product_name: Zrzavy Energy Monitor
+    product_id: zrzavy-energy-monitor
+    repository_name: zrzavy-energy-monitor
+    short_description: Open-source home energy monitoring and validation
+    executable_name: zrzavy-energy-monitor
+    python_entrypoint: zrzavy_energy_monitor.py
+    python_package: zrzavy_energy_monitor_core
+    release_asset_prefix: zrzavy-energy-monitor
+    user_agent: ZrzavyEnergyMonitor
+  abbreviation:
+    value: ZEM
+    policy: 'ZEM ist ausschließlich eine interne oder ergänzende Abkürzung.
+
+      ZEM darf nicht als alleinstehender öffentlicher Produktname,
+
+      Repository-Name, Domainname, Seitentitel, Release-Name oder primäre
+
+      Wortmarke verwendet werden.
+
+      '
+    allowed_examples:
+    - Zrzavy Energy Monitor (ZEM)
+    - ZEM compatibility layer
+    - Interne technische Kurzbezeichnung in Variablennamen, sofern dokumentiert
+    prohibited_examples:
+    - 'Produktname: ZEM'
+    - 'Repository: zem'
+    - 'Release: ZEM 4.5.0'
+    - Seitentitel nur mit ZEM
+    - Logo ausschließlich mit ZEM
+  legacy:
+    product_name: SolarInspector
+    product_id: solarinspector
+    repository_name: SolarInspector
+    python_entrypoint: solarinspector.py
+    python_package: solarinspector_core
+    release_asset_prefix: SolarInspector
+    environment_prefix: SOLARINSPECTOR
+    status: retired
+    allowed_usage:
+    - Kompatibilitätsschicht
+    - Migrationslogik
+    - Historische Changelog-Einträge
+    - Upgrade-Dokumentation
+    - Explizite Hinweise auf frühere Versionen
+    - Tests für Abwärtskompatibilität
+    prohibited_usage:
+    - Aktueller sichtbarer Produktname
+    - Neue Release-Bezeichnung
+    - Neue Installationsanleitung
+    - Neue systemd-Unit
+    - Neue Umgebungsvariable
+    - Neue Datenbankdatei
+    - Neue öffentliche API-Metadaten
+objective:
+  summary: 'Benenne die bestehende SolarInspector-4.1.3-Installation und das Projekt direkt in Zrzavy
+    Energy Monitor um und aktualisiere sie in einem kontrollierten Schritt auf Version 4.5.0.
+
+
+    Das Rebranding umfasst Produkttexte, Quellcode, Python-Namespace, Einstiegspunkt, GitHub-Repository,
+    Release-Artefakte, Updater, Linux-Verzeichnisse, systemd-Units, Umgebungsvariablen, Datenbank- und
+    Logdateinamen, Weboberfläche, API-Metadaten, Tests und sämtliche Dokumentation.
+
+
+    Die einzige vorhandene Installation muss vor der Migration vollständig gesichert werden. Konfiguration,
+    SQLite-Datenbank und Messhistorie müssen unverändert erhalten bleiben. Bei einem Fehler muss ein dokumentierter
+    Rollback auf SolarInspector 4.1.3 möglich sein.'
+  goals:
+  - Alle aktuellen öffentlichen Produktbezeichnungen auf Zrzavy Energy Monitor umstellen.
+  - Das Repository auf zrzavy-energy-monitor vorbereiten und anschließend umbenennen.
+  - Bestehende Datenbanken, Konfigurationen und Messdaten vollständig erhalten.
+  - Neue ZRZAVY_ENERGY_MONITOR_* Variablen als kanonische Schnittstelle einführen.
+  - Bestehende systemd-Installationen kontrolliert auf neue Units umstellen.
+  - Neue Installationen ausschließlich mit neuen Namen anlegen.
+  - Legacy-Namen nur noch in expliziter Kompatibilitäts- und Historienlogik zulassen.
+  - Dokumentation, Tests, UI, API und Betriebsdateien konsistent aktualisieren.
+  - Eine direkte Migration von SolarInspector 4.1.3 auf Zrzavy Energy Monitor 4.5.0 bereitstellen.
+  - Ein einmaliges, getestetes Upgrade-Skript mit Dry Run, Backup, Healthcheck und Rollback bereitstellen.
+critical_migration_principles:
+- Kein blindes globales Suchen und Ersetzen.
+- Keine Löschung oder Überschreibung der einzigen vorhandenen Datenbank.
+- Keine Entfernung alter Umgebungsvariablen im ersten Zrzavy-Energy-Monitor-Release.
+- Keine gleichzeitige Aktivierung alter und neuer Collector-Services.
+- Ein echter Nullwert in Messdaten bleibt unverändert.
+- Datenbankschema und fachliche Metriknamen werden nicht allein wegen des Rebrandings verändert.
+- Legacy-Kompatibilität muss sichtbar dokumentiert und automatisiert getestet sein.
+- Jeder migrationsrelevante Schritt muss rücksetzbar sein.
+- Die Repository-Umbenennung darf erst nach erfolgreichem lokalen Migrationstest erfolgen.
+- Der alte Python-Einstiegspunkt darf nach erfolgreicher Migration als dokumentierter Wrapper erhalten
+  bleiben, ist aber nicht als dauerhafte öffentliche Schnittstelle erforderlich.
+current_state_observations:
+  repository:
+    current_name: SolarInspector
+    default_branch: main
+  documentation:
+    readme_title: SolarInspector
+    documented_version: 4.1.3
+    status: 'Das README dokumentiert noch die 4.1.3-Reihe, während im Unreleased-
+
+      Changelog bereits Funktionen aus Phase 09 enthalten sind.
+
+      '
+  source_code:
+    main_entrypoint: app/solarinspector.py
+    main_package: app/solarinspector_core
+    current_secret_variable: SOLARINSPECTOR_SECRET
+    current_database_filename: solarinspector.db
+    current_log_filename: solarinspector.log
+    current_pid_filename: solarinspector.pid
+  updater:
+    github_owner_constant: zrzavywa
+    github_repository_constant: SolarInspector
+    current_release_asset_pattern: SolarInspector-<VERSION>.tar.gz
+    current_user_agent: SolarInspector/<VERSION>
+    current_temp_prefix: solarinspector-update-
+  linux:
+    current_service_user: solarinspector
+    current_application_service: solarinspector.service
+    current_updater_service: solarinspector-updater.service
+    current_updater_path: solarinspector-updater.path
+    current_prefix: /opt/solarinspector
+    current_config_directory: /etc/solarinspector
+    current_state_directory: /var/lib/solarinspector
+    current_cache_directory: /var/cache/solarinspector
+    current_log_directory: /var/log/solarinspector
+target_identifiers:
+  environment:
+    canonical:
+      secret: ZRZAVY_ENERGY_MONITOR_SECRET
+      config_path: ZRZAVY_ENERGY_MONITOR_CONFIG_PATH
+      database_path: ZRZAVY_ENERGY_MONITOR_DATABASE_PATH
+      update_status_path: ZRZAVY_ENERGY_MONITOR_UPDATE_STATUS_PATH
+      update_request_path: ZRZAVY_ENERGY_MONITOR_UPDATE_REQUEST_PATH
+      update_cache_dir: ZRZAVY_ENERGY_MONITOR_UPDATE_CACHE_DIR
+    legacy_aliases:
+      secret: SOLARINSPECTOR_SECRET
+      config_path: SOLARINSPECTOR_CONFIG_PATH
+      database_path: SOLARINSPECTOR_DATABASE_PATH
+      update_status_path: SOLARINSPECTOR_UPDATE_STATUS_PATH
+      update_request_path: SOLARINSPECTOR_UPDATE_REQUEST_PATH
+      update_cache_dir: SOLARINSPECTOR_UPDATE_CACHE_DIR
+    precedence:
+    - Neue ZRZAVY_ENERGY_MONITOR_* Variable
+    - Legacy-SOLARINSPECTOR_* Variable mit Deprecation-Warnung
+    - Dokumentierter Default
+    conflict_behavior: 'Sind neue und alte Variable gleichzeitig gesetzt und unterscheiden sich,
+
+      gewinnt die neue Variable. Es ist genau eine verständliche Warnung ohne
+
+      Ausgabe sensibler Werte zu protokollieren.
+
+      '
+    removal_policy: Legacy-Variablen können für die direkte Migration unterstützt werden. Nach erfolgreicher
+      Migration sollen Service-Datei und Dokumentation nur noch ZRZAVY_ENERGY_MONITOR_* verwenden. Die
+      Legacy-Fallbacks dürfen mindestens bis zum Abschluss der 4.5.0-Stabilisierung bestehen bleiben.
+  filesystem:
+    new_installation:
+      installation_root: /opt/zrzavy-energy-monitor
+      releases_directory: /opt/zrzavy-energy-monitor/releases
+      current_symlink: /opt/zrzavy-energy-monitor/current
+      updater_directory: /opt/zrzavy-energy-monitor/updater
+      config_directory: /etc/zrzavy-energy-monitor
+      config_file: /etc/zrzavy-energy-monitor/config.json
+      state_directory: /var/lib/zrzavy-energy-monitor
+      data_directory: /var/lib/zrzavy-energy-monitor/data
+      database_file: /var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db
+      backup_directory: /var/lib/zrzavy-energy-monitor/backups
+      cache_directory: /var/cache/zrzavy-energy-monitor/updates
+      log_directory: /var/log/zrzavy-energy-monitor
+      log_file: /var/log/zrzavy-energy-monitor/zrzavy-energy-monitor.log
+      pid_file: /var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.pid
+    legacy:
+      installation_root: /opt/solarinspector
+      config_directory: /etc/solarinspector
+      state_directory: /var/lib/solarinspector
+      database_file: /var/lib/solarinspector/data/solarinspector.db
+      cache_directory: /var/cache/solarinspector
+      log_directory: /var/log/solarinspector
+    migration_policy:
+    - Vor Änderungen konsistentes Backup erstellen.
+    - Konfiguration und Datenbank nicht kopieren, solange der alte Service noch schreibt.
+    - Alten Collector-Service kontrolliert stoppen.
+    - Dateirechte und Eigentümer erhalten oder explizit migrieren.
+    - Migration vorzugsweise durch atomisches Verschieben auf demselben Dateisystem.
+    - Bei dateisystemübergreifender Migration kopieren, fsync, Integrität prüfen und erst dann aktivieren.
+    - Alte Pfade erst nach erfolgreichem Healthcheck entfernen.
+    - Für mindestens ein Release optional Legacy-Symlinks anbieten.
+    - Keine rekursiven Symlinks erzeugen.
+  systemd:
+    canonical:
+      application_service: zrzavy-energy-monitor.service
+      updater_service: zrzavy-energy-monitor-updater.service
+      updater_path: zrzavy-energy-monitor-updater.path
+      description: Zrzavy Energy Monitor
+    service_user:
+      new_installation: zemonitor
+      migration_default: 'Bestehende Installationen dürfen zunächst den vorhandenen Benutzer
+
+        solarinspector weiterverwenden, um UID-, Besitz- und Rechteprobleme zu
+
+        vermeiden. Der Dienstname und die Pfade werden dennoch migriert.
+
+        '
+      optional_final_user: zemonitor
+      requirement: 'Eine Änderung des Service-Benutzers darf nur erfolgen, wenn Besitz,
+
+        Gruppen, Dateirechte und Rollback vollständig getestet sind.
+
+        '
+    conflict_policy:
+    - Alter und neuer Anwendungsservice dürfen nie gleichzeitig laufen.
+    - Vor Aktivierung des neuen Services den alten Service stoppen und deaktivieren.
+    - Erst nach erfolgreichem Healthcheck den alten Service maskieren oder entfernen.
+    - Updater-Path-Units müssen in derselben Reihenfolge migriert werden.
+  files:
+    canonical:
+      entrypoint: app/zrzavy_energy_monitor.py
+      core_package: app/zrzavy_energy_monitor_core
+      database_basename: zrzavy-energy-monitor.db
+      log_basename: zrzavy-energy-monitor.log
+      pid_basename: zrzavy-energy-monitor.pid
+      release_archive: zrzavy-energy-monitor-<VERSION>.tar.gz
+      release_checksum: zrzavy-energy-monitor-<VERSION>.tar.gz.sha256
+      release_manifest: release-manifest.json
+    compatibility:
+      entrypoint: app/solarinspector.py
+      core_package: app/solarinspector_core
+      release_archive: SolarInspector-<VERSION>.tar.gz
+      policy: Der alte Einstiegspunkt und alte Importpfade dürfen als dünne Kompatibilitäts-Wrapper für
+        lokale Tests und Rollback erhalten bleiben. Neue Produktlogik wird ausschließlich unter den neuen
+        kanonischen Namen gepflegt.
+  api:
+    canonical_metadata:
+      product_name: Zrzavy Energy Monitor
+      product_id: zrzavy-energy-monitor
+      description: Open-source home energy monitoring and validation
+    compatibility:
+    - Bestehende API-Endpunkte und Messfeldnamen nicht allein wegen des Rebrandings ändern.
+    - Neue Produktmetadaten additiv ergänzen.
+    - Bestehende Clients dürfen durch das Rebranding nicht brechen.
+    - HTTP-Pfade mit solarinspector im Namen nur ändern, wenn solche Pfade tatsächlich existieren und
+      ein Redirect beziehungsweise Alias bereitgestellt wird.
+  web:
+    title: Zrzavy Energy Monitor
+    short_description: Open-source home energy monitoring and validation
+    footer_policy: 'Die Bezeichnung ZEM darf nur ergänzend nach dem vollständigen Namen
+
+      erscheinen, beispielsweise „Zrzavy Energy Monitor (ZEM)“.
+
+      '
+    legacy_notice: 'Ein einmaliger Upgrade-Hinweis darf erklären, dass Zrzavy Energy Monitor
+
+      der neue Name des früheren Projekts SolarInspector ist.
+
+      '
+release_and_update_strategy:
+  strategy: single_direct_migration
+  source:
+    product_name: SolarInspector
+    version: 4.1.3
+    repository: zrzavywa/SolarInspector
+    asset_pattern: SolarInspector-4.1.3.tar.gz
+  target:
+    product_name: Zrzavy Energy Monitor
+    version: 4.5.0
+    repository: zrzavywa/zrzavy-energy-monitor
+    asset_pattern: zrzavy-energy-monitor-4.5.0.tar.gz
+  requirements:
+  - Kein Bridge-Release erstellen.
+  - Keine Dual-Repository- oder Dual-Asset-Erkennung als dauerhafte Produktlogik einführen.
+  - Vor der Migration ein vollständiges Backup der einzigen 4.1.3-Installation erstellen.
+  - Die neue 4.5.0-Version als vollständiges Release-Artefakt erzeugen und lokal prüfen.
+  - Das Upgrade erfolgt einmalig über ein dediziertes Migrationsskript beziehungsweise einen kontrollierten
+    manuellen Ablauf.
+  - Der vorhandene 4.1.3-Updater muss nicht selbst das neue Repository oder den neuen Assetnamen erkennen.
+  - Nach erfolgreicher Migration verwendet die Anwendung nur noch das neue Repository und neue Release-Artefakte.
+  - Rollback auf die gesicherte 4.1.3-Installation muss möglich und dokumentiert sein.
+  direct_upgrade_sequence:
+  - SolarInspector 4.1.3 stoppen.
+  - Konfiguration, Datenbank, Logs, systemd-Units und Installationspfade sichern.
+  - SQLite-Integrität prüfen.
+  - Zrzavy Energy Monitor 4.5.0 in neuen Zielpfaden installieren.
+  - Konfiguration und Datenbank übernehmen beziehungsweise migrieren.
+  - Neue systemd-Units installieren.
+  - Neuen Service starten.
+  - Healthcheck, Dashboard, Gerätezugriff und Datenhistorie prüfen.
+  - Bei Erfolg alte Units deaktivieren und alte Pfade als Rollbackkopie behalten.
+  - Bei Fehler neuen Service stoppen und 4.1.3 aus dem Backup wiederherstellen.
+  repository_rename:
+    timing:
+    - Quellcode und Dokumentation sind auf den neuen Namen vorbereitet.
+    - Release-Pipeline erzeugt zrzavy-energy-monitor-4.5.0.tar.gz.
+    - Direkte Migration wurde gegen eine Kopie der produktiven 4.1.3-Installation erfolgreich getestet.
+    - Rollback wurde erfolgreich getestet.
+    post_rename_actions:
+    - Lokale origin-URL aktualisieren.
+    - README-Badges aktualisieren.
+    - Updater-Konstanten aktualisieren.
+    - Issue- und Release-Links prüfen.
+    - Repository-Beschreibung auf die neue Kurzbeschreibung setzen.
+scope:
+  included:
+  - Produktname und öffentliche Texte
+  - Repository-Name und GitHub-Links
+  - README, Changelog, Contributing, Security und Trademarks
+  - Alle Dokumente unter docs/
+  - Webseitentitel, Navigation, Footer und Diagnoseansichten
+  - API-Produktmetadaten
+  - Python-Einstiegspunkt
+  - Python-Core-Namespace mit Kompatibilität
+  - Umgebungsvariablen
+  - Datei- und Verzeichnisnamen
+  - Datenbank-, Log- und PID-Dateinamen
+  - systemd-Units
+  - Updater und Release-Installer
+  - Release-Archive, Prüfsummen und Manifest
+  - Installations-, Upgrade-, Backup- und Rollback-Skripte
+  - GitHub Actions und Release-Automatisierung
+  - Tests, Fixtures und Beispieldaten
+  - Kommentare, Docstrings, User-Agents und Logmeldungen
+  - Deprecation- und Kompatibilitätsstrategie
+  excluded:
+  - Änderung der fachlichen Energiebilanz
+  - Neue Geräteadapter
+  - Neue Messwertmetriken
+  - Änderung bestehender Vorzeichenkonventionen
+  - Nicht für das Rebranding notwendige Datenbankschemaänderungen
+  - Neue Cloud- oder Home-Assistant-Funktionen
+  - Markenanmeldung oder rechtliche Vertretung
+  - Neues grafisches Logo, sofern nicht separat beauftragt
+  - Entfernung sämtlicher Legacy-Kompatibilität im ersten Release
+agent_behavior:
+  inspect_before_change: true
+  do_not_assume_repository_structure: true
+  preserve_existing_data: true
+  preserve_existing_api_behavior: true
+  preserve_existing_measurement_semantics: true
+  use_git_mv_for_tracked_renames: true
+  require_tests_after_each_block: true
+  require_full_regression_after_major_blocks: true
+  require_documentation_in_same_block: true
+  require_diff_review_before_commit: true
+  stop_on_data_loss_risk: true
+  stop_on_update_path_regression: true
+  human_review_between_blocks: true
+  instructions: 'Prüfe vor Änderungen den aktuellen Stand von main und die tatsächlich
+
+    vorhandenen Dateien.
+
+
+    Verändere keine fachliche Mess- oder Energiebilanzlogik, sofern dies nicht
+
+    zwingend für die Namensmigration erforderlich ist.
+
+
+    Führe jede Dateiumbenennung mit git mv durch, damit Historie und Review
+
+    nachvollziehbar bleiben.
+
+
+    Neue Produktlogik darf ausschließlich unter den neuen kanonischen Namen
+
+    implementiert werden. Alte Namen dienen nur als dünne Kompatibilitätsschicht.
+
+    '
+coding_and_documentation_standards:
+  mandatory: true
+  python:
+    required:
+    - PEP 8
+    - PEP 257
+    - Google-Style-Docstrings
+    - Vollständige Typannotationen für neue und wesentlich geänderte öffentliche Schnittstellen
+    - Aussagekräftige Namen
+    - Physikalische Einheiten in fachlichen Variablen- und Feldnamen
+    - Keine unerklärten Magic Numbers
+    - Keine Import-Seiteneffekte
+    - Keine kritischen zirkulären Imports
+    documentation:
+    - Jedes neue Modul besitzt einen Modul-Docstring.
+    - Öffentliche Klassen, Funktionen und Methoden besitzen Google-Style-Docstrings.
+    - Kompatibilitäts-Wrapper dokumentieren Zweck und geplante Lebensdauer.
+    - Deprecation-Warnungen nennen neue Schnittstelle und Übergangszeitraum.
+    - Kommentare erklären das Warum, nicht das sichtbare Was.
+  shell:
+    required:
+    - set -Eeuo pipefail für neue Bash-Skripte.
+    - Pfade immer korrekt quoten.
+    - Vor destruktiven Operationen Voraussetzungen prüfen.
+    - Skripte müssen wiederholbar oder eindeutig abbrechbar sein.
+    - Keine Ausgabe von Secrets.
+    - Dry-Run für Migrationsskripte vorsehen.
+  documentation:
+    required:
+    - Code, README, Installationsanleitung und Beispiele müssen dieselben Namen verwenden.
+    - Legacy-Namen nur in einem klar gekennzeichneten Migrationskontext verwenden.
+    - Nicht verifiziertes Verhalten nicht als unterstützt dokumentieren.
+    - Alle neuen Pfade, Variablen, Services und Release-Namen dokumentieren.
+    - Upgrade und Rollback mit vollständigen Befehlen dokumentieren.
+    - Historische Changelog-Einträge nicht rückwirkend umschreiben.
+  tests:
+    required:
+    - Testnamen beschreiben Verhalten und Erwartung.
+    - Keine echten Produktivdaten in Fixtures.
+    - Keine reale Wartezeit, wenn Zeit kontrollierbar ist.
+    - Regressionstests prüfen fachliche Ergebnisse, nicht nur fehlende Exceptions.
+    - Kompatibilitätstests decken alte und neue Namen ab.
+execution_format:
+  required_block_structure:
+  - block_id
+  - title
+  - goal
+  - preconditions
+  - affected_files
+  - complete_code_or_context_patches
+  - commands
+  - targeted_tests
+  - regression_tests
+  - expected_result
+  - review_points
+  - abort_conditions
+  - commit_message
+  rules:
+  - Jeder Block bearbeitet genau ein logisch abgeschlossenes Ziel.
+  - Jeder Block ist einzeln testbar und commitfähig.
+  - Neue Dateien vollständig ausgeben.
+  - Bestehende große Dateien nur mit eindeutigen Kontext-Patches ändern.
+  - Zusammengehörige Shell-Befehle in kopierbaren Bash-Blöcken bündeln.
+  - Keine Formulierung wie 'Rest unverändert'.
+  - Bereits erfolgreiche Blöcke nicht wiederholen.
+  - Bei Fehlern nur den betroffenen Block korrigieren.
+  - Dokumentation ist Teil des jeweiligen Blocks, kein späterer Nachtrag.
+initialization:
+  commands:
+  - git status
+  - git branch --show-current
+  - git log -1 --oneline
+  - git pull --ff-only
+  - git switch -c feature/4.5-rebrand-zrzavy-energy-monitor
+  - pytest -v tests
+  - ruff format --check app tests
+  - ruff check app tests
+  - mypy <configured-paths>
+  abort_conditions:
+  - Arbeitsverzeichnis ist nicht sauber.
+  - Baseline-Tests schlagen fehl und der Fehler ist nicht bereits dokumentiert.
+  - Aktueller Branch enthält nicht gemergte Rebranding-Versuche.
+  - Die einzige produktive Datenbank ist im Arbeitsverzeichnis vorhanden.
+  - Secrets oder lokale Konfigurationen sind getrackt.
+inventory:
+  required_searches:
+    exact_case_sensitive:
+    - SolarInspector
+    - SOLARINSPECTOR
+    - solarinspector
+    - Solarinspector
+    identifiers:
+    - solarinspector.py
+    - solarinspector_core
+    - solarinspector.db
+    - solarinspector.log
+    - solarinspector.pid
+    - solarinspector.service
+    - solarinspector-updater.service
+    - solarinspector-updater.path
+    - /opt/solarinspector
+    - /etc/solarinspector
+    - /var/lib/solarinspector
+    - /var/cache/solarinspector
+    - /var/log/solarinspector
+    - SolarInspector-
+    - zrzavywa/SolarInspector
+    - SOLARINSPECTOR_SECRET
+    file_types:
+    - '*.py'
+    - '*.sh'
+    - '*.service'
+    - '*.path'
+    - '*.md'
+    - '*.json'
+    - '*.yaml'
+    - '*.yml'
+    - '*.toml'
+    - '*.html'
+    - '*.js'
+    - '*.css'
+    - '*.txt'
+  classification:
+    categories:
+    - Aktuelle öffentliche Markenverwendung
+    - Technischer kanonischer Bezeichner
+    - Legacy-Kompatibilität
+    - Historische Dokumentation
+    - Test-Fixture
+    - Drittanbieter- oder Benutzerinhalt
+    requirement: 'Jeder Treffer muss vor Änderung einer Kategorie zugeordnet werden.
+
+      Historische Changelog-Einträge und explizite Migrationshinweise dürfen
+
+      den alten Namen behalten.
+
+      '
+  deliverable: docs/development/4.5/rebranding-inventory.md
+architecture:
+  branding_module:
+    suggested_path: app/zrzavy_energy_monitor_core/branding.py
+    purpose: Zentrale kanonische Produkt- und Repository-Metadaten.
+    suggested_constants:
+    - PRODUCT_NAME = 'Zrzavy Energy Monitor'
+    - PRODUCT_ID = 'zrzavy-energy-monitor'
+    - PRODUCT_DESCRIPTION = 'Open-source home energy monitoring and validation'
+    - PRODUCT_ABBREVIATION = 'ZEM'
+    - GITHUB_OWNER = 'zrzavywa'
+    - GITHUB_REPOSITORY = 'zrzavy-energy-monitor'
+    - LEGACY_PRODUCT_NAME = 'SolarInspector'
+    - LEGACY_GITHUB_REPOSITORY = 'SolarInspector'
+    requirements:
+    - Keine Netzwerk- oder Dateisystemseiteneffekte beim Import.
+    - UI, API, Updater und Release-Logik beziehen kanonische Werte zentral.
+    - Abkürzung wird nicht als alleiniger öffentlicher Name ausgegeben.
+  environment_resolver:
+    suggested_path: app/zrzavy_energy_monitor_core/environment.py
+    behavior:
+    - Neue Variable zuerst lesen.
+    - Legacy-Variable als Fallback lesen.
+    - Bei Legacy-Nutzung genau eine Deprecation-Warnung ausgeben.
+    - Bei Konflikt neue Variable verwenden.
+    - Secret-Werte niemals protokollieren.
+    required_tests:
+    - Nur neue Variable gesetzt.
+    - Nur alte Variable gesetzt.
+    - Beide identisch.
+    - Beide unterschiedlich.
+    - Keine Variable gesetzt.
+    - Secret bleibt in Logs verborgen.
+  path_resolver:
+    suggested_path: app/zrzavy_energy_monitor_core/paths.py
+    behavior:
+    - Explizite neue Umgebungsvariable verwenden.
+    - Legacy-Umgebungsvariable verwenden.
+    - Bei bestehender Legacy-Installation kontrollierten Altpfad erkennen.
+    - Bei neuer Installation ausschließlich neuen Pfad verwenden.
+    - Keine Verzeichnisse beim Import erstellen.
+    migration_guard: 'Eine automatische Pfadmigration darf nicht durch den reinen Import des
+
+      Moduls ausgelöst werden.
+
+      '
+  compatibility_entrypoint:
+    new_entrypoint: app/zrzavy_energy_monitor.py
+    legacy_entrypoint: app/solarinspector.py
+    requirement: 'app/solarinspector.py wird zu einem dünnen Wrapper, der den neuen
+
+      Einstiegspunkt aufruft und eine klare Deprecation-Warnung ausgibt.
+
+      Der Wrapper enthält keine eigene Anwendungslogik.
+
+      '
+  compatibility_namespace:
+    new_namespace: app/zrzavy_energy_monitor_core
+    legacy_namespace: app/solarinspector_core
+    strategy: 'Verschiebe die kanonische Implementierung mit git mv in den neuen
+
+      Namespace. Stelle für tatsächlich öffentlich oder in Tests verwendete
+
+      Legacy-Importpfade gezielte Wrapper bereit.
+
+
+      Erzeuge keine zweite vollständige Kopie des Pakets. Prüfe, welche alten
+
+      Importpfade real benötigt werden. Dokumentiere alle verbleibenden
+
+      Wrapper und decke sie durch Tests ab.
+
+      '
+    removal_policy: 'Legacy-Importpfade bleiben mindestens während der 4.5-Reihe erhalten,
+
+      sofern sie in veröffentlichten Versionen erreichbar waren.
+
+      '
+web_and_api_updates:
+  web:
+    update:
+    - HTML-title
+    - Hauptüberschrift
+    - Navigation
+    - Footer
+    - Update-Ansicht
+    - Systeminformationen
+    - Fehlerseiten
+    - Download-Dateinamen
+    - Browser- und OpenGraph-Metadaten, sofern vorhanden
+    - JavaScript-Texte
+    - CSS-Kommentare nur bei tatsächlichem Produktbezug
+    compatibility:
+    - Bestehende URLs beibehalten.
+    - Gespeicherte Konfigurationen beibehalten.
+    - Browser-Cache-Busting prüfen.
+  api:
+    update:
+    - Produktname in Versions- und Health-Antworten
+    - Repository-URL
+    - Release-URL
+    - Updater-Metadaten
+    - Diagnoseinformationen
+    additive_fields:
+    - product_name
+    - product_id
+    - product_description
+    preserve:
+    - Bestehende Endpoint-Pfade
+    - Bestehende Energiefeldnamen
+    - Bestehende Statuscodes
+    - Bestehende fachliche JSON-Struktur, soweit nicht additiv erweitert
+database_and_data_migration:
+  schema_change_required: false
+  rules:
+  - Keine Messwerttabelle nur wegen des Namens ändern.
+  - Keine historischen Messdaten umschreiben.
+  - Keine source_id oder metric umbenennen, sofern sie nicht den Produktnamen selbst enthalten.
+  - Datenbankintegrität vor und nach Dateimigration prüfen.
+  - SQLite-Backup-API oder konsistente Stop-and-copy-Strategie verwenden.
+  - Neue Datenbankdatei darf erst nach erfolgreicher Integritätsprüfung aktiviert werden.
+  filename_migration:
+    source: solarinspector.db
+    target: zrzavy-energy-monitor.db
+    requirements:
+    - Dry Run verfügbar.
+    - Backup vor Umbenennung.
+    - PRAGMA integrity_check vor Migration.
+    - PRAGMA integrity_check nach Migration.
+    - Dateirechte und Eigentümer erhalten.
+    - Rollback stellt alte Datei und alte Service-Konfiguration wieder her.
+    - Bestehende Konfiguration mit explizitem alten Datenbankpfad bleibt funktionsfähig.
+  log_and_pid:
+    rules:
+    - Alte Logs nicht löschen.
+    - Neue Laufzeit schreibt in neue Logdatei.
+    - Alte PID-Datei nur entfernen, wenn kein alter Prozess läuft.
+    - Keine PID-Kollision zwischen altem und neuem Service.
+systemd_migration:
+  required_files:
+  - systemd/zrzavy-energy-monitor.service
+  - systemd/zrzavy-energy-monitor-updater.service
+  - systemd/zrzavy-energy-monitor-updater.path
+  migration_script:
+    suggested_path: scripts/migrate-to-zrzavy-energy-monitor.sh
+    required_options:
+    - --dry-run
+    - --apply
+    - --rollback
+    - --keep-legacy-paths
+    required_steps:
+    - Root-Rechte prüfen.
+    - Aktive alte Units erkennen.
+    - Konfiguration und Datenbank sichern.
+    - Alten Collector-Service stoppen.
+    - Alte Updater-Path-Unit stoppen.
+    - Zielverzeichnisse anlegen.
+    - Konfiguration und Daten migrieren.
+    - Neue Units installieren.
+    - systemctl daemon-reload.
+    - Neuen Service starten.
+    - Healthcheck ausführen.
+    - Bei Fehler automatisch auf alten Zustand zurückrollen.
+    - Bei Erfolg alte Units deaktivieren.
+    - Status und nächste Schritte ausgeben.
+    safety:
+    - Nie beide Collector-Services parallel starten.
+    - Kein rm -rf auf variablen oder unvalidierten Pfaden.
+    - Zielpfade müssen feste erwartete Präfixe besitzen.
+    - Rollback auch nach teilweise installierten Units ermöglichen.
+    - Exitcodes dokumentieren.
+  service_user:
+    default_for_upgrade: solarinspector
+    default_for_new_install: zemonitor
+    note: 'Die Service-Benutzer-Migration ist von der Produktumbenennung zu trennen.
+
+      Bestehende Installationen behalten standardmäßig die alte UID und den
+
+      alten Benutzer, solange dies keine sichtbare Produktkennzeichnung ist.
+
+      '
+updater_and_release:
+  updater:
+    requirements:
+    - Neue Repository-Konstante zentral beziehen.
+    - Repository ausschließlich auf zrzavywa/zrzavy-energy-monitor umstellen.
+    - Release-Artefakte ausschließlich mit zrzavy-energy-monitor-<VERSION>.tar.gz erwarten.
+    - User-Agent auf ZrzavyEnergyMonitor/<VERSION> umstellen.
+    - Temporäre Verzeichnisse mit zrzavy-energy-monitor-update- benennen.
+    - Fehlermeldungen auf den neuen Produktnamen umstellen.
+    - Release-Manifest auf product_id zrzavy-energy-monitor prüfen.
+    - Der alte 4.1.3-Updater ist nicht Teil des direkten Upgradepfads.
+  release_installer:
+    requirements:
+    - Neuen Top-Level-Archivordner akzeptieren.
+    - Traversal-Schutz und Größenlimits beibehalten.
+    - Persistente Pfade nicht in das Release-Archiv aufnehmen.
+    - Aktivierung, Healthcheck und Rollback unter den neuen Services testen.
+  release_manifest:
+    required_fields:
+    - product_name
+    - product_id
+    - version
+    - repository
+    - archive_name
+    - sha256
+  github_actions:
+    update:
+    - Repository- und Badge-Links
+    - Release-Archivname
+    - Prüfsummendatei
+    - Manifestwerte
+    - Artifact-Uploads
+    - Release-Notes-Template
+    - Cache-Keys nur, wenn sie den Produktnamen enthalten
+    verification:
+    - Workflow-Syntax prüfen.
+    - Test-Release ohne Veröffentlichung erzeugen.
+    - Archivinhalt prüfen.
+    - Keine config.json, Datenbank, Logs, Secrets oder .venv im Archiv.
+documentation_updates:
+  mandatory_files:
+  - README.md
+  - CHANGELOG.md
+  - CONTRIBUTING.md
+  - SECURITY.md, sofern vorhanden
+  - TRADEMARKS.md
+  - docs/README.md
+  - docs/installation-raspberry-pi.md
+  - docs/configuration.md
+  - docs/operation.md
+  - docs/updates.md
+  - docs/troubleshooting.md
+  - docs/architecture.md
+  - docs/api.md
+  - docs/security.md
+  - Alle weiteren Dokumente mit aktuellen SolarInspector-Verweisen
+  readme:
+    title: Zrzavy Energy Monitor
+    description: Open-source home energy monitoring and validation
+    required_changes:
+    - Badges auf neues Repository.
+    - Release-Links auf neues Repository.
+    - Installationspfade und Services auf neue Namen.
+    - Produktbeschreibung auf aktuelle 4.5-Funktionen.
+    - Historischen Namenswechsel kurz dokumentieren.
+    - Dokumentationsstand auf tatsächliche Version anpassen.
+  changelog:
+    rules:
+    - Historische Versionsabschnitte unverändert lassen.
+    - Unter Unreleased einen Abschnitt Changed oder Renamed ergänzen.
+    - Direktes Upgrade von 4.1.3 auf 4.5.0 dokumentieren.
+    - Legacy-Kompatibilität und spätere Deprecation dokumentieren.
+  trademarks:
+    requirements:
+    - Keine Behauptung einer eingetragenen Marke ohne Nachweis.
+    - Zrzavy Energy Monitor als Projektbezeichnung nennen.
+    - ZEM nur als interne Abkürzung erläutern.
+    - SolarInspector als früheren Projektnamen in historischem Kontext nennen.
+    - Drittmarkenhinweise für Solakon, Shelly und Raspberry Pi erhalten.
+  migration_document:
+    path: docs/migration-from-solarinspector.md
+    content:
+    - Voraussetzungen
+    - Backup
+    - Repository-Umbenennung
+    - Neue Pfade
+    - Neue Services
+    - Neue Umgebungsvariablen
+    - Automatische Migration
+    - Manuelle Migration
+    - Healthcheck
+    - Rollback
+    - Bekannte Einschränkungen
+    - Direktes Upgrade von 4.1.3 auf 4.5.0
+  development_document:
+    path: docs/development/4.5/rebranding-zrzavy-energy-monitor.md
+    content:
+    - Entscheidung und Begründung
+    - Kanonische Bezeichner
+    - Legacy-Kompatibilität
+    - Entfernungsplan
+    - Technische Schulden
+test_matrix:
+  branding:
+  - Zentrale Branding-Konstanten liefern exakt die kanonischen Werte.
+  - Weboberfläche zeigt vollständigen Produktnamen.
+  - API liefert neue Produktmetadaten.
+  - ZEM erscheint nicht alleinstehend als öffentlicher Name.
+  environment:
+  - Neue Variable wird verwendet.
+  - Alte Variable wird als Fallback verwendet.
+  - Deprecation-Warnung erscheint einmal.
+  - Neue Variable gewinnt bei Konflikt.
+  - Secret-Wert erscheint niemals im Log.
+  paths:
+  - Neue Installation verwendet neue Pfade.
+  - Legacy-Installation wird erkannt.
+  - Explizite neue Pfade gewinnen.
+  - Explizite Legacy-Pfade bleiben verwendbar.
+  - Import erzeugt keine Verzeichnisse.
+  entrypoints:
+  - Neuer Einstiegspunkt startet die Anwendung.
+  - Alter Einstiegspunkt startet denselben Code über Wrapper.
+  - Alter Einstiegspunkt zeigt Deprecation-Warnung.
+  - Beide Einstiegspunkte liefern denselben Healthcheck.
+  namespace:
+  - Neue Imports funktionieren.
+  - Erforderliche alte Imports funktionieren über Wrapper.
+  - Es existiert nur eine kanonische Implementierung.
+  - Keine zirkulären Imports.
+  updater:
+  - Neuer Updater verwendet ausschließlich das neue Repository.
+  - Neuer Updater akzeptiert das neue Release-Artefakt.
+  - Falsche product_id wird abgelehnt.
+  - Prüfsummenprüfung bleibt wirksam.
+  - Release-Manifest wird validiert.
+  - Rollback funktioniert nach fehlgeschlagenem Healthcheck.
+  systemd:
+  - Nur alter Service aktiv.
+  - Dry Run verändert nichts.
+  - Migration stoppt alten Service.
+  - Neuer Service startet.
+  - Healthcheck erfolgreich.
+  - Alter Service wird deaktiviert.
+  - Rollback reaktiviert alten Service.
+  - Kein paralleler Collector.
+  data:
+  - Konfiguration bleibt bytegleich oder semantisch gleich.
+  - Datenbankzeilenanzahl bleibt erhalten.
+  - PRAGMA integrity_check vor und nach Migration ist ok.
+  - Nullwerte bleiben Nullwerte.
+  - NULL bleibt NULL.
+  - Historische Zeitstempel bleiben erhalten.
+  - Direktes Upgrade 4.1.3 auf 4.5.0 erhält alle Messdaten.
+  docs:
+  - Alle aktuellen Links zeigen auf neues Repository.
+  - Alle aktuellen Installationsbefehle verwenden neue Pfade.
+  - Legacy-Namen erscheinen nur in Historie und Migration.
+  - Kurzbeschreibung ist überall konsistent.
+  regression:
+  - Tasmota bleibt funktionsfähig.
+  - SHRDZM bleibt funktionsfähig.
+  - Shelly bleibt funktionsfähig.
+  - Solakon bleibt funktionsfähig.
+  - Validierung bleibt funktionsfähig.
+  - Quellenpriorisierung bleibt funktionsfähig.
+  - Energiebilanz bleibt funktionsfähig.
+  - SQLite-Persistenz bleibt funktionsfähig.
+  - CSV-Export bleibt funktionsfähig.
+  - Dashboard und API bleiben funktionsfähig.
+work_packages:
+- id: WR-01
+  title: Rebranding-Inventar
+  product_code_changes_allowed: false
+  tasks:
+  - Alle Altbezeichnungen suchen und klassifizieren.
+  - Aktuelle Release-, Update-, Service- und Pfadabhängigkeiten dokumentieren.
+  - Aktuelle öffentliche und interne Schnittstellen erfassen.
+  deliverables:
+  - docs/development/4.5/rebranding-inventory.md
+  - Vollständige Trefferliste mit Kategorie und geplanter Aktion
+- id: WR-02
+  title: Zentrale Branding- und Umgebungsmodelle
+  tasks:
+  - Branding-Modul einführen.
+  - Kanonische Produktmetadaten zentralisieren.
+  - Neue Umgebungsvariablen mit Legacy-Fallback einführen.
+  - Konflikt- und Secret-Verhalten testen.
+  dependencies:
+  - WR-01
+- id: WR-03
+  title: Python-Einstiegspunkt und Namespace
+  tasks:
+  - Neuen Einstiegspunkt erstellen.
+  - Core-Paket mit git mv umbenennen.
+  - Gezielte Legacy-Wrapper ergänzen.
+  - Import- und Starttests erstellen.
+  dependencies:
+  - WR-02
+- id: WR-04
+  title: Pfade und lokale Laufzeitdateien
+  tasks:
+  - Neue kanonische Pfade einführen.
+  - Legacy-Pfaderkennung implementieren.
+  - Datenbank-, Log- und PID-Dateinamen migrieren.
+  - Integritäts- und Rollbacktests erstellen.
+  dependencies:
+  - WR-02
+- id: WR-05
+  title: Direkte Migration von 4.1.3 auf 4.5.0
+  tasks:
+  - Einmaliges Migrationsskript mit --dry-run, --apply und --rollback erstellen.
+  - Vollständiges Backup der vorhandenen Installation erstellen.
+  - Konfiguration, SQLite-Datenbank und Messhistorie in neue Pfade übernehmen.
+  - Neue systemd-Units installieren und alten Service kontrolliert deaktivieren.
+  - Healthcheck und Datenintegrität prüfen.
+  - Automatischen beziehungsweise dokumentierten Rollback testen.
+  dependencies:
+  - WR-04
+- id: WR-05
+  title: Release- und Installationsautomatisierung
+  tasks:
+  - Neue Release-Artefaktnamen.
+  - Release-Manifest aktualisieren.
+  - GitHub Actions aktualisieren.
+  - Archivinhalt und Prüfsummen testen.
+- id: WR-06
+  title: systemd- und Linux-Migration
+  tasks:
+  - Neue Units erstellen.
+  - Bootstrap-Installer aktualisieren.
+  - Migrationsskript mit Dry Run und Rollback erstellen.
+  - Service-Konflikte verhindern.
+  - Upgrade auf Debian/Raspberry Pi testen.
+  dependencies:
+  - WR-04
+  - WR-05
+- id: WR-07
+  title: Web, API und Benutzeroberfläche
+  tasks:
+  - Alle sichtbaren Produkttexte umstellen.
+  - API-Metadaten additiv aktualisieren.
+  - Legacy-Hinweis für Upgrade ergänzen.
+  - Web- und API-Tests aktualisieren.
+  dependencies:
+  - WR-02
+  - WR-03
+- id: WR-08
+  title: Dokumentation und Markenhinweise
+  tasks:
+  - README und alle aktuellen Dokumente aktualisieren.
+  - Migration und Rollback dokumentieren.
+  - TRADEMARKS.md aktualisieren.
+  - Historische Changelog-Einträge erhalten.
+  - Kurzbeschreibung konsistent einsetzen.
+  dependencies:
+  - WR-06
+  - WR-07
+- id: WR-09
+  title: Repository-Umbenennung und Abschluss
+  tasks:
+  - Repository erst nach bestandenem Gate umbenennen.
+  - Lokale Remotes aktualisieren.
+  - Badges und Links final prüfen.
+  - Abschlussbericht erstellen.
+  dependencies:
+  - WR-05
+  - WR-06
+  - WR-07
+  - WR-08
+execution_blocks:
+- block_id: R.1
+  title: Bestandsaufnahme und Rebranding-Matrix
+  work_packages:
+  - WR-01
+  product_code_changes: false
+  commit_message: Document SolarInspector rebranding inventory
+- block_id: R.2
+  title: Branding-Konstanten und Umgebungsvariablen
+  work_packages:
+  - WR-02
+  commit_message: Add Zrzavy Energy Monitor branding compatibility
+- block_id: R.3
+  title: Einstiegspunkt und Python-Namespace
+  work_packages:
+  - WR-03
+  commit_message: Rename application entrypoint and core namespace
+- block_id: R.4
+  title: Laufzeitpfade und Datendateien
+  work_packages:
+  - WR-04
+  commit_message: Add compatible Zrzavy Energy Monitor runtime paths
+- block_id: R.5
+  title: Direktes Upgrade 4.1.3 auf 4.5.0
+  work_packages:
+  - WR-05
+  commit_message: Add direct SolarInspector 4.1.3 migration
+- block_id: R.6
+  title: Release-Pipeline, Linux und systemd
+  work_packages:
+  - WR-06
+  commit_message: Add Zrzavy Energy Monitor release and service migration
+- block_id: R.7
+  title: Weboberfläche und API-Metadaten
+  work_packages:
+  - WR-07
+  commit_message: Apply Zrzavy Energy Monitor product branding
+- block_id: R.8
+  title: Dokumentation, Migration und Markenhinweise
+  work_packages:
+  - WR-08
+  commit_message: Document Zrzavy Energy Monitor rebranding
+- block_id: R.9
+  title: End-to-End-Test und Repository-Umbenennung
+  work_packages:
+  - WR-09
+  commit_message: Finalize Zrzavy Energy Monitor repository migration
+repository_rename_gate:
+  mandatory: true
+  conditions:
+  - Release-Artefakt zrzavy-energy-monitor-4.5.0.tar.gz wurde gebaut und geprüft.
+  - Direkte Migration wurde gegen eine Kopie der einzigen produktiven 4.1.3-Installation getestet.
+  - SQLite-Integrität und Messhistorie wurden vor und nach der Migration verglichen.
+  - Neue systemd-Units, Healthcheck und Gerätezugriffe funktionieren.
+  - Rollback auf die gesicherte 4.1.3-Installation wurde getestet.
+  - README, Badges und Release-Pipeline sind vorbereitet.
+  - Vollständige Testsuite ist grün.
+  - Keine Secrets oder produktiven Daten befinden sich im Diff.
+  prohibited_before_gate:
+  - GitHub-Repository umbenennen
+  - Produktive 4.1.3-Installation überschreiben
+  - Alte systemd-Units löschen
+  - Alte Datenbank oder Konfiguration löschen
+required_commands:
+  inventory:
+  - git grep -n -I -E 'SolarInspector|SOLARINSPECTOR|solarinspector|Solarinspector'
+  - find . -type f \( -name '*solarinspector*' -o -name '*SolarInspector*' \) -print
+  targeted_tests:
+  - pytest -v tests/test_branding.py
+  - pytest -v tests/test_environment.py
+  - pytest -v tests/test_paths.py
+  - pytest -v tests/test_github_updater.py
+  - pytest -v tests/test_release_installer.py
+  - pytest -v tests/test_updater_service.py
+  - pytest -v tests/test_runtime.py
+  - pytest -v tests/test_web.py
+  - pytest -v tests/test_update_api.py
+  full_tests:
+  - pytest -v tests
+  - pytest --cov=app --cov-report=term-missing tests
+  quality:
+  - ruff format --check app tests
+  - ruff check app tests
+  - mypy <configured-paths>
+  - git diff --check
+  import_checks:
+  - python -c "import sys; sys.path.insert(0, 'app'); import zrzavy_energy_monitor"
+  - python -c "import sys; sys.path.insert(0, 'app'); import solarinspector"
+  - python -c "import sys; sys.path.insert(0, 'app'); import zrzavy_energy_monitor_core"
+  - python -c "import sys; sys.path.insert(0, 'app'); import solarinspector_core"
+  manual_start:
+  - ZRZAVY_ENERGY_MONITOR_SECRET='<test-secret>' python app/zrzavy_energy_monitor.py --no-browser
+  - SOLARINSPECTOR_SECRET='<test-secret>' python app/solarinspector.py --no-browser
+  final_inventory:
+  - git grep -n -I -E 'SolarInspector|SOLARINSPECTOR|solarinspector|Solarinspector'
+  - git status
+  - git diff --stat
+  - git diff
+acceptance_criteria:
+  branding:
+  - Aktueller öffentlicher Produktname ist überall Zrzavy Energy Monitor.
+  - Kurzbeschreibung ist überall exakt Open-source home energy monitoring and validation.
+  - ZEM wird nicht alleinstehend als öffentliche Marke verwendet.
+  - SolarInspector erscheint nur noch in erlaubtem Legacy- oder Historienkontext.
+  repository:
+  - Zielrepository heißt zrzavywa/zrzavy-energy-monitor.
+  - Updater und Dokumentation verwenden den neuen Repository-Namen.
+  - Alte GitHub-Links sind nur in Migrationshinweisen oder Fallbacklogik vorhanden.
+  runtime:
+  - Neuer Einstiegspunkt funktioniert.
+  - Alter Einstiegspunkt funktioniert als Wrapper.
+  - Neuer Core-Namespace ist kanonisch.
+  - Erforderliche Legacy-Imports funktionieren.
+  - Keine doppelte Produktlogik.
+  environment:
+  - Alle neuen ZRZAVY_ENERGY_MONITOR_* Variablen funktionieren.
+  - Alle dokumentierten SOLARINSPECTOR_* Variablen funktionieren als Legacy-Fallback.
+  - Neue Variablen haben Vorrang.
+  - Keine Secrets werden geloggt.
+  data:
+  - Konfiguration und SQLite-Daten bleiben vollständig erhalten.
+  - Datenbankintegrität ist vor und nach Migration ok.
+  - Keine künstlichen Nullwerte oder NULL-Änderungen.
+  - Rollback stellt die alte Installation wieder her.
+  linux:
+  - Neue systemd-Units funktionieren.
+  - Alter und neuer Collector laufen nie gleichzeitig.
+  - Dry Run verändert das System nicht.
+  - Automatischer Rollback nach fehlgeschlagenem Healthcheck funktioniert.
+  - Neue Installationen verwenden ausschließlich neue Pfade.
+  updater:
+  - Nach der Migration verwendet Zrzavy Energy Monitor ausschließlich das neue Repository.
+  - Neue Release-Artefakte werden korrekt gefunden und geprüft.
+  - Prüfsumme, Manifestprüfung, Backup, Healthcheck und Rollback bleiben wirksam.
+  - Der alte 4.1.3-Updater wird für das einmalige Upgrade nicht vorausgesetzt.
+  compatibility:
+  - Bestehende API-Endpunkte bleiben kompatibel.
+  - Bestehende Konfigurationen bleiben lesbar.
+  - Die einzige 4.1.3-Installation kann direkt auf 4.5.0 migriert werden.
+  - Tasmota, SHRDZM, Shelly und Solakon bleiben funktionsfähig.
+  - Validierung, Quellenpriorisierung, Energiebilanz, Persistenz und CSV bleiben funktionsfähig.
+  documentation:
+  - Alle aktuellen Dokumente verwenden neue Namen und Pfade.
+  - Migration und Rollback sind vollständig dokumentiert.
+  - Historische Changelog-Einträge wurden nicht verfälscht.
+  - Markenhinweise behaupten keine nicht vorhandene Registrierung.
+  quality:
+  - Alle Tests sind erfolgreich.
+  - Ruff ist erfolgreich.
+  - Mypy ist für die konfigurierten Pfade erfolgreich.
+  - Keine kritischen Importzyklen.
+  - Keine unerklärten Magic Numbers.
+  - Alle neuen Module besitzen Modul-Docstrings.
+  - Alle neuen öffentlichen Schnittstellen sind typisiert und dokumentiert.
+  - Vollständiger git diff wurde geprüft.
+  prohibited_outcomes:
+  - Kein Datenverlust.
+  - Keine parallelen Collector-Services.
+  - Keine alleinstehende öffentliche Verwendung von ZEM.
+  - Keine Änderung fachlicher Messwertsemantik.
+  - Keine Secrets, Datenbanken, Logs oder lokale Konfigurationen im Commit.
+  - Kein Bridge-Release.
+  - Keine unnötige Dual-Repository- oder Dual-Asset-Logik.
+completion_report:
+  required_format:
+    task: Rebranding zu Zrzavy Energy Monitor
+    status: completed | partially_completed | blocked
+    branch: <branch>
+    base_commit: <commit>
+    final_commit: <commit>
+    old_repository: zrzavywa/SolarInspector
+    new_repository: zrzavywa/zrzavy-energy-monitor
+    repository_renamed: false
+    completed_blocks: []
+    branding:
+      product_name: Zrzavy Energy Monitor
+      product_id: zrzavy-energy-monitor
+      description: Open-source home energy monitoring and validation
+      abbreviation_policy_verified: false
+    code:
+      new_entrypoint: null
+      legacy_entrypoint_wrapper: null
+      new_core_namespace: null
+      legacy_imports_supported: []
+    environment:
+      canonical_variables: []
+      legacy_variables_supported: []
+      precedence_verified: false
+      secret_redaction_verified: false
+    paths:
+      new_paths: []
+      legacy_paths_supported: []
+      migration_verified: false
+    systemd:
+      new_units: []
+      old_units_disabled: []
+      parallel_run_prevented: false
+      rollback_verified: false
+    updater:
+      new_repository_configured: false
+      new_asset_prefix_configured: false
+      direct_upgrade_verified: false
+      rollback_verified: false
+    data:
+      database_rows_before: null
+      database_rows_after: null
+      integrity_before: null
+      integrity_after: null
+      data_loss_detected: false
+    documentation:
+      files_created: []
+      files_updated: []
+      legacy_mentions_remaining: []
+      invalid_public_legacy_mentions: []
+    tests:
+      count_before: null
+      count_after: null
+      result: null
+      coverage_percent: null
+    quality:
+      ruff: null
+      mypy: null
+      import_cycles: null
+      documentation_standards: null
+    technical_debt: []
+    intentionally_deferred: []
+    next_step: null
+    migration_strategy: single_direct_migration
+    source_version: 4.1.3
+    target_version: 4.5.0
+start_instruction: 'Beginne mit Block R.1.
+
+
+  Analysiere den tatsächlichen aktuellen Stand des Repositorys zrzavywa/SolarInspector auf dem Branch
+  main.
+
+
+  Führe noch keine Produktivänderung und keine Repository-Umbenennung durch.
+
+
+  Erstelle eine vollständige Rebranding-Matrix für jeden Treffer von:
+
+
+  - SolarInspector
+
+  - SOLARINSPECTOR
+
+  - solarinspector
+
+  - Solarinspector
+
+  - zrzavywa/SolarInspector
+
+  - SolarInspector-<VERSION>
+
+  - alle solarinspector-Datei-, Service- und Verzeichnisnamen
+
+
+  Ordne jeden Treffer einer dieser Kategorien zu:
+
+
+  - aktuelle öffentliche Markenverwendung
+
+  - technischer kanonischer Bezeichner
+
+  - Legacy-Kompatibilität
+
+  - historische Dokumentation
+
+  - Test-Fixture
+
+  - Drittanbieter- oder Benutzerinhalt
+
+
+  Dokumentiere für jeden Treffer Datei und Zeile, aktuelle Bedeutung, Zielbezeichnung, notwendige Kompatibilität,
+  geplanten Ausführungsblock, Testbedarf und Risiko bei Änderung.
+
+
+  Berücksichtige ausdrücklich, dass genau eine produktive Installation auf SolarInspector 4.1.3 existiert
+  und direkt auf Zrzavy Energy Monitor 4.5.0 migriert werden soll. Ein Bridge-Release ist nicht zu erstellen.
+
+
+  Erstelle als Ergebnis:
+
+
+  docs/development/4.5/rebranding-inventory.md
+
+
+  Bereite anschließend Block R.2 als zusammenhängenden, direkt kopierbaren Umsetzungsschritt vor.'
+installation_scope:
+  existing_installations: 1
+  source_version: 4.1.3
+  target_version: 4.5.0
+  strategy: single_direct_migration
+  assumptions:
+  - Es existiert genau eine produktive SolarInspector-Installation.
+  - Diese Installation läuft auf Version 4.1.3.
+  - Es müssen keine weiteren Benutzerinstallationen über GitHub-Updates abgeholt werden.
+  - Ein einmaliger manueller beziehungsweise skriptgestützter Upgradepfad ist ausreichend.
+  consequence: Ein Bridge-Release 4.1.4, Dual-Repository-Erkennung und doppelte Release-Artefakte sind
+    nicht erforderlich.

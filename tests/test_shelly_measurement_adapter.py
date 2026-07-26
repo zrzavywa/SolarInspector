@@ -6,17 +6,20 @@ from unittest.mock import Mock
 
 import pytest
 import requests
-from solarinspector_core.adapters import MeasurementAdapter
-from solarinspector_core.adapters.shelly import (
+from zrzavy_energy_monitor_core.adapters import MeasurementAdapter
+from zrzavy_energy_monitor_core.adapters.shelly import (
     ShellyMeasurementAdapter,
     ShellyReader,
 )
-from solarinspector_core.models.device import DeviceConnectionStatus, DeviceSnapshot
-from solarinspector_core.models.legacy import MeterReading
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.units import unit_for_metric
+from zrzavy_energy_monitor_core.models.device import (
+    DeviceConnectionStatus,
+    DeviceSnapshot,
+)
+from zrzavy_energy_monitor_core.models.legacy import MeterReading
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.units import unit_for_metric
 
 
 def device_config(

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run SolarInspector database maintenance without application side effects."""
+"""Run Zrzavy Energy Monitor database maintenance without application side effects."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-from solarinspector_core.paths import DB_PATH
-from solarinspector_core.persistence.maintenance import (
+from zrzavy_energy_monitor_core.paths import DB_PATH
+from zrzavy_energy_monitor_core.persistence.maintenance import (
     DatabaseInspection,
     DatabaseMaintenanceError,
     create_database_backup,
@@ -18,8 +18,8 @@ from solarinspector_core.persistence.maintenance import (
     inspect_database,
     migrate_database_with_backup,
 )
-from solarinspector_core.persistence.migrations import DatabaseSchemaError
-from solarinspector_core.services.version import read_installed_version
+from zrzavy_energy_monitor_core.persistence.migrations import DatabaseSchemaError
+from zrzavy_energy_monitor_core.services.version import read_installed_version
 
 EXIT_SUCCESS = 0
 EXIT_OPERATION_FAILED = 3
@@ -38,7 +38,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         description=(
-            "SolarInspector SQLite prüfen, sichern oder kontrolliert migrieren; "
+            "Zrzavy Energy Monitor SQLite prüfen, sichern oder kontrolliert migrieren; "
             "startet weder Webserver noch Collector oder Gerätezugriffe."
         )
     )

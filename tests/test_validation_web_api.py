@@ -5,11 +5,11 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.persistence.database import Database
-from solarinspector_core.validation import (
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.persistence.database import Database
+from zrzavy_energy_monitor_core.validation import (
     ValidationDecision,
     ValidationEvent,
     ValidationEventPersistencePolicy,
@@ -17,7 +17,7 @@ from solarinspector_core.validation import (
     ValidationFinding,
     ValidationSeverity,
 )
-from solarinspector_core.web.validation import (
+from zrzavy_energy_monitor_core.web.validation import (
     build_validation_events_api_response,
     build_validation_summary_api_response,
 )

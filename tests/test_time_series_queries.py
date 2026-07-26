@@ -7,9 +7,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
-from solarinspector_core.persistence.database import Database
-from solarinspector_core.persistence.migrations import apply_migrations
-from solarinspector_core.persistence.queries import (
+from zrzavy_energy_monitor_core.persistence.database import Database
+from zrzavy_energy_monitor_core.persistence.migrations import apply_migrations
+from zrzavy_energy_monitor_core.persistence.queries import (
     HARD_MAXIMUM_QUERY_ROWS,
     get_energy_balance_series,
     get_grid_series,

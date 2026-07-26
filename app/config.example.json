@@ -1,6 +1,6 @@
 {
   "general": {
-    "project_name": "SolarInspector",
+    "project_name": "Zrzavy Energy Monitor",
     "site_name": "Solakon Anlage",
     "poll_interval_seconds": 10,
     "auto_start_collection": false,

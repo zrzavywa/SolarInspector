@@ -8,16 +8,16 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.config.manager import ConfigManager, deep_merge
-from solarinspector_core.config.shelly import (
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.config.manager import ConfigManager, deep_merge
+from zrzavy_energy_monitor_core.config.shelly import (
     Phase,
     ShellyMeasurementRole,
     phase_direction_factor,
 )
-from solarinspector_core.models.legacy import MeterReading
-from solarinspector_core.web.api import build_test_device_api_response
-from solarinspector_core.web.configuration import apply_configuration_form
+from zrzavy_energy_monitor_core.models.legacy import MeterReading
+from zrzavy_energy_monitor_core.web.api import build_test_device_api_response
+from zrzavy_energy_monitor_core.web.configuration import apply_configuration_form
 
 
 class ReaderStub:

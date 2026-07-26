@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from solarinspector_core.services.phase_power import analyze_phase_power
+from zrzavy_energy_monitor_core.services.phase_power import analyze_phase_power
 
 
 def test_complete_phase_distribution_and_consistent_device_total() -> None:

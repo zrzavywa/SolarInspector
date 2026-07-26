@@ -16,32 +16,32 @@ from release_installer import (
 from update_status import write_update_status
 
 DEFAULT_REQUEST_PATH = Path(
-    "/var/lib/solarinspector/update-request.json"
+    "/var/lib/zrzavy-energy-monitor/update-request.json"
 )
 DEFAULT_STATUS_PATH = Path(
-    "/var/lib/solarinspector/update-status.json"
+    "/var/lib/zrzavy-energy-monitor/update-status.json"
 )
 DEFAULT_RELEASES_DIR = Path(
-    "/opt/solarinspector/releases"
+    "/opt/zrzavy-energy-monitor/releases"
 )
 DEFAULT_CURRENT_LINK = Path(
-    "/opt/solarinspector/current"
+    "/opt/zrzavy-energy-monitor/current"
 )
 DEFAULT_HEALTHCHECK_URL = (
     "http://127.0.0.1:8787/api/health"
 )
-DEFAULT_SERVICE_NAME = "solarinspector.service"
+DEFAULT_SERVICE_NAME = "zrzavy-energy-monitor.service"
 
 DEFAULT_BACKUP_DIR = Path(
-    "/var/lib/solarinspector/backups"
+    "/var/lib/zrzavy-energy-monitor/backups"
 )
 
 DEFAULT_CONFIG_PATH = Path(
-    "/etc/solarinspector/config.json"
+    "/etc/zrzavy-energy-monitor/config.json"
 )
 
 DEFAULT_DATABASE_PATH = Path(
-    "/var/lib/solarinspector/data/solarinspector.db"
+    "/var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db"
 )
 
 
@@ -62,7 +62,7 @@ def create_backup(
         shutil.copy2(config_path, target / "config.json")
 
     if database_path.is_file():
-        shutil.copy2(database_path, target / "solarinspector.db")
+        shutil.copy2(database_path, target / "zrzavy-energy-monitor.db")
 
     if current_link.is_symlink():
         active_release = current_link.resolve(strict=True)
@@ -129,7 +129,7 @@ def restart_systemd_service(
         )
     except subprocess.CalledProcessError as exc:
         raise ReleaseInstallError(
-            "SolarInspector-Service konnte nicht neu gestartet werden: "
+            "Zrzavy-Energy-Monitor-Service konnte nicht neu gestartet werden: "
             + (exc.stderr or exc.stdout or str(exc))
         ) from exc
 
@@ -267,7 +267,7 @@ def run_update(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="SolarInspector privileged updater"
+        description="Zrzavy Energy Monitor privileged updater"
     )
 
     parser.add_argument(

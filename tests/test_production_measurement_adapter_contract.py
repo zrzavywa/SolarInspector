@@ -6,17 +6,17 @@ from typing import Any
 
 import pytest
 import requests
-from solarinspector_core.adapters.base import MeasurementAdapter
-from solarinspector_core.adapters.shelly import ShellyMeasurementAdapter
-from solarinspector_core.adapters.solakon import SolakonOneReading
-from solarinspector_core.adapters.solakon_measurement import (
+from zrzavy_energy_monitor_core.adapters.base import MeasurementAdapter
+from zrzavy_energy_monitor_core.adapters.shelly import ShellyMeasurementAdapter
+from zrzavy_energy_monitor_core.adapters.solakon import SolakonOneReading
+from zrzavy_energy_monitor_core.adapters.solakon_measurement import (
     SolakonMeasurementAdapter,
 )
-from solarinspector_core.models.device import DeviceConnectionStatus
-from solarinspector_core.models.legacy import MeterReading
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.units import unit_for_metric
+from zrzavy_energy_monitor_core.models.device import DeviceConnectionStatus
+from zrzavy_energy_monitor_core.models.legacy import MeterReading
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.units import unit_for_metric
 
 
 class StubShellyReader:

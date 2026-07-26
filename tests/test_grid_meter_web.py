@@ -8,14 +8,14 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from solarinspector_core.adapters.tasmota_grid_meter import (
+from zrzavy_energy_monitor_core.adapters.tasmota_grid_meter import (
     TasmotaHttpGridMeterAdapter,
 )
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.web.api import (
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.web.api import (
     build_test_device_api_response,
 )
-from solarinspector_core.web.configuration import (
+from zrzavy_energy_monitor_core.web.configuration import (
     apply_configuration_form,
 )
 

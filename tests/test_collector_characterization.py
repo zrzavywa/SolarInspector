@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 import pytest
-import solarinspector as si
+import zrzavy_energy_monitor as si
 
 pytestmark = pytest.mark.characterization
 

@@ -17,8 +17,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Final
 
-from solarinspector_core.persistence.database import Database
-from solarinspector_core.persistence.migrations import apply_migrations
+from zrzavy_energy_monitor_core.persistence.database import Database
+from zrzavy_energy_monitor_core.persistence.migrations import apply_migrations
 
 POLL_INTERVAL_SECONDS: Final = 5
 MEASUREMENTS_PER_CYCLE: Final = 25
@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         description=(
-            "Simuliert SolarInspector-Zeitreihen ohne Geräte oder Wartezeiten."
+            "Simuliert Zrzavy-Energy-Monitor-Zeitreihen ohne Geräte oder Wartezeiten."
         )
     )
     parser.add_argument("--cycles", type=int, default=DEFAULT_CYCLES)
@@ -75,7 +75,7 @@ def run_benchmark(cycles: int) -> dict[str, object]:
     if cycles < 1:
         raise ValueError("cycles must be positive")
     with tempfile.TemporaryDirectory(
-        prefix="solarinspector-persistence-benchmark-"
+        prefix="zrzavy-energy-monitor-persistence-benchmark-"
     ) as raw_directory:
         database_path = Path(raw_directory) / "benchmark.db"
         database = Database(database_path)

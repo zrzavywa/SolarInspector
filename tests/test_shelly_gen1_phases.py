@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import solarinspector as si
+import zrzavy_energy_monitor as si
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "shelly"
 

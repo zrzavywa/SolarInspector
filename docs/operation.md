@@ -5,31 +5,31 @@
 Status:
 
 ```bash
-sudo systemctl status solarinspector.service
+sudo systemctl status zrzavy-energy-monitor.service
 ```
 
 Start:
 
 ```bash
-sudo systemctl start solarinspector.service
+sudo systemctl start zrzavy-energy-monitor.service
 ```
 
 Stopp:
 
 ```bash
-sudo systemctl stop solarinspector.service
+sudo systemctl stop zrzavy-energy-monitor.service
 ```
 
 Neustart:
 
 ```bash
-sudo systemctl restart solarinspector.service
+sudo systemctl restart zrzavy-energy-monitor.service
 ```
 
 Autostart prüfen:
 
 ```bash
-systemctl is-enabled solarinspector.service
+systemctl is-enabled zrzavy-energy-monitor.service
 ```
 
 ## Logs anzeigen
@@ -37,25 +37,25 @@ systemctl is-enabled solarinspector.service
 Letzte Meldungen:
 
 ```bash
-journalctl -u solarinspector.service -n 100 --no-pager
+journalctl -u zrzavy-energy-monitor.service -n 100 --no-pager
 ```
 
 Live-Ansicht:
 
 ```bash
-journalctl -u solarinspector.service -f
+journalctl -u zrzavy-energy-monitor.service -f
 ```
 
 Seit dem letzten Systemstart:
 
 ```bash
-journalctl -u solarinspector.service -b
+journalctl -u zrzavy-energy-monitor.service -b
 ```
 
 Updater:
 
 ```bash
-journalctl -u solarinspector-updater.service -n 200 --no-pager
+journalctl -u zrzavy-energy-monitor-updater.service -n 200 --no-pager
 ```
 
 Vor der Veröffentlichung von Logs Zugangsdaten, interne Adressen und Seriennummern entfernen.
@@ -72,8 +72,8 @@ Der Kern-Healthcheck soll den Zustand der Anwendung, nicht die permanente Erreic
 ## Installierte Version
 
 ```bash
-cat /opt/solarinspector/current/VERSION
-readlink -f /opt/solarinspector/current
+cat /opt/zrzavy-energy-monitor/current/VERSION
+readlink -f /opt/zrzavy-energy-monitor/current
 ```
 
 Alternativ über die API:
@@ -86,15 +86,15 @@ curl --silent http://127.0.0.1:8787/api/system/version
 
 | Inhalt | Referenzpfad |
 |---|---|
-| aktives Release | `/opt/solarinspector/current` |
-| versionierte Releases | `/opt/solarinspector/releases/` |
-| Konfiguration | `/etc/solarinspector/config.json` |
-| SQLite-Datenbank | `/var/lib/solarinspector/data/solarinspector.db` |
-| Update-Status | `/var/lib/solarinspector/update-status.json` |
-| Update-Anforderung | `/var/lib/solarinspector/update-request.json` |
-| Backups | `/var/lib/solarinspector/backups/` |
-| Update-Downloads | `/var/cache/solarinspector/updates/` |
-| Updater-Logs | `/var/log/solarinspector/` |
+| aktives Release | `/opt/zrzavy-energy-monitor/current` |
+| versionierte Releases | `/opt/zrzavy-energy-monitor/releases/` |
+| Konfiguration | `/etc/zrzavy-energy-monitor/config.json` |
+| SQLite-Datenbank | `/var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db` |
+| Update-Status | `/var/lib/zrzavy-energy-monitor/update-status.json` |
+| Update-Anforderung | `/var/lib/zrzavy-energy-monitor/update-request.json` |
+| Backups | `/var/lib/zrzavy-energy-monitor/backups/` |
+| Update-Downloads | `/var/cache/zrzavy-energy-monitor/updates/` |
+| Updater-Logs | `/var/log/zrzavy-energy-monitor/` |
 
 Bei älteren Installationen können Konfiguration und Daten noch direkt im Anwendungsordner liegen.
 
@@ -103,18 +103,18 @@ Bei älteren Installationen können Konfiguration und Daten noch direkt im Anwen
 Anwendung für eine konsistente Sicherung stoppen:
 
 ```bash
-sudo systemctl stop solarinspector.service
+sudo systemctl stop zrzavy-energy-monitor.service
 ```
 
 Backup erstellen:
 
 ```bash
-BACKUP="$HOME/solarinspector-$(date +%Y%m%d-%H%M%S).tar.gz"
+BACKUP="$HOME/zrzavy-energy-monitor-$(date +%Y%m%d-%H%M%S).tar.gz"
 
 sudo tar -czf "$BACKUP" \
-  /etc/solarinspector \
-  /var/lib/solarinspector/data \
-  /var/lib/solarinspector/update-status.json 2>/dev/null || true
+  /etc/zrzavy-energy-monitor \
+  /var/lib/zrzavy-energy-monitor/data \
+  /var/lib/zrzavy-energy-monitor/update-status.json 2>/dev/null || true
 
 sudo chown "$USER":"$USER" "$BACKUP"
 ```
@@ -122,7 +122,7 @@ sudo chown "$USER":"$USER" "$BACKUP"
 Danach:
 
 ```bash
-sudo systemctl start solarinspector.service
+sudo systemctl start zrzavy-energy-monitor.service
 ```
 
 Backup prüfen:
@@ -138,7 +138,7 @@ Ein Backup ist erst dann vertrauenswürdig, wenn seine Wiederherstellung mindest
 Integrität:
 
 ```bash
-sqlite3 /var/lib/solarinspector/data/solarinspector.db \
+sqlite3 /var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db \
   "PRAGMA integrity_check;"
 ```
 
@@ -151,21 +151,21 @@ ok
 Dateigröße:
 
 ```bash
-du -h /var/lib/solarinspector/data/solarinspector.db
+du -h /var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db
 ```
 
-Vor direkten SQL-Änderungen immer ein Backup erstellen. Die Datenbank sollte normalerweise ausschließlich durch SolarInspector verwaltet werden.
+Vor direkten SQL-Änderungen immer ein Backup erstellen. Die Datenbank sollte normalerweise ausschließlich durch Zrzavy Energy Monitor verwaltet werden.
 
 ## Dateirechte prüfen
 
 ```bash
-sudo stat /etc/solarinspector/config.json
-sudo stat /var/lib/solarinspector/data/solarinspector.db
-sudo namei -l /opt/solarinspector/current/app/config.json
-sudo namei -l /opt/solarinspector/current/app/data
+sudo stat /etc/zrzavy-energy-monitor/config.json
+sudo stat /var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db
+sudo namei -l /opt/zrzavy-energy-monitor/current/app/config.json
+sudo namei -l /opt/zrzavy-energy-monitor/current/app/data
 ```
 
-Der SolarInspector-Service-Benutzer benötigt:
+Der Zrzavy-Energy-Monitor-Service-Benutzer benötigt:
 
 - Leserechte auf Programmdateien,
 - Leserechte auf die Konfiguration,
@@ -176,9 +176,9 @@ Der SolarInspector-Service-Benutzer benötigt:
 
 ```bash
 df -h /
-du -sh /opt/solarinspector
-du -sh /var/lib/solarinspector
-du -sh /var/cache/solarinspector
+du -sh /opt/zrzavy-energy-monitor
+du -sh /var/lib/zrzavy-energy-monitor
+du -sh /var/cache/zrzavy-energy-monitor
 ```
 
 Alte Release-Downloads im Cache können nach erfolgreicher Sicherung und Prüfung entfernt werden. Das aktive Release, das unmittelbar vorherige Release und mindestens ein funktionierendes Backup sollten erhalten bleiben.

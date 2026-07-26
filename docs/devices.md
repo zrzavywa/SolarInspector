@@ -23,7 +23,7 @@
 
 ### Zugriffssicherheit
 
-SolarInspector verwendet den Solakon-Zugriff ausschließlich zum Lesen von Mess- und Gerätewerten. Es werden keine Lade-, Entlade- oder Betriebsparameter geschrieben.
+Zrzavy Energy Monitor verwendet den Solakon-Zugriff ausschließlich zum Lesen von Mess- und Gerätewerten. Es werden keine Lade-, Entlade- oder Betriebsparameter geschrieben.
 
 ### Mögliche Werte
 
@@ -56,7 +56,7 @@ Eine erfolgreiche TCP-Verbindung bestätigt nur die Erreichbarkeit, nicht die ko
 
 ## Shelly PM Mini Gen 3
 
-SolarInspector verwendet die lokale Gen3-RPC-Schnittstelle, typischerweise:
+Zrzavy Energy Monitor verwendet die lokale Gen3-RPC-Schnittstelle, typischerweise:
 
 ```text
 /rpc/PM1.GetStatus?id=0
@@ -76,7 +76,7 @@ curl --fail "http://<SHELLY-IP>/rpc/PM1.GetStatus?id=0"
 
 ## Shelly 3EM Gen 1
 
-SolarInspector verwendet die lokale Gen1-Statusschnittstelle:
+Zrzavy Energy Monitor verwendet die lokale Gen1-Statusschnittstelle:
 
 ```text
 /status
@@ -92,7 +92,7 @@ Für die Hausanschlussmessung werden die Leistungen der Phasen zusammengeführt.
 
 ## Shelly Pro 3EM
 
-SolarInspector verwendet die lokale RPC-Schnittstelle des EM-Komponents, typischerweise:
+Zrzavy Energy Monitor verwendet die lokale RPC-Schnittstelle des EM-Komponents, typischerweise:
 
 ```text
 /rpc/EM.GetStatus?id=0
@@ -106,7 +106,7 @@ curl --fail "http://<SHELLY-IP>/rpc/EM.GetStatus?id=0"
 
 ## SHRDZM-Kundenschnittstellen-Modul
 
-SolarInspector liest das Modul lokal und ausschließlich lesend über:
+Zrzavy Energy Monitor liest das Modul lokal und ausschließlich lesend über:
 
 ```text
 /getLastData
@@ -127,7 +127,7 @@ Einrichtung, Authentifizierung, Mapping und Hardwarecheck stehen in
 
 ## Lokale Authentifizierung
 
-Wenn am Shelly eine Authentifizierung aktiviert ist, müssen Benutzername und Kennwort in der lokalen SolarInspector-Konfiguration hinterlegt werden.
+Wenn am Shelly eine Authentifizierung aktiviert ist, müssen Benutzername und Kennwort in der lokalen Zrzavy-Energy-Monitor-Konfiguration hinterlegt werden.
 
 Empfehlungen:
 
@@ -140,11 +140,11 @@ Empfehlungen:
 
 | Verbindung | Standard |
 |---|---|
-| Browser → SolarInspector | TCP `8787` |
-| SolarInspector → Solakon ONE | TCP `502` |
-| SolarInspector → Shelly | TCP `80`, abhängig von Geräteoptionen |
-| SolarInspector → SHRDZM | TCP `80` beziehungsweise konfigurierter HTTPS-Port |
-| SolarInspector → GitHub | HTTPS `443` für Releaseprüfung und Download |
+| Browser → Zrzavy Energy Monitor | TCP `8787` |
+| Zrzavy Energy Monitor → Solakon ONE | TCP `502` |
+| Zrzavy Energy Monitor → Shelly | TCP `80`, abhängig von Geräteoptionen |
+| Zrzavy Energy Monitor → SHRDZM | TCP `80` beziehungsweise konfigurierter HTTPS-Port |
+| Zrzavy Energy Monitor → GitHub | HTTPS `443` für Releaseprüfung und Download |
 
 ## Messabweichungen richtig einordnen
 

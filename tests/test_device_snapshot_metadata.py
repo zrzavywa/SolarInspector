@@ -3,11 +3,11 @@
 from datetime import UTC, datetime
 
 import pytest
-from solarinspector_core.adapters.solakon import SolakonOneReading
-from solarinspector_core.adapters.solakon_measurement import (
+from zrzavy_energy_monitor_core.adapters.solakon import SolakonOneReading
+from zrzavy_energy_monitor_core.adapters.solakon_measurement import (
     SolakonMeasurementAdapter,
 )
-from solarinspector_core.models.device import (
+from zrzavy_energy_monitor_core.models.device import (
     DeviceConnectionStatus,
     DeviceSnapshot,
 )

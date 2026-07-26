@@ -9,21 +9,21 @@ from typing import Any
 
 import pytest
 import requests
-from solarinspector_core.adapters.base import MeasurementAdapter
-from solarinspector_core.adapters.shrdzm_grid_meter import (
+from zrzavy_energy_monitor_core.adapters.base import MeasurementAdapter
+from zrzavy_energy_monitor_core.adapters.shrdzm_grid_meter import (
     ShrdzmRestGridMeterAdapter,
     lookup_shrdzm_path,
     parse_shrdzm_grid_meter_payload,
 )
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.config.grid_meter import (
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.config.grid_meter import (
     DEFAULT_SHRDZM_REST_MAPPING,
 )
-from solarinspector_core.models.device import DeviceConnectionStatus
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.units import Unit
+from zrzavy_energy_monitor_core.models.device import DeviceConnectionStatus
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.units import Unit
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "shrdzm" / "rest"
 

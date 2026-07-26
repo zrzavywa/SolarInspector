@@ -1,0 +1,27 @@
+[Unit]
+Description=Zrzavy Energy Monitor
+After=network-online.target
+Wants=network-online.target
+Conflicts=solarinspector.service
+
+[Service]
+Type=simple
+User=solarinspector
+Group=solarinspector
+WorkingDirectory=/opt/zrzavy-energy-monitor/current
+Environment=PYTHONPATH=/opt/zrzavy-energy-monitor/current/app
+Environment=ZRZAVY_ENERGY_MONITOR_CONFIG_PATH=/etc/zrzavy-energy-monitor/config.json
+Environment=ZRZAVY_ENERGY_MONITOR_DATABASE_PATH=/var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db
+ExecStart=/opt/zrzavy-energy-monitor/current/.venv/bin/python /opt/zrzavy-energy-monitor/current/app/zrzavy_energy_monitor.py --no-browser
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/zrzavy-energy-monitor
+ReadWritePaths=/var/log/zrzavy-energy-monitor
+
+[Install]
+WantedBy=multi-user.target

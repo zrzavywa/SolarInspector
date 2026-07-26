@@ -95,13 +95,13 @@ async function checkForUpdate() {
     if (payload.update_available) {
       updateStatus.textContent = "Neue Version verfügbar";
     } else {
-      updateStatus.textContent = "SolarInspector ist aktuell";
+      updateStatus.textContent = "Zrzavy Energy Monitor ist aktuell";
     }
     
     downloadButton.disabled = !payload.update_available;
     
     releaseName.textContent =
-      payload.release_name || `SolarInspector ${payload.available_version}`;
+      payload.release_name || `Zrzavy Energy Monitor ${payload.available_version}`;
 
     publishedAt.textContent = formatDate(payload.published_at);
     releaseNotes.textContent =
@@ -169,7 +169,7 @@ async function pollInstallationStatus() {
         state: "activating",
         progress: 85,
         message:
-          "SolarInspector wird neu gestartet. Verbindung wird wiederhergestellt …",
+          "Zrzavy Energy Monitor wird neu gestartet. Verbindung wird wiederhergestellt …",
       });
     }
 
@@ -261,7 +261,7 @@ function renderDownloadStatus(payload) {
   if (state === "success") {
     installationResult.hidden = false;
     installationResult.textContent =
-      `SolarInspector ${payload.available_version || ""} wurde erfolgreich installiert.`;
+      `Zrzavy Energy Monitor ${payload.available_version || ""} wurde erfolgreich installiert.`;
   } else if (state === "failed") {
     installationResult.hidden = false;
     installationResult.textContent =

@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from solarinspector_core.models.legacy import MeterReading
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.services.collector import Collector
+from zrzavy_energy_monitor_core.models.legacy import MeterReading
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.services.collector import Collector
 
 
 class StubConfigManager:

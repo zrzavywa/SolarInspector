@@ -11,16 +11,16 @@ from pathlib import Path
 from typing import NoReturn
 
 import pytest
-import solarinspector_core.persistence.maintenance as maintenance
+import zrzavy_energy_monitor_core.persistence.maintenance as maintenance
 from database_cli import EXIT_OPERATION_FAILED, main
-from solarinspector_core.persistence.maintenance import (
+from zrzavy_energy_monitor_core.persistence.maintenance import (
     DatabaseMaintenanceError,
     create_database_backup,
     dry_run_database_migration,
     inspect_database,
     migrate_database_with_backup,
 )
-from solarinspector_core.persistence.migrations import get_current_version
+from zrzavy_energy_monitor_core.persistence.migrations import get_current_version
 
 FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "database"
 CREATED_AT = datetime(2026, 7, 26, 20, 15, 30, tzinfo=timezone.utc)

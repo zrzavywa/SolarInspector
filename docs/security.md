@@ -2,7 +2,7 @@
 
 ## Einsatzgrenze
 
-SolarInspector ist für ein vertrauenswürdiges lokales Netzwerk vorgesehen. Die Anwendung ist kein fertig gehärteter, öffentlich erreichbarer Internetdienst.
+Zrzavy Energy Monitor ist für ein vertrauenswürdiges lokales Netzwerk vorgesehen. Die Anwendung ist kein fertig gehärteter, öffentlich erreichbarer Internetdienst.
 
 Nicht empfohlen:
 
@@ -26,7 +26,7 @@ Für externen Zugriff sollte ein VPN verwendet werden.
 
 ## Solakon-Zugriff
 
-SolarInspector nutzt ausschließlich lesende Modbus-Zugriffe. Nicht vorgesehen sind:
+Zrzavy Energy Monitor nutzt ausschließlich lesende Modbus-Zugriffe. Nicht vorgesehen sind:
 
 - Änderung der Ladeleistung,
 - Änderung der Betriebsart,
@@ -87,10 +87,10 @@ Zu prüfen sind insbesondere:
 Empfohlene Rechte:
 
 ```bash
-sudo chown solarinspector:solarinspector \
-  /etc/solarinspector/config.json
+sudo chown zemonitor:zemonitor \
+  /etc/zrzavy-energy-monitor/config.json
 
-sudo chmod 600 /etc/solarinspector/config.json
+sudo chmod 600 /etc/zrzavy-energy-monitor/config.json
 ```
 
 Kennwörter:

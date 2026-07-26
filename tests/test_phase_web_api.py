@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import solarinspector as si
-from solarinspector_core.web.api import (
+import zrzavy_energy_monitor as si
+from zrzavy_energy_monitor_core.web.api import (
     build_phase_dashboard_api_response,
     build_phase_live_api_response,
 )

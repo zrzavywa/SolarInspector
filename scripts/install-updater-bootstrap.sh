@@ -8,21 +8,21 @@ fi
 
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-UPDATER_DIR="/opt/solarinspector/updater"
-STATE_DIR="/var/lib/solarinspector"
-CACHE_DIR="/var/cache/solarinspector/updates"
-LOG_DIR="/var/log/solarinspector"
+UPDATER_DIR="/opt/zrzavy-energy-monitor/updater"
+STATE_DIR="/var/lib/zrzavy-energy-monitor"
+CACHE_DIR="/var/cache/zrzavy-energy-monitor/updates"
+LOG_DIR="/var/log/zrzavy-energy-monitor"
 
-echo "[SolarInspector] Verzeichnisse vorbereiten"
+echo "[Zrzavy Energy Monitor] Verzeichnisse vorbereiten"
 
-install -d -m 0755 /opt/solarinspector
-install -d -m 0755 /opt/solarinspector/releases
+install -d -m 0755 /opt/zrzavy-energy-monitor
+install -d -m 0755 /opt/zrzavy-energy-monitor/releases
 install -d -m 0755 "$UPDATER_DIR"
 install -d -m 0775 "$STATE_DIR"
 install -d -m 0775 "$CACHE_DIR"
 install -d -m 0755 "$LOG_DIR"
 
-echo "[SolarInspector] Updater installieren"
+echo "[Zrzavy Energy Monitor] Updater installieren"
 
 install -m 0644 \
   "$SOURCE_DIR/updater/updater_service.py" \
@@ -40,7 +40,7 @@ install -m 0644 \
   "$SOURCE_DIR/updater/requirements.txt" \
   "$UPDATER_DIR/requirements.txt"
 
-echo "[SolarInspector] Virtuelle Umgebung erstellen"
+echo "[Zrzavy Energy Monitor] Virtuelle Umgebung erstellen"
 
 python3 -m venv "$UPDATER_DIR/.venv"
 
@@ -50,18 +50,22 @@ python3 -m venv "$UPDATER_DIR/.venv"
 "$UPDATER_DIR/.venv/bin/python" -m pip install \
   -r "$UPDATER_DIR/requirements.txt"
 
-echo "[SolarInspector] systemd Units installieren"
+echo "[Zrzavy Energy Monitor] systemd Units installieren"
 
 install -m 0644 \
-  "$SOURCE_DIR/systemd/solarinspector-updater.service" \
-  /etc/systemd/system/solarinspector-updater.service
+  "$SOURCE_DIR/systemd/zrzavy-energy-monitor.service" \
+  /etc/systemd/system/zrzavy-energy-monitor.service
 
 install -m 0644 \
-  "$SOURCE_DIR/systemd/solarinspector-updater.path" \
-  /etc/systemd/system/solarinspector-updater.path
+  "$SOURCE_DIR/systemd/zrzavy-energy-monitor-updater.service" \
+  /etc/systemd/system/zrzavy-energy-monitor-updater.service
+
+install -m 0644 \
+  "$SOURCE_DIR/systemd/zrzavy-energy-monitor-updater.path" \
+  /etc/systemd/system/zrzavy-energy-monitor-updater.path
 
 systemctl daemon-reload
-systemctl enable --now solarinspector-updater.path
+systemctl enable --now zrzavy-energy-monitor-updater.path
 
-echo "[SolarInspector] Updater erfolgreich installiert"
-systemctl status solarinspector-updater.path --no-pager
+echo "[Zrzavy Energy Monitor] Updater erfolgreich installiert"
+systemctl status zrzavy-energy-monitor-updater.path --no-pager
