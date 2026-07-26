@@ -27,6 +27,9 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Aktuellen Betrieb der 4.1-Reihe klar von der geplanten 5.0-Zielarchitektur getrennt.
 - Zentrale Markenhinweise und Herstellerabgrenzung für Solakon, Shelly und Raspberry Pi ergänzt.
 - Einrichtung, Sicherheit und Hardwarevalidierung des SHRDZM-Netzstromzählers dokumentiert.
+- Vergleichsfenster, Mindestdauer und Mindestanzahl für Quellen mit
+  zehnsekündigem Messintervall einschließlich robuster `60/30/4`-Empfehlung
+  dokumentiert.
 
 ### Fixed
 

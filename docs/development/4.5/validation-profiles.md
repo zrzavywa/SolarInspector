@@ -50,6 +50,35 @@ A comparison with Shelly 3EM is performed only when
 `measurement_position_comparable` is explicitly true. Even a persistent large
 difference does not automatically reject the official reference.
 
+### Comparison-window timing
+
+Cross-source rules compare the arithmetic means of the accepted measurements
+from each source inside the inclusive lookback window. The configured
+`minimum_duration_seconds` is the observed span between the oldest and newest
+measurement in each source window; it is not a delay timer.
+
+`window_seconds` should be larger than `minimum_duration_seconds`. Configuring
+both to the same value is sensitive to polling and network jitter because the
+oldest sample can fall just outside the lookback window. The minimum sample
+count should normally be at least:
+
+```text
+ceil(minimum_duration_seconds / effective_sample_interval_seconds) + 1
+```
+
+For an official Tasmota meter with an effective ten-second update interval, the
+recommended pilot settings are:
+
+```text
+window_seconds: 60
+minimum_duration_seconds: 30
+minimum_samples: 4
+```
+
+This covers samples near 0, 10, 20, and 30 seconds while retaining enough
+window margin for jitter or one delayed poll. Thresholds remain
+installation-specific and independent of this timing recommendation.
+
 ## Source-specific overrides
 
 A source can select a named profile and add:
