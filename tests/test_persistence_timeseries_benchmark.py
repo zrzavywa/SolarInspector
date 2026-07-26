@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -17,7 +18,7 @@ def test_small_benchmark_validates_rows_growth_queries_and_locking(
 
     result = subprocess.run(
         [
-            str(Path(".venv/bin/python").resolve()),
+            sys.executable,
             "scripts/persistence_timeseries_benchmark.py",
             "--cycles",
             "100",
