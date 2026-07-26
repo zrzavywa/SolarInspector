@@ -41,8 +41,13 @@ def _snapshot(index: int) -> DeviceSnapshot:
     )
 
 
-def test_validation_replay_stays_bounded_and_non_blocking() -> None:
-    bridge = CollectorValidationBridge()
+def _run_validation_replay(
+    bridge: CollectorValidationBridge,
+    *,
+    cycle_count: int,
+) -> None:
+    """Run deterministic validation cycles and verify their functional result."""
+
     config = {
         "validation": {
             "enabled": True,
@@ -50,10 +55,7 @@ def test_validation_replay_stays_bounded_and_non_blocking() -> None:
             "sources": {},
         }
     }
-    cycle_count = 750
 
-    tracemalloc.start()
-    started = time.perf_counter()
     for index in range(cycle_count):
         now = BASE_TIME + timedelta(seconds=index)
         result = bridge.validate_cycle(
@@ -63,10 +65,27 @@ def test_validation_replay_stays_bounded_and_non_blocking() -> None:
         )
         assert result.events == ()
         assert len(result.snapshots[0].measurements) == 1
+
+
+def test_validation_replay_stays_non_blocking() -> None:
+    bridge = CollectorValidationBridge()
+    cycle_count = 750
+
+    started = time.perf_counter()
+    _run_validation_replay(bridge, cycle_count=cycle_count)
     elapsed = time.perf_counter() - started
+
+    assert elapsed < 5.0
+
+
+def test_validation_replay_memory_stays_bounded() -> None:
+    bridge = CollectorValidationBridge()
+    cycle_count = 750
+
+    tracemalloc.start()
+    _run_validation_replay(bridge, cycle_count=cycle_count)
     _current_memory, peak_memory = tracemalloc.get_traced_memory()
     tracemalloc.stop()
 
-    assert elapsed < 5.0
     assert peak_memory < 32 * 1024 * 1024
     assert len(bridge._history) <= 512
