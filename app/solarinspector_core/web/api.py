@@ -168,6 +168,10 @@ def build_live_api_response(
         database,
         now_epoch=now_epoch,
     )
+    energy_balance = _latest_energy_balance_api_row(
+        database,
+        now_epoch=now_epoch,
+    )
     active_source_id = (
         grid_meter.get("active_source_id")
         if grid_meter is not None
@@ -178,11 +182,88 @@ def build_live_api_response(
         "latest": latest,
         "collector": status,
         "grid_meter": grid_meter,
+        "energy_balance": energy_balance,
         "active_sources": {
             "grid_power": active_source_id,
             "grid_power_label": (latest.get("grid_source") if latest else None),
         },
     }
+
+
+def _latest_energy_balance_api_row(
+    database: DatabaseApi,
+    *,
+    now_epoch: float,
+) -> dict[str, Any] | None:
+    """Read and serialize an optional current energy-balance row."""
+
+    latest_method = getattr(database, "latest_energy_balance_sample", None)
+    if not callable(latest_method):
+        return None
+    row = latest_method()
+    if row is None:
+        return None
+
+    sources = _json_object(row.get("source_metadata_json"))
+    for source in sources.values():
+        if not isinstance(source, dict):
+            continue
+        source["age_seconds"] = _iso_age_seconds(
+            source.get("selected_measurement_timestamp"),
+            now_epoch=now_epoch,
+        )
+
+    return {
+        "sample_id": row.get("sample_id"),
+        "calculated_at": row.get("calculated_at"),
+        "age_seconds": _iso_age_seconds(
+            row.get("calculated_at"),
+            now_epoch=now_epoch,
+        ),
+        "quality": row.get("quality"),
+        "values": {
+            field_name: _optional_float(row.get(field_name))
+            for field_name in _ENERGY_BALANCE_VALUE_FIELDS
+        },
+        "sources": sources,
+        "fallback_used": _optional_bool(row.get("fallback_used")),
+        "findings": _json_list(row.get("findings_json")),
+    }
+
+
+def _json_object(value: object) -> dict[str, Any]:
+    """Decode an optional JSON object without exposing malformed content."""
+
+    if not isinstance(value, str) or not value:
+        return {}
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _json_list(value: object) -> list[Any]:
+    """Decode an optional JSON list without exposing malformed content."""
+
+    if not isinstance(value, str) or not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return []
+    return parsed if isinstance(parsed, list) else []
+
+
+def _iso_age_seconds(value: object, *, now_epoch: float) -> int | None:
+    """Return non-negative age for one ISO timestamp."""
+
+    if not isinstance(value, str):
+        return None
+    try:
+        return max(0, int(now_epoch - datetime.fromisoformat(value).timestamp()))
+    except ValueError:
+        return None
 
 
 def build_delete_all_api_response(
@@ -520,6 +601,21 @@ def _optional_bool(value: object) -> bool | None:
 
 
 _PHASE_NAMES = ("l1", "l2", "l3")
+_ENERGY_BALANCE_VALUE_FIELDS = (
+    "house_power_w",
+    "grid_power_w",
+    "grid_import_power_w",
+    "grid_export_power_w",
+    "plant_ac_power_w",
+    "pv_power_w",
+    "battery_charge_power_w",
+    "battery_discharge_power_w",
+    "battery_soc_percent",
+    "self_consumed_power_w",
+    "self_consumption_rate_percent",
+    "autonomy_rate_percent",
+    "residual_power_w",
+)
 
 
 def build_test_device_api_response(

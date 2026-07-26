@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Final, Iterator, Optional
 
 from solarinspector_core.models.device import DeviceSnapshot
+from solarinspector_core.models.energy_balance import EnergyBalanceResult
 from solarinspector_core.models.metrics import Metric
 from solarinspector_core.models.quality import MeasurementQuality
 from solarinspector_core.models.roles import MeasurementRole
@@ -242,6 +243,40 @@ class Database:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS energy_balance_samples (
+                    sample_id INTEGER PRIMARY KEY,
+                    calculated_at TEXT NOT NULL,
+                    quality TEXT NOT NULL,
+                    house_power_w REAL,
+                    grid_power_w REAL,
+                    grid_import_power_w REAL,
+                    grid_export_power_w REAL,
+                    plant_ac_power_w REAL,
+                    pv_power_w REAL,
+                    battery_charge_power_w REAL,
+                    battery_discharge_power_w REAL,
+                    battery_soc_percent REAL,
+                    self_consumed_power_w REAL,
+                    self_consumption_rate_percent REAL,
+                    autonomy_rate_percent REAL,
+                    residual_power_w REAL,
+                    fallback_used INTEGER NOT NULL DEFAULT 0,
+                    source_metadata_json TEXT NOT NULL DEFAULT '{}',
+                    findings_json TEXT NOT NULL DEFAULT '[]',
+                    FOREIGN KEY (sample_id) REFERENCES samples(id)
+                        ON DELETE CASCADE
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                    idx_energy_balance_samples_quality_sample
+                ON energy_balance_samples(quality, sample_id)
+                """
+            )
             conn.commit()
 
     def insert_sample(self, sample: dict[str, Any]) -> int:
@@ -271,6 +306,8 @@ class Database:
         grid_meter_snapshot: DeviceSnapshot | None = None,
         *,
         measurement_role: str = "house_total",
+        energy_balance: EnergyBalanceResult | None = None,
+        persist_source_decisions: bool = True,
     ) -> int:
         """Atomically persist aggregate and normalized details."""
 
@@ -300,6 +337,13 @@ class Database:
                         conn,
                         sample_id=sample_id,
                         snapshot=grid_meter_snapshot,
+                    )
+                if energy_balance is not None:
+                    self._insert_energy_balance(
+                        conn,
+                        sample_id=sample_id,
+                        balance=energy_balance,
+                        persist_source_decisions=persist_source_decisions,
                     )
                 conn.commit()
                 return sample_id
@@ -350,6 +394,29 @@ class Database:
             [row[column] for column in columns],
         )
 
+    def _insert_energy_balance(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        sample_id: int,
+        balance: EnergyBalanceResult,
+        persist_source_decisions: bool,
+    ) -> None:
+        """Insert one energy balance inside the aggregate transaction."""
+
+        row = _energy_balance_row(
+            sample_id=sample_id,
+            balance=balance,
+            persist_source_decisions=persist_source_decisions,
+        )
+        columns = list(row.keys())
+        placeholders = ",".join("?" for _ in columns)
+        conn.execute(
+            "INSERT INTO energy_balance_samples "
+            f"({','.join(columns)}) VALUES ({placeholders})",
+            [row[column] for column in columns],
+        )
+
     def latest(self) -> Optional[dict[str, Any]]:
         with self.connect() as conn:
             row = conn.execute(
@@ -392,6 +459,24 @@ class Database:
                 LIMIT 1
                 """,
                 (source_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def latest_energy_balance_sample(self) -> Optional[dict[str, Any]]:
+        """Return the newest persisted energy-balance detail row."""
+
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT energy_balance_samples.*,
+                       samples.ts_epoch,
+                       samples.ts_local
+                FROM energy_balance_samples
+                JOIN samples
+                  ON samples.id = energy_balance_samples.sample_id
+                ORDER BY samples.ts_epoch DESC
+                LIMIT 1
+                """
             ).fetchone()
         return dict(row) if row else None
 
@@ -456,11 +541,140 @@ class Database:
     def delete_all(self) -> None:
         with self.connect() as conn:
             conn.execute("DELETE FROM validation_events")
+            conn.execute("DELETE FROM energy_balance_samples")
             conn.execute("DELETE FROM grid_meter_samples")
             conn.execute("DELETE FROM phase_samples")
             conn.execute("DELETE FROM samples")
             conn.commit()
             conn.execute("VACUUM")
+
+
+def _energy_balance_row(
+    *,
+    sample_id: int,
+    balance: EnergyBalanceResult,
+    persist_source_decisions: bool,
+) -> dict[str, Any]:
+    """Flatten one balance and safe explainability metadata."""
+
+    source_metadata = (
+        {
+            selection.requested_metric.value: {
+                "selected_source_id": selection.selected_source_id,
+                "selected_source_role": (
+                    selection.selected_source_role.value
+                    if selection.selected_source_role is not None
+                    else None
+                ),
+                "selected_quality": selection.selected_quality.value,
+                "selection_reason": selection.selection_reason.value,
+                "fallback_used": selection.fallback_used,
+                "selected_measurement_timestamp": (
+                    selection.selected_measurement_timestamp.isoformat()
+                    if selection.selected_measurement_timestamp is not None
+                    else None
+                ),
+                "selection_timestamp": selection.selection_timestamp.isoformat(),
+                "rejected_candidates": [
+                    {
+                        "source_id": candidate.source_id,
+                        "source_role": (
+                            candidate.source_role.value
+                            if candidate.source_role is not None
+                            else None
+                        ),
+                        "quality": (
+                            candidate.quality.value
+                            if candidate.quality is not None
+                            else None
+                        ),
+                        "reason": candidate.reason.value,
+                        "measured_at": (
+                            candidate.measured_at.isoformat()
+                            if candidate.measured_at is not None
+                            else None
+                        ),
+                    }
+                    for candidate in selection.rejected_candidates
+                ],
+            }
+            for selection in balance.source_metadata
+        }
+        if persist_source_decisions
+        else {}
+    )
+    findings = [
+        {
+            "rule_id": finding.rule_id,
+            "code": finding.code,
+            "message": finding.message,
+            "severity": finding.severity,
+            "details": {
+                key: _safe_balance_detail(key, value) for key, value in finding.details
+            },
+        }
+        for finding in balance.findings
+    ]
+    return {
+        "sample_id": sample_id,
+        "calculated_at": balance.calculated_at.isoformat(),
+        "quality": balance.quality.value,
+        "house_power_w": balance.house_power_w,
+        "grid_power_w": balance.grid_power_w,
+        "grid_import_power_w": balance.grid_import_power_w,
+        "grid_export_power_w": balance.grid_export_power_w,
+        "plant_ac_power_w": balance.plant_ac_power_w,
+        "pv_power_w": balance.pv_power_w,
+        "battery_charge_power_w": balance.battery_charge_power_w,
+        "battery_discharge_power_w": balance.battery_discharge_power_w,
+        "battery_soc_percent": balance.battery_soc_percent,
+        "self_consumed_power_w": balance.self_consumed_power_w,
+        "self_consumption_rate_percent": (balance.self_consumption_rate_percent),
+        "autonomy_rate_percent": balance.autonomy_rate_percent,
+        "residual_power_w": balance.residual_power_w,
+        "fallback_used": int(
+            persist_source_decisions
+            and any(selection.fallback_used for selection in balance.source_metadata)
+        ),
+        "source_metadata_json": json.dumps(
+            source_metadata,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        "findings_json": json.dumps(
+            findings,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+    }
+
+
+def _safe_balance_detail(key: str, value: object) -> object:
+    """Serialize bounded primitive diagnostics and redact sensitive keys."""
+
+    lowered = key.casefold()
+    if any(
+        marker in lowered
+        for marker in (
+            "password",
+            "secret",
+            "token",
+            "credential",
+            "authorization",
+            "username",
+            "host",
+            "address",
+            "url",
+        )
+    ):
+        return "<redacted>"
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, str):
+        return value[:256]
+    return f"<unsupported:{type(value).__name__}>"
 
 
 _PHASE_METRICS: Final[dict[str, tuple[Metric, Metric, Metric, Metric]]] = {

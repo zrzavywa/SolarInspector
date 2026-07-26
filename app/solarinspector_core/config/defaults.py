@@ -10,6 +10,9 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from solarinspector_core.config.energy_balance import (
+    DEFAULT_ENERGY_BALANCE_CONFIG,
+)
 from solarinspector_core.config.grid_meter import (
     DEFAULT_GRID_METER_CONFIG,
 )
@@ -28,6 +31,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "solar_power_source": "auto",
         "grid_power_source": "auto",
     },
+    "energy_balance": deepcopy(DEFAULT_ENERGY_BALANCE_CONFIG),
     "validation": deepcopy(DEFAULT_VALIDATION_CONFIG),
     "solakon_one": {
         "enabled": False,

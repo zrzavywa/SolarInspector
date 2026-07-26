@@ -40,14 +40,21 @@ SolarInspector verwendet am Hausanschluss folgende Vorzeichenkonvention:
 - **positiver Wert** = Netzbezug
 - **negativer Wert** = Einspeisung
 
-Vereinfachte Berechnungen:
+Die aktuelle, validierte Energiebilanz verwendet die Anlagen-AC-Leistung und
+die signierte Netzleistung:
 
 ```text
-Hausverbrauch       = Solarleistung + Netzleistung
-Eigenverbrauch      = min(Solarleistung, Hausverbrauch)
-Eigenverbrauchsquote = Eigenverbrauch / Solarertrag
-Autarkiegrad        = Eigenverbrauch / Hausverbrauch
+Hausverbrauch        = Anlagen-AC-Leistung + Netzleistung
+Netzbezug            = max(Netzleistung, 0)
+Netzeinspeisung      = max(-Netzleistung, 0)
+Eigenverbrauch       = max(Anlagen-AC-Leistung - Netzeinspeisung, 0)
+Eigenverbrauchsquote = Eigenverbrauch / Anlagen-AC-Leistung
+Autarkiegrad         = Eigenverbrauch / Hausverbrauch
 ```
+
+Anlagen-AC-Leistung und PV-Eingangsleistung sind fachlich verschiedene Werte.
+Nur validierte, ausreichend aktuelle und zeitlich vergleichbare Messwerte
+gehen in die Bilanz ein. Fehlende Eingänge werden nicht geschätzt.
 
 Liefert ein Messgerät das umgekehrte Vorzeichen, kann die Messrichtung in der Konfiguration mit `direction_factor: -1` korrigiert werden.
 

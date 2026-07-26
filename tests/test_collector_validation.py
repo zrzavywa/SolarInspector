@@ -11,6 +11,7 @@ from solarinspector_core.models.device import (
     DeviceConnectionStatus,
     DeviceSnapshot,
 )
+from solarinspector_core.models.energy_balance import EnergyBalanceQuality
 from solarinspector_core.models.measurement import Measurement
 from solarinspector_core.models.metrics import Metric
 from solarinspector_core.models.quality import MeasurementQuality
@@ -299,3 +300,53 @@ def test_collector_excludes_rejected_power_before_energy_integration() -> None:
     assert len(events) == 1
     assert events[0].metric is Metric.PLANT_AC_POWER
     assert events[0].decision is ValidationDecision.REJECT
+    balance = collector.energy_balance()
+    assert balance is not None
+    assert balance.quality is EnergyBalanceQuality.UNAVAILABLE
+    assert balance.pv_power_w == 400.0
+
+
+def test_collector_continues_after_controlled_balance_failure(
+    monkeypatch: Any,
+) -> None:
+    config = deepcopy(DEFAULT_CONFIG)
+    for key in (
+        "grid_meter",
+        "house_meter",
+        "solakon_meter",
+        "solakon_one",
+    ):
+        config[key]["enabled"] = False
+    config["solakon_one"]["enabled"] = True
+    config["validation"]["enabled"] = True
+    snapshot = _snapshot(_measurement(Metric.PV_POWER, 400.0))
+    database = _DatabaseStub()
+    collector = Collector(
+        _ConfigStub(config),  # type: ignore[arg-type]
+        database,  # type: ignore[arg-type]
+    )
+    collector._now = lambda: NOW  # type: ignore[method-assign]
+    collector._read_solakon_snapshot_result = (  # type: ignore[method-assign]
+        lambda _config: (None, snapshot, None)
+    )
+
+    def fail_balance(*_args: Any, **_kwargs: Any) -> None:
+        raise RuntimeError("synthetic balance failure")
+
+    monkeypatch.setattr(
+        "solarinspector_core.services.collector.build_cycle_energy_balance",
+        fail_balance,
+    )
+
+    sample = collector.collect_once()
+
+    assert sample["id"] == 1
+    assert len(database.samples) == 1
+    assert "Energiebilanz: Berechnung fehlgeschlagen." in sample["error_text"]
+    balance = collector.energy_balance()
+    assert balance is not None
+    assert balance.quality is EnergyBalanceQuality.UNAVAILABLE
+    assert any(
+        finding.code == "energy_balance_calculation_failed"
+        for finding in balance.findings
+    )

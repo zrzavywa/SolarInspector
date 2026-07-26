@@ -118,6 +118,44 @@ AC- und PV-Leistung sind nicht identisch. Für Wirkungsgrad- oder Verlustverglei
 
 Ohne kompatibles Solakon-Meter sollte `house_meter` verwendet werden.
 
+## Abschnitt `energy_balance`
+
+Dieser additive Abschnitt steuert die validierte aktuelle Energiebilanz.
+Fehlt er in einer bestehenden Konfiguration, werden rückwärtskompatible
+Standardwerte ergänzt.
+
+| Feld | Standard | Bedeutung |
+|---|---:|---|
+| `enabled` | `true` | neue aktuelle Bilanz berechnen |
+| `maximum_measurement_age_seconds` | `30` | maximales Messwertalter |
+| `maximum_source_skew_seconds` | `10` | maximaler Zeitversatz der Bilanzquellen |
+| `allow_suspect_measurements` | `true` | warnungsbehaftete, nutzbare Werte zulassen |
+| `allow_grid_fallback` | `true` | expliziten Hauszähler-Fallback zulassen |
+| `allow_plant_fallback` | `true` | Solakon-AC als Anlagen-Fallback zulassen |
+| `negative_house_power_tolerance_w` | `30` | Toleranz kleiner negativer Residuen |
+| `short_window_average_seconds` | `0` | optionale kurze Mittelung; `0` deaktiviert |
+| `persist_source_decisions` | `true` | sichere Auswahlmetadaten speichern |
+| `source_priorities` | siehe unten | geordnete stabile Quellen-IDs je Metrik |
+
+Standardprioritäten:
+
+```json
+{
+  "grid_power": ["grid_meter_primary", "house_meter"],
+  "plant_ac_power": ["solakon_meter", "solakon_one"],
+  "pv_power": ["solakon_one"],
+  "battery_charge_power": ["solakon_one"],
+  "battery_discharge_power": ["solakon_one"],
+  "battery_soc": ["solakon_one"]
+}
+```
+
+Der `house_meter` ist für Netzleistung nur mit
+`measurement_role: "grid_fallback"` berechtigt. Eine Unterverteilung wird
+nicht als Hausanschlusspunkt verwendet. Ein Wert mit `0 W` ist gültig und
+löst keinen Fallback aus. Abgelehnte, veraltete oder zeitlich nicht
+vergleichbare Werte werden nicht zur Bilanz verrechnet.
+
 ## Abschnitt `grid_meter`
 
 Dieser Abschnitt konfiguriert die führende, offizielle Referenz für
