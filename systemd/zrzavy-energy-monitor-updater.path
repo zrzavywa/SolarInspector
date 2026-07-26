@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for Zrzavy Energy Monitor update requests
+
+[Path]
+PathExists=/var/lib/zrzavy-energy-monitor/update-request.json
+Unit=zrzavy-energy-monitor-updater.service
+
+[Install]
+WantedBy=multi-user.target

@@ -9,16 +9,16 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-from solarinspector_core.models.energy_balance import EnergyBalanceInput
-from solarinspector_core.models.measurement import Measurement
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.source_selection import SourceSelectionResult
-from solarinspector_core.models.units import unit_for_metric
-from solarinspector_core.persistence.database import Database
-from solarinspector_core.services.collector import Collector
-from solarinspector_core.services.energy_balance import EnergyBalanceService
+from zrzavy_energy_monitor_core.models.energy_balance import EnergyBalanceInput
+from zrzavy_energy_monitor_core.models.measurement import Measurement
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.source_selection import SourceSelectionResult
+from zrzavy_energy_monitor_core.models.units import unit_for_metric
+from zrzavy_energy_monitor_core.persistence.database import Database
+from zrzavy_energy_monitor_core.services.collector import Collector
+from zrzavy_energy_monitor_core.services.energy_balance import EnergyBalanceService
 
 NOW = datetime.fromisoformat("2026-07-26T18:00:00+02:00")
 

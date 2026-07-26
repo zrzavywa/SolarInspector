@@ -6,13 +6,13 @@ from datetime import UTC, datetime
 
 import pytest
 from fakes.measurement_adapter import FakeMeasurementAdapter
-from solarinspector_core.adapters.base import MeasurementAdapter
-from solarinspector_core.models.device import (
+from zrzavy_energy_monitor_core.adapters.base import MeasurementAdapter
+from zrzavy_energy_monitor_core.models.device import (
     DeviceConnectionStatus,
     DeviceSnapshot,
     MeasurementSource,
 )
-from solarinspector_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
 
 NOW = datetime(2026, 7, 23, 18, 30, tzinfo=UTC)
 

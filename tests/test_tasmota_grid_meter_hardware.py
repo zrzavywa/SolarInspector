@@ -7,17 +7,17 @@ import time
 from copy import deepcopy
 
 import pytest
-from solarinspector_core.adapters.tasmota_grid_meter import (
+from zrzavy_energy_monitor_core.adapters.tasmota_grid_meter import (
     TasmotaHttpGridMeterAdapter,
 )
-from solarinspector_core.config.grid_meter import (
+from zrzavy_energy_monitor_core.config.grid_meter import (
     DEFAULT_GRID_METER_CONFIG,
     normalize_grid_meter_config,
 )
-from solarinspector_core.models.device import (
+from zrzavy_energy_monitor_core.models.device import (
     DeviceConnectionStatus,
 )
-from solarinspector_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.metrics import Metric
 
 pytestmark = [
     pytest.mark.hardware,

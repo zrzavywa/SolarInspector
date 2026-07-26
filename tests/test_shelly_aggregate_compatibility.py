@@ -5,16 +5,16 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from solarinspector_core.adapters.compatibility import (
+from zrzavy_energy_monitor_core.adapters.compatibility import (
     meter_reading_from_snapshot,
 )
-from solarinspector_core.adapters.shelly import (
+from zrzavy_energy_monitor_core.adapters.shelly import (
     ShellyMeasurementAdapter,
     ShellyReader,
 )
-from solarinspector_core.models.legacy import MeterReading
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.legacy import MeterReading
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
 
 
 class StubShellyReader(ShellyReader):

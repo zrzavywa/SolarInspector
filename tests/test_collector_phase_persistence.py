@@ -9,10 +9,10 @@ from typing import Any
 
 import pytest
 import requests
-from solarinspector_core.adapters.shelly import ShellyReader
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.persistence.database import Database
-from solarinspector_core.services.collector import Collector
+from zrzavy_energy_monitor_core.adapters.shelly import ShellyReader
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.persistence.database import Database
+from zrzavy_energy_monitor_core.services.collector import Collector
 
 
 class StubConfigManager:

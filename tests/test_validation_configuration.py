@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 
 import pytest
-from solarinspector_core.config.manager import ConfigManager
-from solarinspector_core.validation import (
+from zrzavy_energy_monitor_core.config.manager import ConfigManager
+from zrzavy_energy_monitor_core.validation import (
     DEFAULT_COMPARISON_CONFIG,
     DEFAULT_TIME_CONFIG,
     DEFAULT_VALIDATION_CONFIG,

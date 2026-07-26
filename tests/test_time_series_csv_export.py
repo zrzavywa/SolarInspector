@@ -9,9 +9,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
-from solarinspector_core.persistence.database import Database
-from solarinspector_core.persistence.migrations import apply_migrations
-from solarinspector_core.web.export import build_time_series_csv_export
+from zrzavy_energy_monitor_core.persistence.database import Database
+from zrzavy_energy_monitor_core.persistence.migrations import apply_migrations
+from zrzavy_energy_monitor_core.web.export import build_time_series_csv_export
 
 START = datetime(2026, 7, 26, 8, tzinfo=timezone.utc)
 
@@ -217,7 +217,7 @@ def test_additive_exports_have_explicit_unit_headers_and_utc_timestamps(
         ]
         == START.isoformat()
     )
-    assert filename == (f"solarinspector_{dataset}_2026-07-26_2026-07-27.csv")
+    assert filename == (f"zrzavy-energy-monitor_{dataset}_2026-07-26_2026-07-27.csv")
 
 
 def test_measurement_export_requires_metric_and_preserves_real_zero(
@@ -372,7 +372,7 @@ def test_http_route_keeps_legacy_default_and_serves_additive_dataset(
     connection: sqlite3.Connection,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import solarinspector as application
+    import zrzavy_energy_monitor as application
 
     database_path = Path(connection.execute("PRAGMA database_list").fetchone()["file"])
     monkeypatch.setattr(application, "database", Database(database_path))
@@ -387,7 +387,7 @@ def test_http_route_keeps_legacy_default_and_serves_additive_dataset(
     assert response.status_code == 200
     assert "grid_import_total_kwh" in response.get_data(as_text=True)
     assert response.headers["Content-Disposition"].startswith(
-        'attachment; filename="solarinspector_grid_'
+        'attachment; filename="zrzavy-energy-monitor_grid_'
     )
     assert missing_metric.status_code == 400
     assert "requires a metric" in missing_metric.get_json()["error"]

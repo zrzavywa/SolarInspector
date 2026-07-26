@@ -9,20 +9,20 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.models.device import (
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.models.device import (
     DeviceConnectionStatus,
     DeviceSnapshot,
 )
-from solarinspector_core.models.measurement import Measurement
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.units import unit_for_metric
-from solarinspector_core.services.energy_balance_collector import (
+from zrzavy_energy_monitor_core.models.measurement import Measurement
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.units import unit_for_metric
+from zrzavy_energy_monitor_core.services.energy_balance_collector import (
     build_cycle_energy_balance,
 )
-from solarinspector_core.validation import (
+from zrzavy_energy_monitor_core.validation import (
     ValidatedCycle,
     ValidatedDeviceSnapshot,
     ValidatedMeasurement,

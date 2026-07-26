@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from solarinspector_core.adapters.solakon import SolakonOneReading
-from solarinspector_core.services.collector import Collector
+from zrzavy_energy_monitor_core.adapters.solakon import SolakonOneReading
+from zrzavy_energy_monitor_core.services.collector import Collector
 
 
 class StubConfigManager:

@@ -130,15 +130,15 @@ def run_release_smoke_test(
     environment["PYTHONPATH"] = str(release_directory / "app")
     environment.setdefault(
         "SOLARINSPECTOR_SECRET",
-        "solarinspector-release-smoke-test",
+        "zrzavy-energy-monitor-release-smoke-test",
     )
 
     command = [
         str(venv_python),
         "-c",
         (
-            "import solarinspector; "
-            "print(solarinspector.get_installed_version())"
+            "import zrzavy_energy_monitor; "
+            "print(zrzavy_energy_monitor.get_installed_version())"
         ),
     ]
 
@@ -249,7 +249,7 @@ def validate_release_archive(
     required_files = {
         f"{expected_top_level}/VERSION",
         f"{expected_top_level}/release-manifest.json",
-        f"{expected_top_level}/app/solarinspector.py",
+        f"{expected_top_level}/app/zrzavy_energy_monitor.py",
         f"{expected_top_level}/app/requirements.txt",
     }
 
@@ -287,7 +287,7 @@ def prepare_release(
     version: str,
     releases_directory: Path,
 ) -> Path:
-    expected_top_level = f"SolarInspector-{version}"
+    expected_top_level = f"zrzavy-energy-monitor-{version}"
     target_directory = releases_directory / version
     temporary_directory = releases_directory / f".{version}.tmp"
 
@@ -401,7 +401,7 @@ def wait_for_healthcheck(
                 timeout=5,
                 headers={
                     "Accept": "application/json",
-                    "User-Agent": "SolarInspector-Updater",
+                    "User-Agent": "ZrzavyEnergyMonitor-Updater",
                 },
             )
             response.raise_for_status()

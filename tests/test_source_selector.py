@@ -5,20 +5,20 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
-from solarinspector_core.models.measurement import Measurement
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.source_selection import (
+from zrzavy_energy_monitor_core.models.measurement import Measurement
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.source_selection import (
     CandidateRejectionReason,
     SourceSelectionReason,
 )
-from solarinspector_core.models.units import unit_for_metric
-from solarinspector_core.services.source_selector import (
+from zrzavy_energy_monitor_core.models.units import unit_for_metric
+from zrzavy_energy_monitor_core.services.source_selector import (
     SourceCandidate,
     SourceSelector,
 )
-from solarinspector_core.validation import (
+from zrzavy_energy_monitor_core.validation import (
     ValidatedMeasurement,
     ValidationDecision,
     ValidationFinding,

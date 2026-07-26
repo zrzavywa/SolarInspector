@@ -1,7 +1,7 @@
 # Entwicklungsstandards
 
 Dieses Dokument beschreibt die verbindlichen Entwicklungsstandards für neue
-oder wesentlich überarbeitete Python-Komponenten von SolarInspector 4.5.
+oder wesentlich überarbeitete Python-Komponenten von Zrzavy Energy Monitor 4.5.
 
 Die bestehende Codebasis wird schrittweise angepasst. Eine vollständige
 Neuformatierung oder Modularisierung des Altbestands ist nicht Bestandteil
@@ -124,7 +124,7 @@ Der Ruff-Formatter nimmt derzeit folgende historische Dateien aus:
 - `app/github_updater.py`
 - `app/modbus_solakon.py`
 - `app/release_installer.py`
-- `app/solarinspector.py`
+- `app/zrzavy_energy_monitor.py`
 - `app/updater_service.py`
 - `tests/test_core.py`
 - `tests/test_release_installer.py`
@@ -162,7 +162,7 @@ Nach Phase 01 bleiben insbesondere folgende Punkte offen:
 2. Mypy deckt noch nicht die gesamte Anwendung und die Tests ab.
 3. Docstring-Regeln werden für Altcode noch nicht global geprüft.
 4. Modul- und API-Docstrings sind im Altcode nicht vollständig.
-5. `app/solarinspector.py` bündelt weiterhin mehrere Verantwortlichkeiten.
+5. `app/zrzavy_energy_monitor.py` bündelt weiterhin mehrere Verantwortlichkeiten.
 6. Die vollständige Modularisierung erfolgt in einer späteren Phase.
 
 Diese Punkte sind bekannte Migrationsaufgaben und keine Aufforderung zu einer

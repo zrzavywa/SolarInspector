@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-import solarinspector as si
+import zrzavy_energy_monitor as si
 
 pytestmark = pytest.mark.characterization
 

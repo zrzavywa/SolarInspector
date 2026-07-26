@@ -5,9 +5,9 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.config.manager import ConfigManager
-from solarinspector_core.web.configuration import apply_configuration_form
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.config.manager import ConfigManager
+from zrzavy_energy_monitor_core.web.configuration import apply_configuration_form
 
 
 def _form() -> dict[str, str]:

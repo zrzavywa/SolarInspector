@@ -8,9 +8,9 @@ from typing import Any
 import github_updater as gu
 import pytest
 import requests
-import solarinspector as si
-import solarinspector_core.services.periods as periods
 import update_status as us
+import zrzavy_energy_monitor as si
+import zrzavy_energy_monitor_core.services.periods as periods
 from github_updater import (
     ReleaseInfo,
     UpdateCheckError,

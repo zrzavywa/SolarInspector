@@ -208,7 +208,7 @@ code { background: #e7ecea; border-radius: 6px; padding: 3px 6px; }
   .export-form label { min-width: 0; }
 }
 
-/* SolarInspector 4.0 – Solakon ONE */
+/* Zrzavy Energy Monitor – Solakon ONE */
 .readonly-note {
   margin: -4px 0 20px; padding: 13px 15px; border-radius: 12px;
   background: #edf5fb; border: 1px solid #d2e5f3; color: #345a72; font-size: 13px;
@@ -315,7 +315,7 @@ code { background: #e7ecea; border-radius: 6px; padding: 3px 6px; }
 }
 
 
-/* SolarInspector 4.5 – Shelly phases */
+/* Zrzavy Energy Monitor – Shelly phases */
 .phase-panel { border-color: #cfe0d9; }
 .phase-live-grid {
   display: grid;

@@ -17,35 +17,20 @@ from release_installer import (
 from update_status import write_update_status
 
 
-DEFAULT_REQUEST_PATH = Path(
-    "/var/lib/solarinspector/update-request.json"
-)
-DEFAULT_STATUS_PATH = Path(
-    "/var/lib/solarinspector/update-status.json"
-)
-DEFAULT_RELEASES_DIR = Path(
-    "/opt/solarinspector/releases"
-)
-DEFAULT_CURRENT_LINK = Path(
-    "/opt/solarinspector/current"
-)
-DEFAULT_HEALTHCHECK_URL = (
-    "http://127.0.0.1:8787/api/health"
-)
-DEFAULT_SERVICE_NAME = "solarinspector.service"
+DEFAULT_REQUEST_PATH = Path("/var/lib/zrzavy-energy-monitor/update-request.json")
+DEFAULT_STATUS_PATH = Path("/var/lib/zrzavy-energy-monitor/update-status.json")
+DEFAULT_RELEASES_DIR = Path("/opt/zrzavy-energy-monitor/releases")
+DEFAULT_CURRENT_LINK = Path("/opt/zrzavy-energy-monitor/current")
+DEFAULT_HEALTHCHECK_URL = "http://127.0.0.1:8787/api/health"
+DEFAULT_SERVICE_NAME = "zrzavy-energy-monitor.service"
 
-DEFAULT_BACKUP_DIR = Path(
-    "/var/lib/solarinspector/backups"
-)
+DEFAULT_BACKUP_DIR = Path("/var/lib/zrzavy-energy-monitor/backups")
 
-DEFAULT_CONFIG_PATH = Path(
-    "/etc/solarinspector/config.json"
-)
+DEFAULT_CONFIG_PATH = Path("/etc/zrzavy-energy-monitor/config.json")
 
 DEFAULT_DATABASE_PATH = Path(
-    "/var/lib/solarinspector/data/solarinspector.db"
+    "/var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db"
 )
-
 
 
 def create_backup(
@@ -64,7 +49,7 @@ def create_backup(
         shutil.copy2(config_path, target / "config.json")
 
     if database_path.is_file():
-        shutil.copy2(database_path, target / "solarinspector.db")
+        shutil.copy2(database_path, target / "zrzavy-energy-monitor.db")
 
     if current_link.is_symlink():
         active_release = current_link.resolve(strict=True)
@@ -87,17 +72,14 @@ def create_backup(
 
     return target
 
+
 def read_request(path: Path) -> dict:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
-        raise ReleaseInstallError(
-            f"Update-Anforderung fehlt: {path}"
-        ) from exc
+        raise ReleaseInstallError(f"Update-Anforderung fehlt: {path}") from exc
     except (OSError, json.JSONDecodeError) as exc:
-        raise ReleaseInstallError(
-            "Update-Anforderung ist ungültig."
-        ) from exc
+        raise ReleaseInstallError("Update-Anforderung ist ungültig.") from exc
 
     required = {
         "version",
@@ -107,10 +89,7 @@ def read_request(path: Path) -> dict:
     missing = required - payload.keys()
 
     if missing:
-        raise ReleaseInstallError(
-            "Pflichtfelder fehlen: "
-            + ", ".join(sorted(missing))
-        )
+        raise ReleaseInstallError("Pflichtfelder fehlen: " + ", ".join(sorted(missing)))
 
     return payload
 
@@ -131,7 +110,7 @@ def restart_systemd_service(
         )
     except subprocess.CalledProcessError as exc:
         raise ReleaseInstallError(
-            "SolarInspector-Service konnte nicht neu gestartet werden: "
+            "Zrzavy-Energy-Monitor-Service konnte nicht neu gestartet werden: "
             + (exc.stderr or exc.stdout or str(exc))
         ) from exc
 
@@ -144,45 +123,36 @@ def configure_runtime_paths(
     app_directory = release_directory / "app"
 
     if not app_directory.is_dir():
-        raise ReleaseInstallError(
-            f"App-Verzeichnis fehlt: {app_directory}"
-        )
+        raise ReleaseInstallError(f"App-Verzeichnis fehlt: {app_directory}")
 
     config_link = app_directory / "config.json"
     data_link = app_directory / "data"
     data_directory = database_path.parent
 
     if not config_path.is_file():
-        raise ReleaseInstallError(
-            f"Konfigurationsdatei fehlt: {config_path}"
-        )
+        raise ReleaseInstallError(f"Konfigurationsdatei fehlt: {config_path}")
 
     if not database_path.is_file():
-        raise ReleaseInstallError(
-            f"Datenbank fehlt: {database_path}"
-        )
+        raise ReleaseInstallError(f"Datenbank fehlt: {database_path}")
 
     if config_link.is_symlink() or config_link.is_file():
         config_link.unlink()
     elif config_link.exists():
-        raise ReleaseInstallError(
-            f"Unerwarteter Konfigurationspfad: {config_link}"
-        )
+        raise ReleaseInstallError(f"Unerwarteter Konfigurationspfad: {config_link}")
 
     if data_link.is_symlink() or data_link.is_file():
         data_link.unlink()
     elif data_link.is_dir():
         shutil.rmtree(data_link)
     elif data_link.exists():
-        raise ReleaseInstallError(
-            f"Unerwarteter Datenpfad: {data_link}"
-        )
+        raise ReleaseInstallError(f"Unerwarteter Datenpfad: {data_link}")
 
     config_link.symlink_to(config_path.resolve())
     data_link.symlink_to(
         data_directory.resolve(),
         target_is_directory=True,
     )
+
 
 def run_update(
     request_path: Path,
@@ -201,22 +171,22 @@ def run_update(
     archive_path = Path(request["archive_path"])
 
     write_update_status(
-         status_path,
-   	 state="backing_up",
-    	 progress=5,
-    	 message="Konfiguration und Datenbank werden gesichert.",
-    	 available_version=version,
+        status_path,
+        state="backing_up",
+        progress=5,
+        message="Konfiguration und Datenbank werden gesichert.",
+        available_version=version,
     )
 
     backup_path = create_backup(
-    	 backup_directory=backup_directory,
-    	 version=version,
-    	 config_path=config_path,
-    	 database_path=database_path,
-    	 current_link=current_link,
+        backup_directory=backup_directory,
+        version=version,
+        config_path=config_path,
+        database_path=database_path,
+        current_link=current_link,
     )
 
-    backup_path=str(backup_path),
+    backup_path = (str(backup_path),)
 
     write_update_status(
         status_path,
@@ -251,9 +221,7 @@ def run_update(
         current_link=current_link,
         healthcheck_url=healthcheck_url,
         expected_version=version,
-        restart_service=lambda: restart_systemd_service(
-            service_name
-        ),
+        restart_service=lambda: restart_systemd_service(service_name),
     )
 
     write_update_status(
@@ -267,9 +235,10 @@ def run_update(
 
     request_path.unlink(missing_ok=True)
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="SolarInspector privileged updater"
+        description="Zrzavy Energy Monitor privileged updater"
     )
 
     parser.add_argument(
@@ -330,9 +299,8 @@ def main() -> int:
             service_name=args.service,
             backup_directory=args.backups,
             config_path=args.config,
-            database_path=args.database,    
-
-    )
+            database_path=args.database,
+        )
     except Exception as exc:
         write_update_status(
             args.status,
@@ -347,8 +315,6 @@ def main() -> int:
         return 1
 
     return 0
-
-
 
 
 if __name__ == "__main__":

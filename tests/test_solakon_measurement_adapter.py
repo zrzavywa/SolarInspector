@@ -5,15 +5,15 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from solarinspector_core.adapters import (
+from zrzavy_energy_monitor_core.adapters import (
     MeasurementAdapter,
     SolakonMeasurementAdapter,
 )
-from solarinspector_core.adapters.solakon import ModbusError, SolakonOneReading
-from solarinspector_core.models.device import DeviceConnectionStatus
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.adapters.solakon import ModbusError, SolakonOneReading
+from zrzavy_energy_monitor_core.models.device import DeviceConnectionStatus
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
 
 
 class StubSolakonReader:

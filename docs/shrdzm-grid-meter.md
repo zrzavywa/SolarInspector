@@ -1,6 +1,6 @@
 # SHRDZM als offizieller Netzstromzähler
 
-Diese Anleitung beschreibt die in SolarInspector 4.5 implementierte,
+Diese Anleitung beschreibt die in Zrzavy Energy Monitor 4.5 implementierte,
 ausschließlich lesende Anbindung eines SHRDZM-Kundenschnittstellen-Moduls
 an den offiziellen Netzstromzähler.
 
@@ -12,7 +12,7 @@ Implementiert und automatisiert getestet sind:
 - Query-Authentifizierung, HTTP Basic oder explizit keine Authentifizierung,
 - direkte OBIS-Schlüssel und konfigurierbare verschachtelte JSON-Pfade,
 - Netzbezug, Einspeisung, saldierte Netzleistung und echte Nullwerte,
-- Energiezähler in der internen SolarInspector-Einheit Wh,
+- Energiezähler in der internen Zrzavy-Energy-Monitor-Einheit Wh,
 - optionale Phasenspannungen und Phasenströme,
 - kontrollierte Zustände `ONLINE`, `DEGRADED`, `OFFLINE` und `DISABLED`,
 - priorisierte Nutzung als offizielle Netzreferenz mit bestehenden Quellen
@@ -25,7 +25,7 @@ weiterhin erforderlich, sobald das Gerät verfügbar ist.
 ## Messkonzept
 
 Der offizielle Netzstromzähler ist die führende Referenz für Netzbezug und
-Einspeisung. SolarInspector verwendet folgende Vorzeichenkonvention:
+Einspeisung. Zrzavy Energy Monitor verwendet folgende Vorzeichenkonvention:
 
 - positiver Wert: Netzbezug,
 - negativer Wert: Einspeisung.
@@ -42,7 +42,7 @@ fehlend interpretiert.
 
 ## Standard-OBIS-Zuordnung
 
-| SolarInspector-Feld | OBIS | Bedeutung |
+| Zrzavy-Energy-Monitor-Feld | OBIS | Bedeutung |
 |---|---|---|
 | `grid_power_w` | `16.7.0` | saldierte Wirkleistung, falls verfügbar |
 | `grid_import_power_w` | `1.7.0` | aktueller Netzbezug |
@@ -101,7 +101,7 @@ dürfen nicht durch erfundene Nullwerte ersetzt werden.
 
 Die Feldnamen der historischen Konfiguration enden bei den Energiezählern
 weiterhin auf `_kwh`. Intern werden die Messwerte unabhängig davon in Wh
-normalisiert. Bei `energy_total_unit: "auto"` verwendet SolarInspector für
+normalisiert. Bei `energy_total_unit: "auto"` verwendet Zrzavy Energy Monitor für
 die Standard-OBIS-Zähler `1.8.0` und `2.8.0` die bestätigte Rohdateneinheit
 Wh. Für eigene Pfade muss die Einheit ausdrücklich als `wh`, `kwh` oder
 `mwh` konfiguriert werden.
@@ -118,7 +118,7 @@ Zugangsdaten sind niemals Bestandteil der protokollierten URL oder der
 Diagnoseantwort. Die lokale `config.json` muss trotzdem mit restriktiven
 Dateirechten geschützt werden.
 
-## Verbindungstest in SolarInspector
+## Verbindungstest in Zrzavy Energy Monitor
 
 1. Unter **Konfiguration** den Adapter `SHRDZM REST / getLastData` wählen.
 2. IP-Adresse beziehungsweise Hostname eintragen.
@@ -141,7 +141,7 @@ Erreichbarkeit oder konkrete Datenfreigabe eines realen Zählers.
 | `DISABLED` | Messstelle ist deaktiviert und wird nicht abgefragt |
 
 Liefert der offizielle Zähler keine nutzbare Netzleistung, kann
-SolarInspector auf die bestehende Shelly-Hausanschlussmessung oder das
+Zrzavy Energy Monitor auf die bestehende Shelly-Hausanschlussmessung oder das
 Solakon-Meter zurückfallen. Der Fallback wird im Quellenlabel ausdrücklich
 gekennzeichnet.
 
@@ -150,8 +150,8 @@ gekennzeichnet.
 - Modul und offizieller Zähler sind elektrisch und optisch korrekt verbunden.
 - Die Kundenschnittstelle des Zählers ist beim Netzbetreiber freigeschaltet.
 - `/getLastData` liefert im lokalen Netz ein JSON-Objekt.
-- Bezug ohne PV-Erzeugung erzeugt einen positiven SolarInspector-Netzwert.
-- Deutliche Einspeisung erzeugt einen negativen SolarInspector-Netzwert.
+- Bezug ohne PV-Erzeugung erzeugt einen positiven Zrzavy-Energy-Monitor-Netzwert.
+- Deutliche Einspeisung erzeugt einen negativen Zrzavy-Energy-Monitor-Netzwert.
 - Stillstand beziehungsweise Bilanznull bleibt exakt `0 W`.
 - `1.8.0` und `2.8.0` steigen nur in der fachlich richtigen Richtung.
 - Einheiten werden mit dem Zählerdisplay oder Netzbetreiberportal verglichen.

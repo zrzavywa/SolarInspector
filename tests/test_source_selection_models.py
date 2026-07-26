@@ -5,18 +5,18 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
-from solarinspector_core.models.measurement import Measurement
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.source_selection import (
+from zrzavy_energy_monitor_core.models.measurement import Measurement
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.source_selection import (
     CandidateRejectionReason,
     RejectedSourceCandidate,
     SourceSelectionFinding,
     SourceSelectionReason,
     SourceSelectionResult,
 )
-from solarinspector_core.models.units import Unit
+from zrzavy_energy_monitor_core.models.units import Unit
 
 NOW = datetime(2026, 7, 26, 12, 0, tzinfo=timezone.utc)
 

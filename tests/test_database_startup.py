@@ -7,17 +7,17 @@ from contextlib import closing
 from pathlib import Path
 
 import pytest
-import solarinspector_core.persistence.startup as startup
-from solarinspector_core.persistence.database import Database
-from solarinspector_core.persistence.maintenance import (
+import zrzavy_energy_monitor_core.persistence.startup as startup
+from zrzavy_energy_monitor_core.persistence.database import Database
+from zrzavy_energy_monitor_core.persistence.maintenance import (
     DatabaseMaintenanceError,
     inspect_database,
 )
-from solarinspector_core.persistence.migrations import (
+from zrzavy_energy_monitor_core.persistence.migrations import (
     apply_migrations,
     get_current_version,
 )
-from solarinspector_core.persistence.startup import (
+from zrzavy_energy_monitor_core.persistence.startup import (
     DatabaseStartupError,
     prepare_database_for_startup,
 )
@@ -193,7 +193,7 @@ def test_failed_migration_is_reported_once_without_retry(
 
 
 def test_application_import_constructs_collector_only_after_target_schema() -> None:
-    import solarinspector as application
+    import zrzavy_energy_monitor as application
 
     assert application.database_startup.current_schema_version == 2
     assert application.collector.database is application.database

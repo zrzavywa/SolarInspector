@@ -6,14 +6,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.config.grid_meter import (
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.config.grid_meter import (
     DEFAULT_GRID_METER_CONFIG,
     DEFAULT_GRID_METER_MAPPING,
     DEFAULT_SHRDZM_REST_CONFIG,
     DEFAULT_SHRDZM_REST_MAPPING,
 )
-from solarinspector_core.config.manager import ConfigManager
+from zrzavy_energy_monitor_core.config.manager import ConfigManager
 
 
 def _write_config(path: Path, payload: Any) -> None:

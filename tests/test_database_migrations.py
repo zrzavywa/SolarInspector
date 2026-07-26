@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-from solarinspector_core.persistence.database import Database
-from solarinspector_core.persistence.migrations import (
+from zrzavy_energy_monitor_core.persistence.database import Database
+from zrzavy_energy_monitor_core.persistence.migrations import (
     SchemaVerificationError,
     UnsupportedSchemaVersionError,
     apply_migrations,

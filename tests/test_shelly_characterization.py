@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 import requests
-import solarinspector as si
+import zrzavy_energy_monitor as si
 
 pytestmark = pytest.mark.characterization
 

@@ -1,3 +1,11 @@
+HISTORISCHES DOKUMENT – NICHT FÜR NEUE INSTALLATIONEN
+======================================================
+
+Die folgende Altanleitung dokumentiert ausschließlich den früheren
+3.x/4.0.x-Upgradepfad. Für Zrzavy Energy Monitor 4.5 gilt
+docs/installation-raspberry-pi.md; für das direkte Upgrade von SolarInspector
+4.1.3 gilt docs/migration-from-solarinspector.md.
+
 SOLARINSPECTOR 4.0 – RASPBERRY-PI-UPGRADE
 =========================================
 

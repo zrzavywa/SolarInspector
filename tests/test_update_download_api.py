@@ -3,15 +3,15 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-import solarinspector as si
+import zrzavy_energy_monitor as si
 from github_updater import ReleaseInfo
 
 pytestmark = pytest.mark.release
 
 
 
-@patch("solarinspector.download_and_verify_release")
-@patch("solarinspector.check_for_update")
+@patch("zrzavy_energy_monitor.download_and_verify_release")
+@patch("zrzavy_energy_monitor.check_for_update")
 def test_update_download_endpoint(
     mock_check,
     mock_download,

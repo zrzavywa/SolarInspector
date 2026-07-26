@@ -1,6 +1,8 @@
-# SolarInspector-Dokumentation
+# Zrzavy-Energy-Monitor-Dokumentation
 
-Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von SolarInspector. Sie orientiert sich am Produktstand **4.1.3**.
+Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von Zrzavy Energy Monitor. Sie orientiert sich am Produktstand **4.5.0**.
+
+> Open-source home energy monitoring and validation
 
 ## Für Betreiber
 
@@ -24,9 +26,9 @@ Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von Solar
 
 ## Dokumentationsprinzipien
 
-- **Aktueller Stand:** Aussagen zur 4.1-Reihe beschreiben implementierte Funktionen.
+- **Aktueller Stand:** Aussagen zur 4.5-Reihe beschreiben implementierte Funktionen.
 - **Zielbild:** Die geplante 5.0-Architektur wird ausdrücklich als Planung markiert.
-- **Lokal zuerst:** SolarInspector ist für einen lokalen, selbst betriebenen Einsatz ausgelegt.
+- **Lokal zuerst:** Zrzavy Energy Monitor ist für einen lokalen, selbst betriebenen Einsatz ausgelegt.
 - **Keine geheimen Daten:** Beispiele verwenden ausschließlich Platzhalter.
 - **Sichere Updates:** Konfiguration und Messdaten werden unabhängig vom Programmrelease behandelt.
 
@@ -38,10 +40,10 @@ Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von Solar
 | Solaranlagenmessung | Leistung oder Energie der PV-Anlage |
 | Hausanschlussmessung | Netzbezug oder Einspeisung am Übergabepunkt |
 | Collector | Komponente zur zyklischen Abfrage und Normalisierung von Messwerten |
-| Release | veröffentlichte, versionierte SolarInspector-Ausgabe |
+| Release | veröffentlichte, versionierte Zrzavy-Energy-Monitor-Ausgabe |
 | Updater | separater Prozess für Prüfung, Backup, Aktivierung und Rollback |
 | Healthcheck | lokale Prüfung, ob die aktivierte Anwendung erfolgreich gestartet wurde |
 
 ## Markenhinweise
 
-SolarInspector ist ein unabhängiges Projekt. **Raspberry Pi is a trademark of Raspberry Pi Ltd.** Weitere Hinweise zu Solakon, Shelly, Raspberry Pi und anderen Produktbezeichnungen stehen in [TRADEMARKS.md](../TRADEMARKS.md).
+Zrzavy Energy Monitor ist ein unabhängiges Projekt. **Raspberry Pi is a trademark of Raspberry Pi Ltd.** Weitere Hinweise zu Solakon, Shelly, Raspberry Pi und anderen Produktbezeichnungen stehen in [TRADEMARKS.md](../TRADEMARKS.md).

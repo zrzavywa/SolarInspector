@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-import solarinspector as si
+import zrzavy_energy_monitor as si
 from modbus_solakon import SolakonOneReader
 
 pytestmark = pytest.mark.integration

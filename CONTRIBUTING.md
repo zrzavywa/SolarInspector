@@ -1,4 +1,4 @@
-# Mitwirken an SolarInspector
+# Mitwirken an Zrzavy Energy Monitor
 
 Beiträge zu Dokumentation, Fehleranalyse, Gerätekompatibilität und Softwareverbesserungen sind willkommen.
 
@@ -39,7 +39,7 @@ Vor einem Commit mit Python-Änderungen mindestens ausführen:
 python -m ruff format --check app tests
 python -m ruff check app tests
 python -m mypy
-SOLARINSPECTOR_SECRET="solarinspector-test-secret" python -m pytest -v tests
+ZRZAVY_ENERGY_MONITOR_SECRET="zrzavy-energy-monitor-test-secret" python -m pytest -v tests
 git diff --check
 ```
 
@@ -58,7 +58,7 @@ git status
 git diff --check
 git diff
 git add README.md CHANGELOG.md CONTRIBUTING.md docs/
-git commit -m "docs: update SolarInspector documentation"
+git commit -m "docs: update Zrzavy Energy Monitor documentation"
 git push -u origin docs/<kurze-beschreibung>
 ```
 
@@ -78,7 +78,7 @@ Anschließend einen Pull Request gegen `main` erstellen.
 
 Ein guter Fehlerbericht enthält:
 
-- SolarInspector-Version,
+- Zrzavy-Energy-Monitor-Version,
 - Raspberry-Pi-Modell und Betriebssystem,
 - Python-Version,
 - Installationsart,

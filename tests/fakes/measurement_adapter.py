@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from solarinspector_core.models.device import DeviceSnapshot, MeasurementSource
+from zrzavy_energy_monitor_core.models.device import DeviceSnapshot, MeasurementSource
 
 
 @dataclass(slots=True)

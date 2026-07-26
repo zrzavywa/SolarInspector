@@ -1,0 +1,21 @@
+"""Write timestamped Zrzavy Energy Monitor application log messages.
+
+This module preserves the existing stdout and file logging behavior.
+Importing it does not create directories or write log entries.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+
+from zrzavy_energy_monitor_core.paths import LOG_PATH
+
+
+def log(message: str) -> None:
+    """Write a timestamped message to stdout and the application log."""
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    line = f"{stamp} {message}"
+    print(line, flush=True)
+    with LOG_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(line + "\n")

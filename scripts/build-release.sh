@@ -19,7 +19,7 @@ if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
-PACKAGE_NAME="SolarInspector-${VERSION}"
+PACKAGE_NAME="zrzavy-energy-monitor-${VERSION}"
 PACKAGE_DIR="$DIST_DIR/$PACKAGE_NAME"
 ARCHIVE="$DIST_DIR/${PACKAGE_NAME}.tar.gz"
 
@@ -43,7 +43,12 @@ rsync -a \
   "$ROOT_DIR/app/" \
   "$PACKAGE_DIR/app/"
 
-cp -R "$ROOT_DIR/scripts" "$PACKAGE_DIR/"
+rsync -a \
+  --exclude='Upgrade-SolarInspector-RaspberryPi.sh' \
+  --exclude='Rollback-SolarInspector-RaspberryPi.sh' \
+  --exclude='Diagnose-SolarInspector-RaspberryPi.sh' \
+  "$ROOT_DIR/scripts/" \
+  "$PACKAGE_DIR/scripts/"
 cp -R "$ROOT_DIR/tools" "$PACKAGE_DIR/"
 cp -R "$ROOT_DIR/docs" "$PACKAGE_DIR/"
 cp -R "$ROOT_DIR/updater" "$PACKAGE_DIR/"

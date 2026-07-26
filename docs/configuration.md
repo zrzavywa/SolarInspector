@@ -1,15 +1,15 @@
 # Konfigurationsreferenz
 
-SolarInspector verwendet eine JSON-Konfiguration. Die Vorlage befindet sich unter:
+Zrzavy Energy Monitor verwendet eine JSON-Konfiguration. Die Vorlage befindet sich unter:
 
 ```text
 app/config.example.json
 ```
 
-In einer 4.1-Referenzinstallation liegt die persistente Konfiguration unter:
+In einer 4.5-Referenzinstallation liegt die persistente Konfiguration unter:
 
 ```text
-/etc/solarinspector/config.json
+/etc/zrzavy-energy-monitor/config.json
 ```
 
 ## Grundregeln
@@ -24,7 +24,7 @@ In einer 4.1-Referenzinstallation liegt die persistente Konfiguration unter:
 Konfiguration prüfen:
 
 ```bash
-python3 -m json.tool /etc/solarinspector/config.json >/dev/null
+python3 -m json.tool /etc/zrzavy-energy-monitor/config.json >/dev/null
 ```
 
 ## Vollständiges Beispiel
@@ -32,7 +32,7 @@ python3 -m json.tool /etc/solarinspector/config.json >/dev/null
 ```json
 {
   "general": {
-    "project_name": "SolarInspector",
+    "project_name": "Zrzavy Energy Monitor",
     "site_name": "Standort",
     "poll_interval_seconds": 10,
     "auto_start_collection": false,
@@ -75,7 +75,7 @@ python3 -m json.tool /etc/solarinspector/config.json >/dev/null
 
 | Feld | Typ | Standard | Bedeutung |
 |---|---:|---:|---|
-| `project_name` | String | `SolarInspector` | Name der Installation |
+| `project_name` | String | `Zrzavy Energy Monitor` | Name der Installation |
 | `site_name` | String | `Standort` | Bezeichnung des Anlagenstandorts |
 | `poll_interval_seconds` | Integer | `10` | Abstand zwischen Geräteabfragen |
 | `auto_start_collection` | Boolean | `false` | Datenerfassung beim Anwendungsstart aktivieren |
@@ -101,7 +101,7 @@ Unterstützte Auswahlwerte:
 
 | Wert | Bedeutung |
 |---|---|
-| `auto` | SolarInspector wählt eine verfügbare Quelle |
+| `auto` | Zrzavy Energy Monitor wählt eine verfügbare Quelle |
 | `shelly_ac` | unabhängige AC-Messung am Solakon-Ausgang |
 | `solakon_ac` | AC-Leistung aus der Solakon ONE |
 | `solakon_pv` | PV-Eingangsleistung aus der Solakon ONE |
@@ -112,7 +112,7 @@ AC- und PV-Leistung sind nicht identisch. Für Wirkungsgrad- oder Verlustverglei
 
 | Wert | Bedeutung |
 |---|---|
-| `auto` | SolarInspector wählt eine verfügbare Quelle |
+| `auto` | Zrzavy Energy Monitor wählt eine verfügbare Quelle |
 | `house_meter` | separate Shelly-Hausanschlussmessung |
 | `solakon_one` | mit Solakon ONE verbundenes Meter beziehungsweise CT |
 
@@ -247,7 +247,7 @@ simulation
 
 ### Messrichtung
 
-SolarInspector erwartet:
+Zrzavy Energy Monitor erwartet:
 
 - positiv = Netzbezug
 - negativ = Einspeisung
@@ -264,7 +264,7 @@ Die Korrektur erst nach einem nachvollziehbaren Test vornehmen, beispielsweise b
 
 Der Vergleich zwischen `grid_meter_primary` und `house_meter` darf nur
 aktiviert werden, wenn beide Geräte dieselbe elektrische Position am gesamten
-Hausanschluss messen. SolarInspector vergleicht dann die Mittelwerte der
+Hausanschluss messen. Zrzavy Energy Monitor vergleicht dann die Mittelwerte der
 akzeptierten Messungen beider Quellen innerhalb des konfigurierten
 Vergleichsfensters. Der offizielle Netzstromzähler bleibt auch bei einer
 anhaltend großen Abweichung die führende Referenz.
@@ -321,8 +321,8 @@ simulation
 Nach einer manuellen Änderung:
 
 ```bash
-sudo systemctl restart solarinspector.service
-sudo systemctl status solarinspector.service
+sudo systemctl restart zrzavy-energy-monitor.service
+sudo systemctl status zrzavy-energy-monitor.service
 ```
 
 Danach:

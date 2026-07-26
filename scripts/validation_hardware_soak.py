@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Observe a running SolarInspector validation API without changing settings."""
+"""Observe a running Zrzavy Energy Monitor validation API without changes."""
 
 from __future__ import annotations
 

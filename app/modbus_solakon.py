@@ -1,7 +1,7 @@
 """Compatibility layer for the Solakon ONE adapter.
 
 The implementation lives in
-``solarinspector_core.adapters.solakon``.
+``zrzavy_energy_monitor_core.adapters.solakon``.
 This module preserves the historic import and monkeypatch paths.
 """
 
@@ -10,12 +10,12 @@ from __future__ import annotations
 import socket as _socket
 from typing import Any
 
-from solarinspector_core.adapters.solakon import (
+from zrzavy_energy_monitor_core.adapters.solakon import (
     ModbusError,
     ModbusTcpConnection,
     SolakonOneReading,
 )
-from solarinspector_core.adapters.solakon import (
+from zrzavy_energy_monitor_core.adapters.solakon import (
     SolakonOneReader as CoreSolakonOneReader,
 )
 

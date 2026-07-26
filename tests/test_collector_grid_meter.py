@@ -6,19 +6,19 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Any
 
-from solarinspector_core.adapters.solakon import SolakonOneReading
-from solarinspector_core.config.defaults import DEFAULT_CONFIG
-from solarinspector_core.models.device import (
+from zrzavy_energy_monitor_core.adapters.solakon import SolakonOneReading
+from zrzavy_energy_monitor_core.config.defaults import DEFAULT_CONFIG
+from zrzavy_energy_monitor_core.models.device import (
     DeviceConnectionStatus,
     DeviceSnapshot,
 )
-from solarinspector_core.models.legacy import MeterReading
-from solarinspector_core.models.measurement import Measurement
-from solarinspector_core.models.metrics import Metric
-from solarinspector_core.models.quality import MeasurementQuality
-from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.models.units import unit_for_metric
-from solarinspector_core.services.collector import Collector
+from zrzavy_energy_monitor_core.models.legacy import MeterReading
+from zrzavy_energy_monitor_core.models.measurement import Measurement
+from zrzavy_energy_monitor_core.models.metrics import Metric
+from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
+from zrzavy_energy_monitor_core.models.roles import MeasurementRole
+from zrzavy_energy_monitor_core.models.units import unit_for_metric
+from zrzavy_energy_monitor_core.services.collector import Collector
 
 
 class StubConfigManager:

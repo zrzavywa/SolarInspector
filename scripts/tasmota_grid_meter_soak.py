@@ -17,17 +17,17 @@ from typing import Any
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 sys.path.insert(0, str(APP_DIR))
 
-from solarinspector_core.adapters.tasmota_grid_meter import (  # noqa: E402
+from zrzavy_energy_monitor_core.adapters.tasmota_grid_meter import (  # noqa: E402
     TasmotaHttpGridMeterAdapter,
 )
-from solarinspector_core.config.grid_meter import (  # noqa: E402
+from zrzavy_energy_monitor_core.config.grid_meter import (  # noqa: E402
     DEFAULT_GRID_METER_CONFIG,
     normalize_grid_meter_config,
 )
-from solarinspector_core.models.device import (  # noqa: E402
+from zrzavy_energy_monitor_core.models.device import (  # noqa: E402
     DeviceConnectionStatus,
 )
-from solarinspector_core.models.metrics import Metric  # noqa: E402
+from zrzavy_energy_monitor_core.models.metrics import Metric  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

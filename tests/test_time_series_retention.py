@@ -7,10 +7,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
-from solarinspector_core.config.manager import ConfigManager
-from solarinspector_core.persistence.database import Database
-from solarinspector_core.persistence.migrations import apply_migrations
-from solarinspector_core.persistence.retention import (
+from zrzavy_energy_monitor_core.config.manager import ConfigManager
+from zrzavy_energy_monitor_core.persistence.database import Database
+from zrzavy_energy_monitor_core.persistence.migrations import apply_migrations
+from zrzavy_energy_monitor_core.persistence.retention import (
     MAXIMUM_RETENTION_BATCH_ROWS,
     RetentionPolicy,
     apply_retention,
