@@ -587,10 +587,11 @@ class Collector:
             )
             if snapshot is not None
         )
+        evaluation_timestamp = self._now()
         validated_cycle = self._validation.validate_cycle(
             raw_snapshots,
             config=config,
-            now=now,
+            now=evaluation_timestamp,
         )
         validated_by_source = validated_cycle.snapshot_by_source()
         self._validation_events = validated_cycle.events
@@ -598,11 +599,11 @@ class Collector:
             cycle_energy_balance = build_cycle_energy_balance(
                 validated_cycle,
                 config=config,
-                calculation_timestamp=now,
+                calculation_timestamp=evaluation_timestamp,
             )
         except Exception:
             cycle_energy_balance = unavailable_cycle_energy_balance(
-                now,
+                evaluation_timestamp,
                 code="energy_balance_calculation_failed",
                 message=(
                     "Energy balance calculation failed; measurement "

@@ -28,6 +28,12 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Zentrale Markenhinweise und Herstellerabgrenzung für Solakon, Shelly und Raspberry Pi ergänzt.
 - Einrichtung, Sicherheit und Hardwarevalidierung des SHRDZM-Netzstromzählers dokumentiert.
 
+### Fixed
+
+- Quellenmessungen aus demselben Collector-Zyklus werden erst nach Abschluss
+  der Geräteabfragen zeitlich bewertet und nicht mehr fälschlich als zukünftige
+  Messwerte verworfen.
+
 ## [4.1.3] - 2026-07-20
 
 ### Fixed

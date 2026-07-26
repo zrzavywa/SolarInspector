@@ -306,6 +306,59 @@ def test_collector_excludes_rejected_power_before_energy_integration() -> None:
     assert balance.pv_power_w == 400.0
 
 
+def test_collector_evaluates_sources_after_device_reads() -> None:
+    config = deepcopy(DEFAULT_CONFIG)
+    for key in (
+        "grid_meter",
+        "house_meter",
+        "solakon_meter",
+        "solakon_one",
+    ):
+        config[key]["enabled"] = False
+    config["solakon_meter"]["enabled"] = True
+    config["validation"]["enabled"] = True
+    measurement_timestamp = NOW + timedelta(milliseconds=100)
+    snapshot = _snapshot(
+        _measurement(
+            Metric.PLANT_AC_POWER,
+            400.0,
+            source_id="solakon_meter",
+            role=MeasurementRole.PLANT_METER,
+            measured_at=measurement_timestamp,
+        ),
+        source_id="solakon_meter",
+    )
+    collector = Collector(
+        _ConfigStub(config),  # type: ignore[arg-type]
+        _DatabaseStub(),  # type: ignore[arg-type]
+    )
+    timestamps = iter((NOW, NOW + timedelta(milliseconds=200)))
+    collector._now = lambda: next(timestamps)  # type: ignore[method-assign]
+    collector._read_shelly_snapshot_result = (  # type: ignore[method-assign]
+        lambda *_args, **_kwargs: (None, snapshot, None)
+    )
+
+    collector.collect_once()
+
+    balance = collector.energy_balance()
+    assert balance is not None
+    assert balance.calculated_at == NOW + timedelta(milliseconds=200)
+    plant_source = next(
+        source
+        for source in balance.source_metadata
+        if source.requested_metric is Metric.PLANT_AC_POWER
+    )
+    assert plant_source.selected_source_id == "solakon_meter"
+    assert plant_source.selected_measurement_timestamp == measurement_timestamp
+    assert (
+        plant_source.selection_timestamp - measurement_timestamp
+    ).total_seconds() == 0.1
+    assert all(
+        rejected.reason.value != "invalid_timestamp"
+        for rejected in plant_source.rejected_candidates
+    )
+
+
 def test_collector_continues_after_controlled_balance_failure(
     monkeypatch: Any,
 ) -> None:
