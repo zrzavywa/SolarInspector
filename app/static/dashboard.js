@@ -109,6 +109,7 @@ async function loadLive() {
       data.active_sources,
       latest
     );
+    renderEnergyBalance(data.energy_balance);
 
     const batteryPower = latest?.solakon_battery_power_w;
     document.getElementById("battery-direction").textContent = batteryPower === null || batteryPower === undefined
@@ -137,6 +138,48 @@ async function loadLive() {
   } catch (error) {
     document.getElementById("live-meta").textContent = "Livewerte konnten nicht geladen werden.";
   }
+}
+
+function renderEnergyBalance(balance) {
+  const values = balance?.values;
+  setText("balance-pv", values?.pv_power_w);
+  setText("balance-plant-ac", values?.plant_ac_power_w);
+  setText("balance-house", values?.house_power_w);
+  setText("balance-grid-import", values?.grid_import_power_w);
+  setText("balance-grid-export", values?.grid_export_power_w);
+  setText("balance-battery-charge", values?.battery_charge_power_w);
+  setText("balance-battery-discharge", values?.battery_discharge_power_w);
+  setText("balance-self-consumed", values?.self_consumed_power_w);
+  setText("balance-self-consumption-rate", values?.self_consumption_rate_percent, 1);
+  setText("balance-autonomy-rate", values?.autonomy_rate_percent, 1);
+
+  const status = document.getElementById("energy-balance-status");
+  const quality = balance?.quality || "nicht verfügbar";
+  const goodQuality = quality === "validated" || quality === "calculated";
+  status.className = `mini-pill ${goodQuality ? "on" : "off"}`;
+  status.textContent = quality;
+
+  const sources = Object.entries(balance?.sources || {})
+    .filter(([, source]) => source?.selected_source_id)
+    .map(([metric, source]) => `${metric}: ${source.selected_source_id}`);
+  document.getElementById("energy-balance-sources").textContent =
+    sources.length ? sources.join(" · ") : "Nicht verfügbar";
+  document.getElementById("energy-balance-fallback").textContent =
+    balance ? (balance.fallback_used ? "Aktiv" : "Nein") : "Nicht verfügbar";
+  document.getElementById("energy-balance-age").textContent =
+    balance?.age_seconds === null || balance?.age_seconds === undefined
+      ? "Nicht verfügbar"
+      : `${balance.age_seconds} s`;
+
+  const findings = balance?.findings || [];
+  const warning = [...findings].reverse().find(finding =>
+    finding?.severity === "warning" || finding?.severity === "error"
+  );
+  document.getElementById("energy-balance-warning").textContent =
+    warning?.message || warning?.code || "Keine";
+  document.getElementById("energy-balance-meta").textContent = balance
+    ? `Berechnet ${new Date(balance.calculated_at).toLocaleString("de-DE")} · Qualität: ${quality}`
+    : "Noch keine berechnete Energiebilanz vorhanden.";
 }
 
 function renderGridMeter(gridMeter, activeSources, latest) {

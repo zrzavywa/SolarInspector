@@ -59,6 +59,7 @@
   "house_meter": {
     "enabled": false,
     "type": "shelly_3em_gen1",
+    "measurement_role": "grid_fallback",
     "host": "",
     "username": "",
     "password": "",
@@ -73,5 +74,25 @@
     "password": "",
     "timeout_seconds": 3,
     "direction_factor": 1
+  },
+  "energy_balance": {
+    "enabled": true,
+    "maximum_measurement_age_seconds": 30,
+    "maximum_source_skew_seconds": 10,
+    "allow_suspect_measurements": true,
+    "allow_grid_fallback": true,
+    "allow_plant_fallback": true,
+    "negative_house_power_tolerance_w": 30,
+    "short_window_average_seconds": 0,
+    "persist_source_decisions": true,
+    "source_priorities": {
+      "grid_power": ["grid_meter_primary", "house_meter"],
+      "plant_ac_power": ["solakon_meter", "solakon_one"],
+      "pv_power": ["solakon_one"],
+      "battery_power": ["solakon_one"],
+      "battery_charge_power": ["solakon_one"],
+      "battery_discharge_power": ["solakon_one"],
+      "battery_soc": ["solakon_one"]
+    }
   }
 }

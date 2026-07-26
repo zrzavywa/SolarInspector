@@ -16,6 +16,9 @@ from solarinspector_core.config.defaults import (
     DEFAULT_CONFIG,
     DEVICE_TYPES,
 )
+from solarinspector_core.config.energy_balance import (
+    normalize_energy_balance_config,
+)
 from solarinspector_core.config.grid_meter import (
     normalize_grid_meter_config,
 )
@@ -204,6 +207,9 @@ class ConfigManager:
             general["grid_power_source"] = "auto"
 
         config["validation"] = normalize_validation_config(config.get("validation"))
+        config["energy_balance"] = normalize_energy_balance_config(
+            config.get("energy_balance")
+        )
         config["grid_meter"] = normalize_grid_meter_config(config.get("grid_meter"))
 
         solakon = config["solakon_one"]

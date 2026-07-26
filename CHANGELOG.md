@@ -11,6 +11,15 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Offizieller Netzstromzähler als priorisierte Messquelle mit gekennzeichnetem Fallback ergänzt.
 - Read-only SHRDZM-REST-Adapter für `/getLastData` mit Query-, Basic- und optionaler Authentifizierung ergänzt.
 - Adapterabhängige OBIS-Mappings, Einheitenkonvertierung und End-to-End-Tests ergänzt.
+- Erklärbare Quellenauswahlmodelle und additive, rückwärtskompatible Konfiguration für die Phase-09-Energiebilanz ergänzt.
+- Deterministische qualitäts-, rollen- und messpositionsbasierte Quellenauswahl mit transparenten Fallbackgründen ergänzt.
+- Begrenzte Altersprüfung, zeitnächste Auswahl, optionale Kurzzeitmittelung und Source-Skew-Bewertung ergänzt.
+- Validierte aktuelle Leistungsbilanz mit Hausleistung, getrennten Netzrichtungen, Toleranzbehandlung und diagnostischem Residualwert ergänzt.
+- Eigenverbrauch, Eigenverbrauchsquote, Autarkiegrad sowie getrennte Batterieflüsse und SOC mit Widerspruchsfindings ergänzt.
+- Source Selector und Energiebilanz additiv in jeden Collector-Zyklus integriert; Bilanzfehler stoppen die Messwerterfassung nicht.
+- Additive atomare SQLite-Persistenz für Bilanzwerte, Qualität, Findings und optionale Quellenentscheidungen ergänzt.
+- Herstellerunabhängige Live-API und Dashboard-Bereiche für aktuelle Energieflüsse, Kennzahlen, Quellen, Datenalter und Bilanzqualität ergänzt.
+- Deterministische Replay-Szenarien für Phase-09-Normal-, Ausfall-, Zeit-, Ablehnungs- und Nullwertfälle ergänzt.
 
 ### Documentation
 

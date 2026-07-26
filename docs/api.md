@@ -66,6 +66,57 @@ curl --silent http://127.0.0.1:8787/api/status
 
 Das konkrete Antwortschema kann sich innerhalb der 4.x-Reihe ändern.
 
+## Livewerte
+
+### `GET /api/live`
+
+Liefert die bisherigen Livefelder und additiv die herstellerunabhängige
+aktuelle Energiebilanz:
+
+```json
+{
+  "latest": {},
+  "collector": {},
+  "grid_meter": {},
+  "active_sources": {},
+  "energy_balance": {
+    "calculated_at": "2026-07-26T18:00:00+02:00",
+    "age_seconds": 4,
+    "quality": "calculated",
+    "values": {
+      "house_power_w": 1500.0,
+      "grid_power_w": 900.0,
+      "grid_import_power_w": 900.0,
+      "grid_export_power_w": 0.0,
+      "plant_ac_power_w": 600.0,
+      "pv_power_w": 720.0,
+      "self_consumed_power_w": 600.0,
+      "self_consumption_rate_percent": 100.0,
+      "autonomy_rate_percent": 40.0
+    },
+    "sources": {
+      "grid_power": {
+        "selected_source_id": "grid_meter_primary",
+        "fallback_used": false,
+        "age_seconds": 4
+      }
+    },
+    "fallback_used": false,
+    "findings": []
+  }
+}
+```
+
+Die vollständige `values`-Struktur enthält zusätzlich Anlagen-, Batterie-,
+SOC- und Residualwerte. `null` bedeutet „nicht verfügbar“; `0.0` ist ein
+gültiger gemessener oder berechneter Nullwert. Ohne persistierte Bilanz ist
+`energy_balance` insgesamt `null`. Clients müssen zusätzliche Quellen-,
+Finding- und Wertefelder tolerieren.
+
+Qualitäten sind `validated`, `calculated`, `suspect`, `incomplete` oder
+`unavailable`. `sources` erklärt je Metrik die Auswahl und verworfene
+Kandidaten. Es enthält keine Zugangsdaten.
+
 ## Updateprüfung
 
 ### `GET /api/update/check`

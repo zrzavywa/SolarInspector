@@ -45,6 +45,37 @@
 </section>
 <p id="live-meta" class="live-meta">Noch keine Messung vorhanden.</p>
 
+<section class="panel energy-balance-panel" id="energy-balance-panel">
+  <div class="panel-head">
+    <div>
+      <p class="eyebrow">AKTUELLE ENERGIEBILANZ</p>
+      <h2>Energieflüsse und Kennzahlen</h2>
+      <p id="energy-balance-meta">Noch keine berechnete Energiebilanz vorhanden.</p>
+    </div>
+    <span id="energy-balance-status" class="mini-pill off">nicht verfügbar</span>
+  </div>
+  <div class="energy-flow-grid">
+    <article><span>PV-Leistung</span><strong id="balance-pv">–</strong><small>W</small></article>
+    <article><span>Anlagen-AC-Leistung</span><strong id="balance-plant-ac">–</strong><small>W</small></article>
+    <article><span>Hausverbrauch</span><strong id="balance-house">–</strong><small>W</small></article>
+    <article><span>Netzbezug</span><strong id="balance-grid-import">–</strong><small>W</small></article>
+    <article><span>Netzeinspeisung</span><strong id="balance-grid-export">–</strong><small>W</small></article>
+    <article><span>Batterieladung</span><strong id="balance-battery-charge">–</strong><small>W</small></article>
+    <article><span>Batterieentladung</span><strong id="balance-battery-discharge">–</strong><small>W</small></article>
+  </div>
+  <div class="energy-metric-grid">
+    <article><span>Eigenverbrauchsleistung</span><strong id="balance-self-consumed">–</strong><small>W</small></article>
+    <article><span>Eigenverbrauchsquote</span><strong id="balance-self-consumption-rate">–</strong><small>%</small></article>
+    <article><span>Autarkiegrad</span><strong id="balance-autonomy-rate">–</strong><small>%</small></article>
+  </div>
+  <div class="energy-quality-grid">
+    <div><span>Aktive Quellen</span><strong id="energy-balance-sources">Nicht verfügbar</strong></div>
+    <div><span>Fallback</span><strong id="energy-balance-fallback">Nicht verfügbar</strong></div>
+    <div><span>Datenalter</span><strong id="energy-balance-age">Nicht verfügbar</strong></div>
+    <div><span>Letzte Warnung</span><strong id="energy-balance-warning">Keine</strong></div>
+  </div>
+</section>
+
 
 <section class="panel validation-panel" id="validation-panel">
   <div class="panel-head">

@@ -30,10 +30,15 @@ from solarinspector_core.adapters.solakon_measurement import SolakonMeasurementA
 from solarinspector_core.config.manager import ConfigManager
 from solarinspector_core.logging import log
 from solarinspector_core.models.device import DeviceSnapshot
+from solarinspector_core.models.energy_balance import EnergyBalanceResult
 from solarinspector_core.models.legacy import MeterReading
 from solarinspector_core.models.metrics import Metric
 from solarinspector_core.models.roles import MeasurementRole
 from solarinspector_core.persistence.database import Database
+from solarinspector_core.services.energy_balance_collector import (
+    build_cycle_energy_balance,
+    unavailable_cycle_energy_balance,
+)
 from solarinspector_core.validation.collector import CollectorValidationBridge
 from solarinspector_core.validation.engine import ValidationEvent
 from solarinspector_core.validation.persistence import (
@@ -73,6 +78,7 @@ class Collector:
         self._validation = CollectorValidationBridge()
         self._validation_events: tuple[ValidationEvent, ...] = ()
         self._validation_event_store = ValidationEventStore(database)
+        self._last_energy_balance: EnergyBalanceResult | None = None
 
     @staticmethod
     def _create_shelly_reader() -> ShellyReader:
@@ -330,6 +336,12 @@ class Collector:
         with self._lock:
             return tuple(self._validation_events)
 
+    def energy_balance(self) -> EnergyBalanceResult | None:
+        """Return the latest immutable Phase-09 energy balance."""
+
+        with self._lock:
+            return self._last_energy_balance
+
     def _persist_validation_events(
         self,
         *,
@@ -582,6 +594,22 @@ class Collector:
         )
         validated_by_source = validated_cycle.snapshot_by_source()
         self._validation_events = validated_cycle.events
+        try:
+            cycle_energy_balance = build_cycle_energy_balance(
+                validated_cycle,
+                config=config,
+                calculation_timestamp=now,
+            )
+        except Exception:
+            cycle_energy_balance = unavailable_cycle_energy_balance(
+                now,
+                code="energy_balance_calculation_failed",
+                message=(
+                    "Energy balance calculation failed; measurement "
+                    "collection continued."
+                ),
+            )
+            errors.append("Energiebilanz: Berechnung fehlgeschlagen.")
 
         if grid_meter_snapshot is not None:
             grid_meter_snapshot = validated_by_source.get(
@@ -816,6 +844,13 @@ class Collector:
             sample,
             phase_snapshot=phase_snapshot,
             grid_meter_snapshot=(grid_meter_persistence_snapshot),
+            energy_balance=cycle_energy_balance,
+            persist_source_decisions=bool(
+                config.get("energy_balance", {}).get(
+                    "persist_source_decisions",
+                    True,
+                )
+            ),
             measurement_role=str(
                 house_cfg.get(
                     "measurement_role",
@@ -840,6 +875,7 @@ class Collector:
         with self._lock:
             self._last_sample = sample
             self._last_error = " | ".join(errors)
+            self._last_energy_balance = cycle_energy_balance
             self._cycles += 1
 
         if errors:
@@ -852,6 +888,8 @@ class Collector:
         *,
         phase_snapshot: DeviceSnapshot | None,
         grid_meter_snapshot: DeviceSnapshot | None,
+        energy_balance: EnergyBalanceResult,
+        persist_source_decisions: bool,
         measurement_role: str,
     ) -> int:
         """Persist normalized details with test-double support."""
@@ -868,6 +906,8 @@ class Collector:
                     phase_snapshot=phase_snapshot,
                     grid_meter_snapshot=grid_meter_snapshot,
                     measurement_role=measurement_role,
+                    energy_balance=energy_balance,
+                    persist_source_decisions=persist_source_decisions,
                 )
             )
 
@@ -897,6 +937,7 @@ class Collector:
             self._last_grid_meter_snapshot = None
             self._last_grid_meter_poll_monotonic = None
             self._validation_events = ()
+            self._last_energy_balance = None
             self._validation.clear()
 
     def _run(self) -> None:
