@@ -14,6 +14,7 @@ from solarinspector_core.config.grid_meter import (
     DEFAULT_GRID_METER_CONFIG,
 )
 from solarinspector_core.config.shelly import ShellyMeasurementRole
+from solarinspector_core.validation.config import DEFAULT_VALIDATION_CONFIG
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "general": {
@@ -27,6 +28,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "solar_power_source": "auto",
         "grid_power_source": "auto",
     },
+    "validation": deepcopy(DEFAULT_VALIDATION_CONFIG),
     "solakon_one": {
         "enabled": False,
         "host": "",

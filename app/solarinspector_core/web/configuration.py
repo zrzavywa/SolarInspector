@@ -172,4 +172,102 @@ def apply_configuration_form(
                     phase_direction[phase.value] = int(value)
             current[role]["phase_direction"] = phase_direction
 
+    validation = current.setdefault("validation", {})
+    validation["enabled"] = form.get("validation_enabled") == "on"
+    validation["persistence"] = {
+        "dedup_window_seconds": form.get(
+            "validation_dedup_window_seconds",
+            "300",
+        ),
+        "retention_days": form.get(
+            "validation_retention_days",
+            "90",
+        ),
+        "prune_interval_seconds": form.get(
+            "validation_prune_interval_seconds",
+            "3600",
+        ),
+    }
+
+    sources = validation.setdefault("sources", {})
+    for settings in sources.values():
+        if isinstance(settings, dict):
+            settings.pop("authoritative_grid_meter", None)
+
+    plant_source = sources.setdefault("solakon_one", {})
+    plant_source["enabled"] = True
+    plant_source["plant_comparison_source_id"] = "solakon_meter"
+    plant_source.setdefault("comparisons", {})["plant_meter"] = _comparison_form(
+        form,
+        "validation_plant",
+        allow_rejection=(form.get("validation_plant_allow_rejection") == "on"),
+    )
+
+    grid_source_id = (
+        str(
+            current.get("grid_meter", {}).get(
+                "source_id",
+                "grid_meter_primary",
+            )
+        ).strip()
+        or "grid_meter_primary"
+    )
+    grid_source = sources.setdefault(grid_source_id, {})
+    grid_source["enabled"] = True
+    grid_source["authoritative_grid_meter"] = True
+    grid_source["measurement_position_comparable"] = (
+        form.get("validation_grid_positions_comparable") == "on"
+    )
+    grid_source["grid_comparison_source_id"] = "house_meter"
+    grid_source.setdefault("comparisons", {})["grid_meter"] = _comparison_form(
+        form,
+        "validation_grid",
+        allow_rejection=False,
+    )
+
     return current
+
+
+def _comparison_form(
+    form: Any,
+    prefix: str,
+    *,
+    allow_rejection: bool,
+) -> dict[str, Any]:
+    """Return one raw comparison configuration for manager normalization."""
+
+    return {
+        "warning_absolute_w": form.get(
+            f"{prefix}_warning_absolute_w",
+            "30",
+        ),
+        "reject_absolute_w": form.get(
+            f"{prefix}_reject_absolute_w",
+            "100",
+        ),
+        "warning_relative_percent": form.get(
+            f"{prefix}_warning_relative_percent",
+            "10",
+        ),
+        "reject_relative_percent": form.get(
+            f"{prefix}_reject_relative_percent",
+            "30",
+        ),
+        "window_seconds": form.get(
+            f"{prefix}_window_seconds",
+            "30",
+        ),
+        "minimum_duration_seconds": form.get(
+            f"{prefix}_minimum_duration_seconds",
+            "30",
+        ),
+        "minimum_reference_w": form.get(
+            f"{prefix}_minimum_reference_w",
+            "100",
+        ),
+        "minimum_samples": form.get(
+            f"{prefix}_minimum_samples",
+            "2",
+        ),
+        "allow_rejection": allow_rejection,
+    }

@@ -1,0 +1,2 @@
+{"type":"metadata","name":"solarkon_invalid_power","validation":{"enabled":true,"profiles":{},"sources":{}}}
+{"type":"cycle","at":"2026-07-25T10:00:00+00:00","snapshots":[{"source_id":"solakon_one","status":"online","measurements":[{"metric":"plant_ac_power","role":"solar_system","value":8350.0,"raw_value":8350},{"metric":"battery_soc","role":"battery_system","value":50.0}]}],"expect":{"accepted_values":{"solakon_one:battery_soc":50.0},"rejected_metrics":["solakon_one:plant_ac_power"],"event_codes":["above_reject_maximum"],"statuses":{"solakon_one":"degraded"}}}

@@ -1,0 +1,3 @@
+{"type":"metadata","name":"network_recovery","validation":{"enabled":true,"profiles":{},"sources":{}}}
+{"type":"cycle","at":"2026-07-25T13:00:00+00:00","snapshots":[{"source_id":"solakon_one","status":"offline","error":"connection unavailable","measurements":[]}],"expect":{"accepted_values":{},"rejected_metrics":[],"event_codes":[],"statuses":{"solakon_one":"offline"}}}
+{"type":"cycle","at":"2026-07-25T13:00:10+00:00","snapshots":[{"source_id":"solakon_one","status":"online","measurements":[{"metric":"plant_ac_power","role":"solar_system","value":0.0}]}],"expect":{"accepted_values":{"solakon_one:plant_ac_power":0.0},"rejected_metrics":[],"event_codes":[],"statuses":{"solakon_one":"online"}}}

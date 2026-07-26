@@ -1,6 +1,7 @@
 """Characterization tests for the SolarInspector SQLite persistence layer."""
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
@@ -269,7 +270,7 @@ def test_v3_style_schema_migration_preserves_existing_row(
     """Adding current columns does not remove data from a prior base schema."""
     path = tmp_path / "legacy.db"
 
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection:
         connection.execute(
             """
             CREATE TABLE samples (

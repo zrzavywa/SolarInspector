@@ -45,6 +45,40 @@
 </section>
 <p id="live-meta" class="live-meta">Noch keine Messung vorhanden.</p>
 
+
+<section class="panel validation-panel" id="validation-panel">
+  <div class="panel-head">
+    <div>
+      <p class="eyebrow">MESSWERTQUALITÄT</p>
+      <h2>Plausibilitätsprüfung</h2>
+      <p id="validation-meta">Validierungsstatus wird geladen.</p>
+    </div>
+    <span id="validation-status" class="mini-pill off">wird geladen</span>
+  </div>
+  <div class="validation-kpi-grid">
+    <article><span>Ereignisgruppen</span><strong id="validation-group-count">0</strong></article>
+    <article><span>Vorkommnisse</span><strong id="validation-occurrence-count">0</strong></article>
+    <article class="warning"><span>Warnungen</span><strong id="validation-warning-count">0</strong></article>
+    <article class="error"><span>Ablehnungen</span><strong id="validation-rejection-count">0</strong></article>
+  </div>
+  <div class="validation-event-table-wrap">
+    <table class="validation-event-table">
+      <thead>
+        <tr>
+          <th>Zuletzt</th>
+          <th>Quelle / Messwert</th>
+          <th>Regel</th>
+          <th>Entscheidung</th>
+          <th>Anzahl</th>
+        </tr>
+      </thead>
+      <tbody id="validation-event-body">
+        <tr><td colspan="5" class="validation-empty">Noch keine Validierungsereignisse.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
 <section class="panel grid-meter-panel" id="public-grid-panel">
   <div class="panel-head">
     <div>
