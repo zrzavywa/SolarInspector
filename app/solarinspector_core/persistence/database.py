@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from contextlib import contextmanager
+from datetime import timezone
 from pathlib import Path
 from typing import Any, Final, Iterator, Optional
 
@@ -17,13 +18,13 @@ from solarinspector_core.models.energy_balance import EnergyBalanceResult
 from solarinspector_core.models.metrics import Metric
 from solarinspector_core.models.quality import MeasurementQuality
 from solarinspector_core.models.roles import MeasurementRole
-from solarinspector_core.paths import DATA_DIR
+from solarinspector_core.models.source_selection import SourceSelectionResult
 
 
 class Database:
     def __init__(self, path: Path):
         self.path = path
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         self.initialize()
 
     @contextmanager
@@ -304,12 +305,18 @@ class Database:
         sample: dict[str, Any],
         phase_snapshot: DeviceSnapshot | None = None,
         grid_meter_snapshot: DeviceSnapshot | None = None,
+        measurement_snapshots: tuple[DeviceSnapshot, ...] = (),
         *,
         measurement_role: str = "house_total",
         energy_balance: EnergyBalanceResult | None = None,
         persist_source_decisions: bool = True,
     ) -> int:
-        """Atomically persist aggregate and normalized details."""
+        """Atomically persist aggregate and normalized details.
+
+        Normalized time-series writes activate only after schema migration
+        version 2. This keeps the persistence API backward-compatible until
+        startup migration is integrated.
+        """
 
         columns = list(sample.keys())
         placeholders = ",".join("?" for _ in columns)
@@ -344,6 +351,23 @@ class Database:
                         sample_id=sample_id,
                         balance=energy_balance,
                         persist_source_decisions=persist_source_decisions,
+                    )
+                if _table_exists(conn, "measurements"):
+                    self._insert_measurements(
+                        conn,
+                        sample_id=sample_id,
+                        snapshots=measurement_snapshots,
+                        energy_balance=energy_balance,
+                    )
+                if (
+                    energy_balance is not None
+                    and persist_source_decisions
+                    and _table_exists(conn, "source_selection_events")
+                ):
+                    self._insert_source_selection_events(
+                        conn,
+                        sample_id=sample_id,
+                        energy_balance=energy_balance,
                     )
                 conn.commit()
                 return sample_id
@@ -415,6 +439,83 @@ class Database:
             "INSERT INTO energy_balance_samples "
             f"({','.join(columns)}) VALUES ({placeholders})",
             [row[column] for column in columns],
+        )
+
+    def _insert_measurements(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        sample_id: int,
+        snapshots: tuple[DeviceSnapshot, ...],
+        energy_balance: EnergyBalanceResult | None,
+    ) -> None:
+        """Store accepted normalized and calculated values for one cycle."""
+
+        rows = [
+            row
+            for snapshot in snapshots
+            for row in _measurement_rows(
+                sample_id=sample_id,
+                snapshot=snapshot,
+            )
+        ]
+        if energy_balance is not None:
+            rows.extend(
+                _calculated_measurement_rows(
+                    sample_id=sample_id,
+                    balance=energy_balance,
+                )
+            )
+        conn.executemany(
+            """
+            INSERT INTO measurements (
+                sample_id,
+                source_id,
+                role,
+                metric,
+                value,
+                unit,
+                measured_at,
+                received_at,
+                quality,
+                device_status
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+
+    def _insert_source_selection_events(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        sample_id: int,
+        energy_balance: EnergyBalanceResult,
+    ) -> None:
+        """Store bounded Phase 09 source decisions for one cycle."""
+
+        conn.executemany(
+            """
+            INSERT INTO source_selection_events (
+                sample_id,
+                selected_at,
+                metric,
+                selected_source_id,
+                selected_source_role,
+                selected_quality,
+                fallback_used,
+                selection_reason,
+                rejected_candidates_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                _source_selection_event_row(
+                    sample_id=sample_id,
+                    selection=selection,
+                )
+                for selection in energy_balance.source_metadata
+            ),
         )
 
     def latest(self) -> Optional[dict[str, Any]]:
@@ -540,6 +641,10 @@ class Database:
 
     def delete_all(self) -> None:
         with self.connect() as conn:
+            if _table_exists(conn, "source_selection_events"):
+                conn.execute("DELETE FROM source_selection_events")
+            if _table_exists(conn, "measurements"):
+                conn.execute("DELETE FROM measurements")
             conn.execute("DELETE FROM validation_events")
             conn.execute("DELETE FROM energy_balance_samples")
             conn.execute("DELETE FROM grid_meter_samples")
@@ -547,6 +652,180 @@ class Database:
             conn.execute("DELETE FROM samples")
             conn.commit()
             conn.execute("VACUUM")
+
+
+_COUNTER_METRICS: Final = frozenset(
+    {
+        Metric.GRID_IMPORT_TOTAL,
+        Metric.GRID_EXPORT_TOTAL,
+        Metric.PLANT_AC_ENERGY_TOTAL,
+        Metric.PLANT_AC_RETURNED_ENERGY_TOTAL,
+        Metric.PV_ENERGY_TODAY,
+        Metric.PV_ENERGY_TOTAL,
+        Metric.BATTERY_CHARGE_TOTAL,
+        Metric.BATTERY_DISCHARGE_TOTAL,
+    }
+)
+
+_UNUSABLE_TIME_SERIES_QUALITIES: Final = frozenset(
+    {
+        MeasurementQuality.REJECTED,
+        MeasurementQuality.STALE,
+        MeasurementQuality.UNAVAILABLE,
+    }
+)
+
+_MAXIMUM_SELECTION_JSON_CHARACTERS: Final = 16_384
+
+
+def _measurement_rows(
+    *,
+    sample_id: int,
+    snapshot: DeviceSnapshot,
+) -> list[tuple[object, ...]]:
+    """Build accepted normalized time-series rows for one source snapshot."""
+
+    rows: list[tuple[object, ...]] = []
+    for measurement in snapshot.measurements:
+        if measurement.quality in _UNUSABLE_TIME_SERIES_QUALITIES:
+            continue
+        is_counter = measurement.metric in _COUNTER_METRICS
+        value = measurement.value / 1000.0 if is_counter else measurement.value
+        unit = "kWh" if is_counter else measurement.unit.value
+        rows.append(
+            (
+                sample_id,
+                measurement.source_id,
+                measurement.role.value,
+                measurement.metric.value,
+                value,
+                unit,
+                measurement.measured_at.astimezone(timezone.utc).isoformat(),
+                measurement.received_at.astimezone(timezone.utc).isoformat(),
+                measurement.quality.value,
+                snapshot.status.value,
+            )
+        )
+    return rows
+
+
+def _calculated_measurement_rows(
+    *,
+    sample_id: int,
+    balance: EnergyBalanceResult,
+) -> list[tuple[object, ...]]:
+    """Build non-missing calculated time-series rows for one energy balance."""
+
+    calculated_at = balance.calculated_at.astimezone(timezone.utc).isoformat()
+    values = (
+        ("house_power", balance.house_power_w, "W"),
+        ("self_consumed_power", balance.self_consumed_power_w, "W"),
+        (
+            "self_consumption_rate",
+            balance.self_consumption_rate_percent,
+            "%",
+        ),
+        ("autonomy_rate", balance.autonomy_rate_percent, "%"),
+        (
+            "energy_balance_residual_power",
+            balance.residual_power_w,
+            "W",
+        ),
+    )
+    return [
+        (
+            sample_id,
+            "energy_balance",
+            "calculated",
+            metric,
+            value,
+            unit,
+            calculated_at,
+            calculated_at,
+            balance.quality.value,
+            "calculated",
+        )
+        for metric, value, unit in values
+        if value is not None
+    ]
+
+
+def _source_selection_event_row(
+    *,
+    sample_id: int,
+    selection: SourceSelectionResult,
+) -> tuple[object, ...]:
+    """Build one bounded source-selection audit row."""
+
+    rejected_candidates = [
+        {
+            "source_id": candidate.source_id,
+            "source_role": (
+                candidate.source_role.value
+                if candidate.source_role is not None
+                else None
+            ),
+            "quality": (
+                candidate.quality.value if candidate.quality is not None else None
+            ),
+            "reason": candidate.reason.value,
+            "measured_at": (
+                candidate.measured_at.astimezone(timezone.utc).isoformat()
+                if candidate.measured_at is not None
+                else None
+            ),
+        }
+        for candidate in selection.rejected_candidates
+    ]
+    rejected_candidates_json = _bounded_json_list(rejected_candidates)
+    return (
+        sample_id,
+        selection.selection_timestamp.astimezone(timezone.utc).isoformat(),
+        selection.requested_metric.value,
+        selection.selected_source_id,
+        (
+            selection.selected_source_role.value
+            if selection.selected_source_role is not None
+            else None
+        ),
+        selection.selected_quality.value,
+        int(selection.fallback_used),
+        selection.selection_reason.value,
+        rejected_candidates_json,
+    )
+
+
+def _bounded_json_list(values: list[dict[str, str | None]]) -> str:
+    """Serialize a list within the schema's source-diagnostic size limit."""
+
+    bounded_values = list(values)
+    while bounded_values:
+        encoded = json.dumps(
+            bounded_values,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        if len(encoded) <= _MAXIMUM_SELECTION_JSON_CHARACTERS:
+            return encoded
+        bounded_values.pop()
+    return "[]"
+
+
+def _table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
+    """Return whether one internal persistence table exists."""
+
+    return (
+        conn.execute(
+            """
+            SELECT 1
+            FROM sqlite_schema
+            WHERE type = 'table' AND name = ?
+            """,
+            (table_name,),
+        ).fetchone()
+        is not None
+    )
 
 
 def _energy_balance_row(

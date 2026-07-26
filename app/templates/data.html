@@ -18,11 +18,22 @@
 <section class="panel">
   <div class="panel-head"><div><p class="eyebrow">EXPORT</p><h2>CSV-Datei erstellen</h2></div></div>
   <form action="{{ url_for('api_export_csv') }}" method="get" class="export-form">
+    <label><span>Datensatz</span><select name="dataset">
+      <option value="legacy">Bestehender Messwerteexport</option>
+      <option value="measurements">Normalisierte Messwerte</option>
+      <option value="phases">Phasenwerte</option>
+      <option value="grid">Grid-Meter</option>
+      <option value="energy_balance">Energiebilanz</option>
+      <option value="validation_events">Validierungsereignisse</option>
+      <option value="source_selection_events">Quellenentscheidungen</option>
+    </select></label>
     <label><span>Von</span><input type="date" name="from" id="export-from" required></label>
     <label><span>Bis einschließlich</span><input type="date" name="to" id="export-to" required></label>
+    <label><span>Metrik (für normalisierte Messwerte erforderlich)</span><input type="text" name="metric" placeholder="z. B. grid_power"></label>
+    <label><span>Quelle (optional)</span><input type="text" name="source_id" placeholder="z. B. grid_meter_primary"></label>
     <button class="button primary">CSV herunterladen</button>
   </form>
-  <p class="hint">Die CSV-Datei verwendet Semikolon als Trennzeichen und enthält auch die Rohwerte von Solakon ONE, Batterie, Meter und Shelly-Vergleich.</p>
+  <p class="hint">Die CSV-Datei verwendet Semikolon als Trennzeichen. Der bestehende Export bleibt unverändert; die neuen Exporte sind auf 50.000 Zeilen begrenzt und enthalten keine Rohdiagnosen oder Zugangsdaten.</p>
 </section>
 
 <section class="panel danger-zone">

@@ -12,7 +12,12 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = BASE_DIR / "config.json"
 DATA_DIR = BASE_DIR / "data"
-DB_PATH = DATA_DIR / "solarinspector.db"
+DB_PATH = Path(
+    os.environ.get(
+        "SOLARINSPECTOR_DATABASE_PATH",
+        DATA_DIR / "solarinspector.db",
+    )
+)
 LOG_PATH = DATA_DIR / "solarinspector.log"
 PID_PATH = DATA_DIR / "solarinspector.pid"
 

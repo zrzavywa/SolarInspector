@@ -10,6 +10,15 @@
     "solar_power_source": "auto",
     "grid_power_source": "auto"
   },
+  "persistence": {
+    "retention": {
+      "enabled": false,
+      "raw_high_resolution_days": 30,
+      "validation_events_days": 365,
+      "source_selection_events_days": 90,
+      "batch_rows": 1000
+    }
+  },
   "solakon_one": {
     "enabled": false,
     "host": "",

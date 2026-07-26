@@ -1,0 +1,91 @@
+{
+  "legacy_v3": {
+    "schema_version": 0,
+    "tables": ["samples"],
+    "sample_columns": 21,
+    "row_counts": {
+      "samples": 2
+    },
+    "preserved_values": {
+      "first_grid_power_w": 250.0,
+      "second_grid_power_w": -100.0,
+      "second_voltage_v": null,
+      "second_grid_import_wh": 0.0,
+      "second_feed_in_wh": 0.14
+    }
+  },
+  "legacy_4_1": {
+    "schema_version": 0,
+    "tables": ["samples"],
+    "sample_columns": 48,
+    "row_counts": {
+      "samples": 2
+    },
+    "preserved_values": {
+      "first_grid_power_w": 250.0,
+      "second_grid_power_w": -100.0,
+      "second_voltage_v": null,
+      "second_grid_import_wh": 0.0,
+      "second_feed_in_wh": 0.14,
+      "second_solakon_pv_power_w": null,
+      "second_battery_charge_wh": 0.0
+    }
+  },
+  "phase_05": {
+    "schema_version": 0,
+    "tables": ["phase_samples", "samples"],
+    "row_counts": {
+      "phase_samples": 1,
+      "samples": 2
+    }
+  },
+  "phase_06_07": {
+    "schema_version": 0,
+    "tables": ["grid_meter_samples", "phase_samples", "samples"],
+    "row_counts": {
+      "grid_meter_samples": 1,
+      "phase_samples": 1,
+      "samples": 2
+    }
+  },
+  "phase_08": {
+    "schema_version": 0,
+    "tables": [
+      "grid_meter_samples",
+      "phase_samples",
+      "samples",
+      "validation_events"
+    ],
+    "row_counts": {
+      "grid_meter_samples": 1,
+      "phase_samples": 1,
+      "samples": 2,
+      "validation_events": 1
+    }
+  },
+  "phase_09": {
+    "schema_version": 0,
+    "tables": [
+      "energy_balance_samples",
+      "grid_meter_samples",
+      "phase_samples",
+      "samples",
+      "validation_events"
+    ],
+    "sample_columns": 48,
+    "row_counts": {
+      "energy_balance_samples": 1,
+      "grid_meter_samples": 1,
+      "phase_samples": 1,
+      "samples": 1,
+      "validation_events": 1
+    },
+    "preserved_values": {
+      "grid_import_total_kwh": 1234.5,
+      "grid_export_total_kwh": 67.8,
+      "energy_balance_house_power_w": 1500.0,
+      "energy_balance_grid_export_power_w": 0.0,
+      "validation_accepted_value": 835.0
+    }
+  }
+}

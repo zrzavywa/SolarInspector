@@ -77,6 +77,11 @@ from solarinspector_core.paths import (
     LOG_PATH as LOG_PATH,
 )
 from solarinspector_core.persistence.database import Database
+from solarinspector_core.persistence.retention import (
+    RetentionPolicy,
+    apply_retention,
+)
+from solarinspector_core.persistence.startup import prepare_database_for_startup
 from solarinspector_core.runtime import (
     cleanup_runtime_pid_file,
     parse_runtime_args,
@@ -121,7 +126,11 @@ from solarinspector_core.web.configuration import (
     apply_configuration_form,
 )
 from solarinspector_core.web.context import build_template_context
-from solarinspector_core.web.export import build_csv_export
+from solarinspector_core.web.export import (
+    DEFAULT_MAXIMUM_EXPORT_ROWS,
+    build_csv_export,
+    build_time_series_csv_export,
+)
 from solarinspector_core.web.pages import (
     render_acquisition_page,
     render_dashboard_page,
@@ -230,17 +239,50 @@ class Collector(CoreCollector):
 
 
 
-config_manager = ConfigManager(CONFIG_PATH)
-database = Database(DB_PATH)
-collector = Collector(config_manager, database)
-
-app = Flask(__name__)
 secret_key = os.environ.get("SOLARINSPECTOR_SECRET")
 if not secret_key:
     raise RuntimeError(
         "SOLARINSPECTOR_SECRET ist nicht gesetzt. "
         "Bitte einen sicheren zufälligen Schlüssel konfigurieren."
     )
+
+config_manager = ConfigManager(CONFIG_PATH)
+database_startup = prepare_database_for_startup(
+    DB_PATH,
+    DB_PATH.parent / "backups",
+    application_version=APP_VERSION,
+)
+log(
+    "Datenbankschema bereit: "
+    f"{database_startup.previous_schema_version} -> "
+    f"{database_startup.current_schema_version}; "
+    "Migrationen="
+    f"{list(database_startup.applied_migration_versions)}; "
+    f"Backup={database_startup.backup_path or 'nicht erforderlich'}"
+)
+database = Database(DB_PATH)
+retention_config = config_manager.get().get("persistence", {}).get("retention")
+retention_policy = RetentionPolicy.from_mapping(
+    retention_config if isinstance(retention_config, dict) else None
+)
+with database.connect() as retention_connection:
+    retention_result = apply_retention(
+        retention_connection,
+        retention_policy,
+        reference_time=datetime.now().astimezone(),
+    )
+if retention_policy.enabled:
+    log(
+        "Datenaufbewahrung abgeschlossen: "
+        f"Rohdaten={retention_result.raw_samples_deleted}; "
+        f"Validierungsereignisse="
+        f"{retention_result.validation_events_deleted}; "
+        f"Quellenentscheidungen="
+        f"{retention_result.source_selection_events_deleted}"
+    )
+collector = Collector(config_manager, database)
+
+app = Flask(__name__)
 app.secret_key = secret_key
 
 
@@ -468,13 +510,31 @@ def api_export_csv():
     tz = datetime.now().astimezone().tzinfo
     start = datetime.combine(start_date, datetime.min.time(), tzinfo=tz)
     end = datetime.combine(end_date, datetime.min.time(), tzinfo=tz)
-    rows = database.rows_between(start.timestamp(), end.timestamp())
-
-    csv_content, filename = build_csv_export(
-        rows,
-        start_date,
-        end_date - timedelta(days=1),
-    )
+    dataset = request.args.get("dataset", "legacy")
+    if dataset == "legacy":
+        rows = database.rows_between(start.timestamp(), end.timestamp())
+        csv_content, filename = build_csv_export(
+            rows,
+            start_date,
+            end_date - timedelta(days=1),
+        )
+    else:
+        try:
+            maximum_rows = int(
+                request.args.get("maximum_rows", DEFAULT_MAXIMUM_EXPORT_ROWS)
+            )
+            with database.connect() as connection:
+                csv_content, filename = build_time_series_csv_export(
+                    connection,
+                    dataset,
+                    start,
+                    end,
+                    metric=request.args.get("metric"),
+                    source_id=request.args.get("source_id"),
+                    maximum_rows=maximum_rows,
+                )
+        except (TypeError, ValueError) as exc:
+            return jsonify({"error": str(exc)}), 400
 
     return Response(
         csv_content,
