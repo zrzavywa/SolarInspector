@@ -17,6 +17,7 @@ from solarinspector_core.config.grid_meter import (
     DEFAULT_GRID_METER_CONFIG,
 )
 from solarinspector_core.config.shelly import ShellyMeasurementRole
+from solarinspector_core.persistence.retention import DEFAULT_RETENTION_CONFIG
 from solarinspector_core.validation.config import DEFAULT_VALIDATION_CONFIG
 
 DEFAULT_CONFIG: dict[str, Any] = {
@@ -32,6 +33,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "grid_power_source": "auto",
     },
     "energy_balance": deepcopy(DEFAULT_ENERGY_BALANCE_CONFIG),
+    "persistence": {
+        "retention": deepcopy(DEFAULT_RETENTION_CONFIG),
+    },
     "validation": deepcopy(DEFAULT_VALIDATION_CONFIG),
     "solakon_one": {
         "enabled": False,

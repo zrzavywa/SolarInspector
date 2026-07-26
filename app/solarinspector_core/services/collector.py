@@ -845,6 +845,7 @@ class Collector:
             sample,
             phase_snapshot=phase_snapshot,
             grid_meter_snapshot=(grid_meter_persistence_snapshot),
+            measurement_snapshots=validated_cycle.snapshots,
             energy_balance=cycle_energy_balance,
             persist_source_decisions=bool(
                 config.get("energy_balance", {}).get(
@@ -892,6 +893,7 @@ class Collector:
         energy_balance: EnergyBalanceResult,
         persist_source_decisions: bool,
         measurement_role: str,
+        measurement_snapshots: tuple[DeviceSnapshot, ...] = (),
     ) -> int:
         """Persist normalized details with test-double support."""
 
@@ -906,6 +908,7 @@ class Collector:
                     sample,
                     phase_snapshot=phase_snapshot,
                     grid_meter_snapshot=grid_meter_snapshot,
+                    measurement_snapshots=measurement_snapshots,
                     measurement_role=measurement_role,
                     energy_balance=energy_balance,
                     persist_source_decisions=persist_source_decisions,

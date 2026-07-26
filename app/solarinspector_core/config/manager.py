@@ -28,6 +28,7 @@ from solarinspector_core.config.shelly import (
     normalize_phase_direction,
 )
 from solarinspector_core.logging import log as default_log
+from solarinspector_core.persistence.retention import RetentionPolicy
 from solarinspector_core.validation.config import (
     normalize_comparison_config,
     normalize_validation_config,
@@ -207,6 +208,14 @@ class ConfigManager:
             general["grid_power_source"] = "auto"
 
         config["validation"] = normalize_validation_config(config.get("validation"))
+        persistence = config.get("persistence")
+        if not isinstance(persistence, dict):
+            persistence = {}
+        raw_retention = persistence.get("retention")
+        if not isinstance(raw_retention, dict):
+            raw_retention = None
+        persistence["retention"] = asdict(RetentionPolicy.from_mapping(raw_retention))
+        config["persistence"] = persistence
         config["energy_balance"] = normalize_energy_balance_config(
             config.get("energy_balance")
         )

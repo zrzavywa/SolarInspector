@@ -31,6 +31,7 @@ exclude = [
 [tool.mypy]
 python_version = "3.11"
 files = [
+    "app/database_cli.py",
     "app/github_updater.py",
     "app/update_status.py",
     "app/modbus_solakon.py",
@@ -73,10 +74,16 @@ files = [
     "app/solarinspector_core/validation/profiles.py",
     "app/solarinspector_core/validation/state.py",
     "app/solarinspector_core/persistence/database.py",
+    "app/solarinspector_core/persistence/maintenance.py",
+    "app/solarinspector_core/persistence/migrations.py",
+    "app/solarinspector_core/persistence/queries.py",
+    "app/solarinspector_core/persistence/retention.py",
+    "app/solarinspector_core/persistence/startup.py",
     "app/solarinspector_core/services/collector.py",
     "app/solarinspector_core/services/energy_balance.py",
     "app/solarinspector_core/services/energy_balance_collector.py",
     "app/solarinspector_core/services/source_selector.py",
+    "app/solarinspector_core/web/export.py",
     "app/solarinspector_core/web/configuration.py",
     "app/solarinspector_core/web/validation.py",
 ]

@@ -8,6 +8,17 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Added
 
+- Versionierte Phase-10-Schema-Migrationen, normalisierte Messwert- und
+  Quellenentscheidungs-Zeitreihen sowie begrenzte, indexgestützte
+  Zeitbereichsabfragen ergänzt.
+- Standardmäßig deaktivierte, konfigurierbare und transaktional begrenzte
+  Zeitreihenaufbewahrung mit sicherem Rollback ergänzt.
+- Additive, begrenzte CSV-Exporte für normalisierte Messwerte, Phasen,
+  Grid-Meter, Energiebilanz und sichere Diagnoseereignisse ergänzt.
+- Eigenständige Datenbank-CLI für read-only Diagnose, private SQLite-Backups,
+  unveränderliche Dry Runs und backup-gesicherte Migrationen ergänzt.
+- Datenbankschema-Prüfung und Pflicht-Backup-Migration vor Konstruktion von
+  Collector und Webanwendung in den Startablauf integriert.
 - Offizieller Netzstromzähler als priorisierte Messquelle mit gekennzeichnetem Fallback ergänzt.
 - Read-only SHRDZM-REST-Adapter für `/getLastData` mit Query-, Basic- und optionaler Authentifizierung ergänzt.
 - Adapterabhängige OBIS-Mappings, Einheitenkonvertierung und End-to-End-Tests ergänzt.
