@@ -260,6 +260,41 @@ Bei umgekehrter Anzeige:
 
 Die Korrektur erst nach einem nachvollziehbaren Test vornehmen, beispielsweise bei bekanntem Verbrauch ohne PV-Erzeugung und anschließend bei deutlicher Einspeisung.
 
+### Netzleistungsvergleich mit dem offiziellen Zähler
+
+Der Vergleich zwischen `grid_meter_primary` und `house_meter` darf nur
+aktiviert werden, wenn beide Geräte dieselbe elektrische Position am gesamten
+Hausanschluss messen. SolarInspector vergleicht dann die Mittelwerte der
+akzeptierten Messungen beider Quellen innerhalb des konfigurierten
+Vergleichsfensters. Der offizielle Netzstromzähler bleibt auch bei einer
+anhaltend großen Abweichung die führende Referenz.
+
+`minimum_duration_seconds` bezeichnet die tatsächlich beobachtete Zeitspanne
+zwischen dem ältesten und neuesten Messwert jeder Quelle. Das
+`window_seconds`-Fenster sollte deshalb größer als die Mindestdauer sein.
+Sind beide Werte gleich, kann bereits geringer Polling- oder Netzwerk-Jitter
+den ältesten Messwert aus dem Fenster schieben und den Vergleich verzögern.
+
+Für einen Tasmota-Zähler, der ungefähr alle zehn Sekunden einen neuen Messwert
+liefert, ist folgende Pilotkonfiguration robust:
+
+| Einstellung | Wert |
+|---|---:|
+| Vergleichsfenster | `60 s` |
+| Mindestdauer | `30 s` |
+| Mindestanzahl Messwerte | `4` |
+| Mindestreferenz | `200 W` |
+| Warnung absolut | `50 W` |
+| Ablehnungsschwelle absolut | `250 W` |
+| Warnung relativ | `10 %` |
+| Ablehnungsschwelle relativ | `30 %` |
+
+Vier Messwerte bei etwa zehn Sekunden Abstand decken die Zeitpunkte 0, 10, 20
+und 30 Sekunden ab. Das 60-Sekunden-Fenster lässt zusätzlich Reserve für
+Jitter oder einen verzögerten Abruf. Allgemein sollte die Mindestanzahl
+mindestens
+`ceil(Mindestdauer / effektives Messintervall) + 1` betragen.
+
 ## Abschnitt `solakon_meter`
 
 Dieser Abschnitt beschreibt die unabhängige AC-Messung am Ausgang der Solakon-Anlage.
