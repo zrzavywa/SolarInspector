@@ -29,19 +29,16 @@ python -m pip install -r requirements-dev.txt
 
 ## Verbindliche Prüfungen
 
-Vor einem Commit mit Python-Änderungen sind mindestens folgende Befehle
-auszuführen:
+Vor einem Commit ist der kanonische lokale Prüflauf auszuführen:
 
 ```bash
-python -m ruff format --check app tests
-python -m ruff check app tests
-python -m mypy
-SOLARINSPECTOR_SECRET="solarinspector-test-secret" python -m pytest -v tests
-git diff --check
+./scripts/verify.sh
 ```
 
-Diese Prüfungen werden auch in den GitHub-Actions-Workflows für Tests und
-Releases ausgeführt.
+Das Skript verwendet ausschließlich `.venv`, prüft eine der unterstützten
+Python-Versionen 3.11 bis 3.13 und führt Formatierung, Linting, Typprüfung,
+Kompilierung, Tests und `git diff --check` aus. Die wesentlichen Prüfungen
+werden auch in den GitHub-Actions-Workflows für Tests und Releases ausgeführt.
 
 ## Stil und Struktur
 
