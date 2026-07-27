@@ -6,6 +6,12 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+### Documentation
+
+- Aktive Entwicklungsstandards auf den kanonischen Produktnamen und
+  Core-Namespace ausgerichtet sowie Migration und historische
+  4.5-Entwicklungsnachweise über zentrale Indizes erschlossen.
+
 ## [4.5.0] - 2026-07-27
 
 ### Changed

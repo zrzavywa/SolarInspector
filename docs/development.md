@@ -3,9 +3,9 @@
 Dieses Dokument beschreibt die verbindlichen Entwicklungsstandards für neue
 oder wesentlich überarbeitete Python-Komponenten von Zrzavy Energy Monitor 4.5.
 
-Die bestehende Codebasis wird schrittweise angepasst. Eine vollständige
-Neuformatierung oder Modularisierung des Altbestands ist nicht Bestandteil
-der Phase 01.
+Die bestehende Codebasis wird schrittweise angepasst. Auch mit Stand 4.5.0
+sind eine vollständige Neuformatierung, Typisierung oder Modularisierung des
+Altbestands nicht abgeschlossen.
 
 ## Unterstützte Python-Versionen
 
@@ -140,30 +140,31 @@ Neuformatierung soll möglichst in einem getrennten Commit erfolgen.
 
 ## Schrittweise mypy-Migration
 
-Mypy prüft derzeit:
-
-- `app/github_updater.py`
-- `app/update_status.py`
-- `app/modbus_solakon.py`
-- `app/release_installer.py`
+Die verbindliche und aktuelle Auswahl der durch mypy geprüften Module steht
+ausschließlich unter `[tool.mypy].files` in `pyproject.toml`. Sie umfasst mit
+Stand 4.5.0 bereits zentrale Module für Branding, Migration, Konfiguration,
+Adapter, Modelle, Validierung, Persistenz, Dienste und Webdarstellung. Diese
+Liste wird hier bewusst nicht dupliziert, damit Dokumentation und
+Toolkonfiguration nicht auseinanderlaufen.
 
 Neue Module und wesentlich überarbeitete Funktionen sollen vollständig
-typisiert werden. Weitere geeignete Module werden schrittweise in die
-mypy-Konfiguration aufgenommen.
+typisiert und, soweit geeignet, in diese Konfiguration aufgenommen werden.
 
 Eine strikte Typprüfung der gesamten bestehenden Anwendung ist derzeit
 bewusst nicht aktiviert.
 
-## Verbleibende technische Schulden
+## Verbleibende technische Schulden in 4.5.0
 
-Nach Phase 01 bleiben insbesondere folgende Punkte offen:
+Mit Stand 4.5.0 bleiben insbesondere folgende Punkte offen:
 
 1. Zehn historische Dateien sind noch nicht Ruff-formatiert.
 2. Mypy deckt noch nicht die gesamte Anwendung und die Tests ab.
 3. Docstring-Regeln werden für Altcode noch nicht global geprüft.
 4. Modul- und API-Docstrings sind im Altcode nicht vollständig.
-5. `app/zrzavy_energy_monitor.py` bündelt weiterhin mehrere Verantwortlichkeiten.
-6. Die vollständige Modularisierung erfolgt in einer späteren Phase.
+5. Der kanonische Einstiegspunkt `app/zrzavy_energy_monitor.py` bündelt
+   weiterhin mehrere Web- und Laufzeitverantwortlichkeiten.
+6. Die weitere Modularisierung ist geplant, aber keiner veröffentlichten
+   Version nach 4.5.0 verbindlich zugeordnet.
 
 Diese Punkte sind bekannte Migrationsaufgaben und keine Aufforderung zu einer
 ungeprüften Gesamtüberarbeitung.

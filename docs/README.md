@@ -20,6 +20,10 @@ Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von Zrzav
 - [Architektur](architecture.md)
 - [Entwicklungsstandards](development.md)
 - [API-Referenz](api.md)
+- [Migration von SolarInspector 4.1.3](migration-from-solarinspector.md) für
+  Betreiber bestehender Installationen und Migrationsprüfungen
+- [Entwicklungsarchiv 4.5](development/4.5/README.md) für Mitwirkende, die
+  Entscheidungen, Phasenberichte und historische Nachweise nachvollziehen
 - [Mitwirken](../CONTRIBUTING.md)
 - [Änderungshistorie](../CHANGELOG.md)
 - [Markenhinweise](../TRADEMARKS.md)

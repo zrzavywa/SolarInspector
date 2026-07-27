@@ -1,8 +1,8 @@
-# SolarInspector agent instructions
+# Zrzavy Energy Monitor agent instructions
 
 ## Mission
 
-Develop SolarInspector incrementally according to the approved roadmap.
+Develop Zrzavy Energy Monitor incrementally according to the approved roadmap.
 Prefer small, reviewable, backward-compatible changes. Preserve measurement,
 validation, persistence, source-selection, and energy-integration semantics
 unless the task explicitly changes them.
@@ -10,7 +10,10 @@ unless the task explicitly changes them.
 ## Repository map
 
 - Application code: `app/`
-- Core modules: `app/solarinspector_core/`
+- Canonical core modules: `app/zrzavy_energy_monitor_core/`
+- Canonical entry point: `app/zrzavy_energy_monitor.py`
+- Temporary 4.5 compatibility: `app/solarinspector.py` and
+  `app/solarinspector_core/`
 - Tests: `tests/`
 - Documentation: `docs/`
 - Development plans and reports: `docs/development/`
@@ -93,7 +96,7 @@ options, the recommended option, and the consequences of each option.
   data.
 - Never copy or commit productive secrets, private addresses, real
   configuration files, or customer data.
-- Never access a production SolarInspector installation.
+- Never access a production Zrzavy Energy Monitor installation.
 - Never change database schemas unless explicitly required.
 - Never suppress or weaken a failing test to make verification pass.
 - Never modify unrelated code merely to satisfy a check.
@@ -128,7 +131,9 @@ If a test fails:
 
 Skipped hardware tests must be reported as skipped, never as passed.
 
-## Phase 09 pilot
+## Historical Phase 09 pilot
 
-For Phase 09, read `docs/development/4.5/phase-09-pilot.md` before planning or
-implementation. Treat its decision gates and out-of-scope section as binding.
+Only when working on the historical Phase 09 scope, read
+`docs/development/4.5/phase-09-pilot.md` before planning or implementation.
+Its decision gates and out-of-scope section remain binding for that work, but
+are not general instructions for later development.
