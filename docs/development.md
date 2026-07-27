@@ -29,6 +29,12 @@ python -m pip install -r requirements-dev.txt
 
 ## Verbindliche Prüfungen
 
+Der Dokumentationsqualitätsvertrag prüft lokal und ohne Netzwerkzugriff
+relative Links aktiver Dokumente, Dokumentations- und Archivindex,
+Versionsstand, Konfigurationsschlüssel, aktuelle Architekturpfade sowie die
+Struktur von Mermaid-Blöcken. Historische Entwicklungsnachweise werden dabei
+getrennt vom aktiven Dokumentationsbestand behandelt.
+
 Vor einem Commit ist der kanonische lokale Prüflauf auszuführen:
 
 ```bash

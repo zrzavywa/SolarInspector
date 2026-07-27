@@ -47,7 +47,7 @@ python3 -m json.tool /etc/zrzavy-energy-monitor/config.json >/dev/null
     "host": "",
     "port": 502,
     "device_id": 1,
-    "timeout": 5,
+    "timeout_seconds": 5,
     "simulation": false
   },
   "house_meter": {
@@ -56,7 +56,7 @@ python3 -m json.tool /etc/zrzavy-energy-monitor/config.json >/dev/null
     "host": "",
     "username": "",
     "password": "",
-    "timeout": 3,
+    "timeout_seconds": 3,
     "direction_factor": 1
   },
   "solakon_meter": {
@@ -65,7 +65,7 @@ python3 -m json.tool /etc/zrzavy-energy-monitor/config.json >/dev/null
     "host": "",
     "username": "",
     "password": "",
-    "timeout": 3,
+    "timeout_seconds": 3,
     "direction_factor": 1
   }
 }
@@ -209,7 +209,7 @@ Die vollständige Einrichtung und spätere Hardwareprüfung beschreibt
 | `host` | String | leer | IP-Adresse oder lokaler Hostname |
 | `port` | Integer | `502` | Modbus-TCP-Port |
 | `device_id` | Integer | `1` | Modbus Unit-ID |
-| `timeout` | Zahl | `5` | Netzwerk-Timeout in Sekunden |
+| `timeout_seconds` | Zahl | `5` | Netzwerk-Timeout in Sekunden |
 | `simulation` | Boolean | `false` | simulierte Solakon-Werte verwenden |
 
 Beispiel:
@@ -220,7 +220,7 @@ Beispiel:
   "host": "192.168.1.50",
   "port": 502,
   "device_id": 1,
-  "timeout": 5,
+  "timeout_seconds": 5,
   "simulation": false
 }
 ```
@@ -234,7 +234,7 @@ Beispiel:
 | `host` | String | leer | IP-Adresse oder lokaler Hostname |
 | `username` | String | leer | optionale lokale Authentifizierung |
 | `password` | String | leer | optionales Kennwort |
-| `timeout` | Zahl | `3` | HTTP-Timeout in Sekunden |
+| `timeout_seconds` | Zahl | `3` | HTTP-Timeout in Sekunden |
 | `direction_factor` | Integer | `1` | Vorzeichen normalisieren |
 
 Unterstützte Typen:
@@ -306,7 +306,7 @@ Dieser Abschnitt beschreibt die unabhängige AC-Messung am Ausgang der Solakon-A
 | `host` | String | leer | IP-Adresse oder lokaler Hostname |
 | `username` | String | leer | optionale lokale Authentifizierung |
 | `password` | String | leer | optionales Kennwort |
-| `timeout` | Zahl | `3` | HTTP-Timeout |
+| `timeout_seconds` | Zahl | `3` | HTTP-Timeout |
 | `direction_factor` | Integer | `1` | Vorzeichen normalisieren |
 
 Unterstützte Typen:
@@ -315,6 +315,42 @@ Unterstützte Typen:
 shelly_pm_mini_gen3
 simulation
 ```
+
+## Abschnitt `persistence.retention`
+
+Die Aufbewahrung ist standardmäßig deaktiviert und arbeitet bei Aktivierung
+begrenzt. Die Werte werden beim Start aus diesem Abschnitt gelesen:
+
+| Feld | Bedeutung |
+|---|---|
+| `enabled` | Aufbewahrung aktivieren |
+| `raw_high_resolution_days` | Aufbewahrungsdauer roher hochauflösender Werte |
+| `validation_events_days` | Aufbewahrungsdauer von Validierungsereignissen |
+| `source_selection_events_days` | Aufbewahrungsdauer von Quellenentscheidungen |
+| `batch_rows` | Maximale Zeilen je begrenztem Bereinigungslauf |
+
+Die Konfigurationsvorlage enthält außerdem die folgenden Blatt-Schlüssel; sie
+werden hier bewusst als Referenzschlüssel und nicht als Wertprüfung aufgeführt:
+
+`project_name`, `site_name`, `poll_interval_seconds`, `auto_start_collection`,
+`bind_host`, `port`, `open_browser`, `solar_power_source`, `grid_power_source`,
+`enabled`, `host`, `port`, `device_id`, `timeout_seconds`, `simulation`, `type`,
+`username`, `password`, `direction_factor`, `measurement_role`, `adapter`,
+`source_id`, `name`, `scheme`, `mapping`, `grid_power_w`, `grid_import_power_w`,
+`grid_export_power_w`, `grid_import_total_kwh`, `grid_export_total_kwh`,
+`frequency_hz`, `phase_voltage_l1_v`, `phase_voltage_l2_v`,
+`phase_voltage_l3_v`, `phase_current_l1_a`, `phase_current_l2_a`,
+`phase_current_l3_a`, `phase_power_l1_w`, `phase_power_l2_w`,
+`phase_power_l3_w`, `shrdzm_rest`, `endpoint`, `authentication_mode`,
+`username_parameter`, `password_parameter`, `energy_total_unit`,
+`raw_high_resolution_days`, `validation_events_days`,
+`source_selection_events_days`, `batch_rows`, `maximum_measurement_age_seconds`,
+`maximum_source_skew_seconds`, `allow_suspect_measurements`,
+`allow_grid_fallback`, `allow_plant_fallback`,
+`negative_house_power_tolerance_w`, `short_window_average_seconds`,
+`persist_source_decisions`, `source_priorities`, `grid_power`, `plant_ac_power`,
+`pv_power`, `battery_power`, `battery_charge_power`, `battery_discharge_power`,
+`battery_soc`.
 
 ## Konfiguration aktivieren
 

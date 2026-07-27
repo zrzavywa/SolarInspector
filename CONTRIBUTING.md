@@ -25,6 +25,8 @@ Bitte bei Änderungen beachten:
 - bei neuen Konfigurationsfeldern auch `docs/configuration.md` aktualisieren,
 - bei neuen Endpunkten auch `docs/api.md` aktualisieren,
 - bei sichtbaren Änderungen `CHANGELOG.md` ergänzen.
+- lokale Dokumentationsqualitätsprüfungen für Links, Indizes, Versionen,
+  Konfigurationsreferenz, Architekturpfade und Mermaid-Struktur ausführen.
 
 ## Softwareänderungen
 

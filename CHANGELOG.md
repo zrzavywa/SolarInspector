@@ -8,6 +8,12 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Documentation
 
+- Architekturübersicht für den implementierten 4.5.0-Stand um Adapterfactory,
+  normalisierte Modelle, Validierung, Quellenauswahl, Energiebilanz,
+  Zeitreihenpersistenz, Update-/Rollbackgrenzen und direkte Migration ergänzt.
+- Lokale standardbibliotheksbasierte Dokumentationsqualitätsverträge für Links,
+  Indizes, Versionen, Konfigurationsschlüssel, Architekturpfade und Mermaid-
+  Struktur ergänzt.
 - Betriebs-, Update-, Persistenz-, Collector-, Web- und Geräte-Schnittstellen
   im priorisierten WP-03-Scope mit englischen PEP-257-/Google-Docstrings
   ergänzt und durch einen AST-Vertragstest abgesichert.

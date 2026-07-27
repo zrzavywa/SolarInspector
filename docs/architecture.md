@@ -1,175 +1,103 @@
 # Architektur
 
-## Dokumentstatus
+## Dokumentstatus und Geltungsbereich
 
-Dieses Dokument trennt zwei Ebenen:
+Dieses Dokument beschreibt den implementierten Stand von **Zrzavy Energy Monitor 4.5.0**. Repositorypfade ohne Präfix sind relativ zur Repositorywurzel. Pfade unter `/opt`, `/etc`, `/var/lib`, `/var/cache` und `/var/log` sind Deploymentpfade, keine Repositorypfade.
 
-1. **Ist-Architektur 4.5** – heute eingesetzte Struktur
-2. **Zielarchitektur 5.0** – geplante Modularisierung
-
-Damit werden geplante Komponenten nicht versehentlich als bereits implementiert dargestellt.
+Die Abschnitte „Ist-Architektur 4.5“ und „Zielarchitektur 5.0 – geplant“ sind bewusst getrennt. MQTT, Home-Assistant-Discovery und eine versionierte externe API sind in 4.5 nicht implementiert.
 
 ## Ist-Architektur 4.5
 
-Zrzavy Energy Monitor 4.5 ist eine lokale Python-/Flask-Anwendung mit folgenden Hauptbestandteilen:
+Der kanonische Entrypoint ist `app/zrzavy_energy_monitor.py`; die fachlichen Core-Module liegen im Namespace `app/zrzavy_energy_monitor_core/`. `app/solarinspector.py` und `app/solarinspector_core/` sind schmale, temporäre Legacy-Kompatibilitätswrapper für 4.5.
 
-- Weboberfläche und REST-Endpunkte
-- Gerätezugriff für Solakon ONE und Shelly
-- zyklische Messwerterfassung
-- Normalisierung und Energieberechnungen
-- SQLite-Persistenz
-- Konfigurationsverwaltung über JSON
-- GitHub-Releaseprüfung und Download
-- separater privilegierter systemd-Updater
+### Komponentenübersicht
 
-Die Anwendung ist funktional gegliedert, aber noch nicht vollständig in unabhängige Python-Pakete modularisiert.
+| Verantwortung | Implementierte Pfade |
+|---|---|
+| Entrypoint und Flask-Routen | `app/zrzavy_energy_monitor.py`, `app/zrzavy_energy_monitor_core/web/` |
+| Adapter und Factory | `app/zrzavy_energy_monitor_core/adapters/`, `app/modbus_solakon.py`; Solakon, Shelly, SHRDZM REST und Tasmota HTTP; `grid_meter_factory.py` |
+| Konfiguration | `app/zrzavy_energy_monitor_core/config/`, `app/config.example.json` |
+| Normalisierte Modelle | `app/zrzavy_energy_monitor_core/models/` |
+| Validierung und Findings | `app/zrzavy_energy_monitor_core/validation/` |
+| Collector, Auswahl, Zeitabgleich, Energiebilanz | `app/zrzavy_energy_monitor_core/services/` |
+| SQLite, Migrationen, Zeitreihen, Retention | `app/zrzavy_energy_monitor_core/persistence/` |
+| Webdarstellung und interne HTTP-API | `app/zrzavy_energy_monitor_core/web/`, `app/templates/`, `app/static/`; unversioniert und primär intern |
+| Update | `app/github_updater.py`, `app/update_status.py`, `app/release_installer.py`, `app/updater_service.py`, `updater/`, `systemd/` |
+| Migration und Kompatibilität | `app/zrzavy_energy_monitor_core/direct_migration.py`, `environment.py`, `paths.py`, `scripts/migrate-to-zrzavy-energy-monitor.sh` |
 
-## Laufzeitfluss
+### Messwert- und Datenfluss
 
 ```mermaid
 flowchart TD
-    subgraph Devices[Lokale Geräte]
-        SO[Solakon ONE]
-        SP[Shelly PM Mini Gen 3]
-        SH[Shelly 3EM / Pro 3EM]
-    end
-
-    SO -->|Modbus TCP| DA[Gerätezugriff]
-    SP -->|HTTP/RPC| DA
-    SH -->|HTTP/RPC| DA
-
-    DA --> C[Collector und Normalisierung]
-    C --> E[Energieberechnung]
-    E --> DB[(SQLite)]
-    E --> WEB[Flask-Webanwendung]
-    DB --> WEB
-    WEB --> B[Browser]
+    D[Lokale Geräte] --> A[Solakon / Shelly / SHRDZM / Tasmota Adapter]
+    A --> N[Normalisierte Messmodelle und Snapshots]
+    N --> V[Validierungsengine]
+    V --> F[Findings und Qualitätsbewertung]
+    V --> S[Quellenauswahl mit Zeitabgleich und Fallbackgründen]
+    S --> E[Energiebilanz]
+    E --> P[Atomare SQLite-Persistenz]
+    P --> W[Webdarstellung und interne HTTP-API]
+    W --> U[Browser und CSV-Export]
 ```
 
-## Deployment-Layout 4.5
+Adapter liefern rollen- und einheitenbezogene normalisierte Snapshots. Die Validierung erzeugt Findings; der Source Selector berücksichtigt Prioritäten, Messalter und maximalen Source-Skew und dokumentiert Fallbacks. Die Energiebilanz berechnet Netz-, Anlagen-, Batterie- und Residualgrößen.
 
-```text
-/opt/zrzavy-energy-monitor/
-├── current -> releases/<aktive-version>
-├── releases/
-│   ├── <vorherige-version>/
-│   └── <aktive-version>/
-└── updater/
+### Persistenz, Migrationen, Retention und Export
 
-/etc/zrzavy-energy-monitor/
-└── config.json
+`app/zrzavy_energy_monitor_core/persistence/database.py` und `app/zrzavy_energy_monitor_core/persistence/migrations.py` führen versionierte SQLite-Schema-Migrationen aus. Persistiert werden normalisierte Messwert-Zeitreihen, Phasenwerte, Energiebilanzen, Validierungsereignisse/Findings und – sofern aktiviert – Quellenentscheidungen. `app/zrzavy_energy_monitor_core/persistence/retention.py` implementiert eine standardmäßig deaktivierte, konfigurierbare und begrenzte Aufbewahrung; `app/zrzavy_energy_monitor_core/persistence/queries.py` bietet Zeitbereichsabfragen. `app/zrzavy_energy_monitor_core/web/export.py` stellt additive CSV-Exporte bereit. Das vollständige Schema steht in [docs/development/4.5/database-schema.md](development/4.5/database-schema.md).
 
-/var/lib/zrzavy-energy-monitor/
-├── data/
-│   └── zrzavy-energy-monitor.db
-├── backups/
-├── update-request.json
-└── update-status.json
+### Web, Deployment und Laufzeitpfade
 
-/var/cache/zrzavy-energy-monitor/
-└── updates/
+Die Webschicht trennt Response-Builder und Flask-Routen. Die installierte Anwendung liegt unter `/opt/zrzavy-energy-monitor/` mit `current`-Symlink und versionierten `releases/`; Konfiguration, Daten, Backups, Cache und Logs liegen getrennt unter `/etc/zrzavy-energy-monitor/`, `/var/lib/zrzavy-energy-monitor/`, `/var/cache/zrzavy-energy-monitor/` und `/var/log/zrzavy-energy-monitor/`. Release-venvs liegen je Release im Deploymentbaum.
 
-/var/log/zrzavy-energy-monitor/
-```
-
-Jedes Release besitzt eine eigene virtuelle Python-Umgebung. Konfiguration und Datenbank liegen außerhalb des Release-Verzeichnisses und werden in das aktive Release eingebunden.
-
-## Updatearchitektur
+### Update- und Rollbackarchitektur
 
 ```mermaid
-flowchart LR
-    WEB[Webprozess ohne Root] -->|schreibt definierte Request-Datei| PATH[systemd Path Unit]
-    PATH --> UPD[Privilegierter OneShot-Updater]
-    UPD --> BK[Backup]
-    UPD --> DL[Release vorbereiten]
-    UPD --> LINK[current-Symlink umschalten]
-    UPD --> SVC[Service neu starten]
-    SVC --> HC[Healthcheck]
-    HC -->|erfolgreich| OK[Version bestätigen]
-    HC -->|Fehler| RB[Rollback]
+sequenceDiagram
+    participant Web as Webprozess
+    participant Cache as Updatecache
+    participant Path as systemd Path Unit
+    participant Updater as privilegierter OneShot-Updater
+    Web->>Cache: Release prüfen und Download mit Prüfsumme
+    Web->>Updater: update-request.json schreiben
+    Path->>Updater: Requestdatei aktiviert Dienst
+    Updater->>Updater: Backup und Release vorbereiten
+    Updater->>Updater: current-Symlink aktivieren
+    Updater->>Web: Dienstneustart und lokaler Healthcheck
+    alt Healthcheck erfolgreich
+        Updater->>Updater: Statusdatei bestätigen
+    else Healthcheck fehlgeschlagen
+        Updater->>Updater: Backup wiederherstellen und Rollback
+    end
 ```
 
-### Sicherheitsgrenze
+`systemd/zrzavy-energy-monitor-updater.path` überwacht die Requestdatei; `systemd/zrzavy-energy-monitor-updater.service` begrenzt den privilegierten Updater. Updatecache, Request- und Statusdateien liegen unter den genannten `/var/lib`- beziehungsweise `/var/cache`-Deploymentpfaden.
 
-Der Webprozess:
+### Legacy-Kompatibilität und direkte Migration
 
-- sammelt Messwerte,
-- stellt Weboberfläche und API bereit,
-- prüft und lädt bekannte Releases,
-- besitzt keine allgemeinen Root-Rechte.
+`scripts/migrate-to-zrzavy-energy-monitor.sh` und `direct_migration.py` unterstützen die direkte Migration von SolarInspector 4.1.3 auf Zrzavy Energy Monitor 4.5.0: Vorbedingungen, unveränderliches Backup, Konfigurations- und SQLite-Kopie, kanonische Dienste, Healthcheck und Rollback sind Teil des Ablaufs. Alte Pfade und Variablen werden nur im Legacy-Kontext erkannt; kanonische Pfade haben Vorrang.
 
-Der privilegierte Updater:
+### Sicherheitsgrenzen, Eigenschaften und Grenzen
 
-- wird als eng begrenzter OneShot-Service gestartet,
-- arbeitet mit festen Pfaden,
-- erstellt Backups,
-- bereitet ein neues Release vor,
-- schaltet den aktiven Symlink um,
-- startet den Dienst neu,
-- führt Healthcheck und Rollback aus.
-
-## Datenmodell
-
-Zentrale fachliche Größen:
-
-| Entität | Beispiele |
-|---|---|
-| Gerät | ID, Typ, Rolle, Host, Aktivierung |
-| Messwert | Zeitstempel, Quelle, Metrik, Wert, Einheit |
-| Energieaggregation | Bezug, Einspeisung, Erzeugung, Verbrauch |
-| Updatezustand | Phase, Versionen, Fortschritt, Meldung |
-| Updatehistorie | Start, Ende, Ergebnis, Rollback |
-
-SQLite ist für eine einzelne lokale Installation angemessen. Datenbankzugriffe sollten langfristig hinter einer klaren Repository-Schicht gekapselt werden.
-
-## Nicht-funktionale Ziele
-
-- **Sicherheit:** Webprozess ohne Root-Rechte
-- **Verfügbarkeit:** kurzer, kontrollierter Neustart bei Updates
-- **Wiederherstellung:** Rollback ohne Verlust von Messdaten
-- **Nachvollziehbarkeit:** protokollierte Updateversuche
-- **Portabilität:** primär Linux, Kernlogik möglichst plattformneutral
-- **Wartbarkeit:** klare Modulgrenzen und Migrationen
-- **Performance:** Updateprüfung blockiert die Messung nicht
-- **Datenschutz:** keine lokalen Daten oder Geheimnisse in Releases
+Der Webprozess benötigt keine allgemeinen Root-Rechte. Nur der Updater darf privilegierte Installationsschritte ausführen. SQLite ist für eine lokale Einzelinstallation vorgesehen. Die Architektur garantiert keine allgemeine Hochverfügbarkeit; Hardware-, Netzwerk- und Herstellerfehler werden über Validierung, Qualitätsstatus und Fallbacks sichtbar gemacht.
 
 ## Zielarchitektur 5.0 – geplant
 
-Die geplante Struktur trennt Domänenlogik und technische Adapter noch weiter. Das Modul `mqtt` ist Teil dieses Zielbilds und nicht Bestandteil der dokumentierten 4.5-Laufzeit:
+Die folgende Struktur ist ausschließlich ein Zielbild und kein Bestandteil der 4.5-Laufzeit:
 
 ```text
-zrzavy-energy-monitor/
-├── api/
-├── collectors/
-├── configuration/
-├── database/
-├── domain/
-├── mqtt/
-├── updater/
-└── web/
+zrzavy-energy-monitor/  (geplant für 5.0)
+├── api/                 (geplant, versionierte API)
+├── collectors/          (geplant, entkoppelte Adapter)
+├── domain/              (geplant, Domänenlogik)
+├── database/            (geplant, Persistenz)
+├── mqtt/                (geplant, MQTT und Home-Assistant-Discovery)
+└── web/                 (geplant, Präsentation)
 ```
-
-Geplante Verantwortlichkeiten:
-
-| Modul | Aufgabe |
-|---|---|
-| `collectors` | Geräteadapter und Messwerterfassung |
-| `domain` | normalisierte Messwerte und Energielogik |
-| `database` | Persistenz, Migrationen und Aggregationen |
-| `configuration` | Schema, Defaults, Validierung und Migration |
-| `web` | Dashboard und Bedienoberfläche |
-| `api` | versionierte REST-Schnittstellen |
-| `mqtt` | geplante Home-Assistant-Discovery und Zustände |
-| `updater` | Prüfung, Installation, Healthcheck und Rollback |
 
 ## Architekturentscheidungen
 
-| Entscheidung | Begründung |
-|---|---|
-| GitHub Releases statt `git pull` | reproduzierbare und prüfbare Artefakte |
-| Side-by-side-Releases | atomare Aktivierung und schnelles Rollback |
-| eigene venv pro Release | Dependency-Änderungen bleiben rollbackfähig |
-| persistente Konfiguration außerhalb des Releases | Updates überschreiben keine lokalen Einstellungen |
-| SQLite | lokal, einfach und ausreichend für einen Standort |
-| manuelle Updatebestätigung | verhindert unbeabsichtigte Installationen |
-| read-only Solakon-Zugriff | Monitoring ohne Eingriff in den Anlagenbetrieb |
+- Der kanonische Entrypoint und Namespace bleiben in 4.5 stabil; Legacywrapper sind zeitlich begrenzte Kompatibilität.
+- Adapter, Modelle, Validierung, Auswahl, Energiebilanz, Persistenz und Web bleiben als getrennte Verantwortungen dokumentiert.
+- SQLite und Side-by-side-Releases passen zum lokalen Betrieb und ermöglichen geprüfte Backups sowie Rollback.
+- MQTT, Home Assistant und eine versionierte öffentliche API werden erst in einer ausdrücklich geplanten 5.0-Zielarchitektur betrachtet.
