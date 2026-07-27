@@ -1,10 +1,12 @@
 # Changelog
 
-Alle wesentlichen Änderungen an SolarInspector werden in dieser Datei dokumentiert.
+Alle wesentlichen Änderungen an Zrzavy Energy Monitor werden in dieser Datei dokumentiert.
 
 Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/). Die Versionsnummern folgen nach Möglichkeit [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
+
+## [4.5.0] - 2026-07-27
 
 ### Changed
 

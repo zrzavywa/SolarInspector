@@ -19,7 +19,8 @@ phase: "10 – Persistenz, Zeitreihen und Migration"
 status: "completed"
 branch: "feature/4.5-10-persistence-migration"
 base_commit: "40e1cdd"
-final_commit: null
+final_commit: "8bb47fc8864a2784f7e0040d8be94e22c20de62d"
+merge_commit: "f403a63dabebb6022d1a88a4ed64391ee97f524f"
 completed_blocks:
   - "10.1"
   - "10.2"
