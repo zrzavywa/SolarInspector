@@ -311,8 +311,9 @@ def rollback_direct_migration(
 
     Side Effects:
         Preserves any canonical target files in the backup directory before
-        atomically restoring legacy config and database. Target files are not
-        deleted.
+        atomically restoring legacy config and database. Removes the inactive
+        canonical files after their verified diagnostic copies exist so a
+        later apply can use a fresh backup root.
     """
 
     if not services_stopped:
@@ -351,6 +352,14 @@ def rollback_direct_migration(
             failed_target_directory / "zrzavy-energy-monitor.db",
             overwrite=True,
         )
+    if paths.target_config.is_file():
+        paths.target_config.unlink()
+        _fsync_directory(paths.target_config.parent)
+    if paths.target_database.is_file():
+        paths.target_database.unlink()
+        for suffix in ("-wal", "-shm"):
+            Path(f"{paths.target_database}{suffix}").unlink(missing_ok=True)
+        _fsync_directory(paths.target_database.parent)
 
     _atomic_copy_file(backup_config, paths.source_config, overwrite=True)
     _atomic_sqlite_copy(

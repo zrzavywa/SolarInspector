@@ -6,9 +6,11 @@ PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 MIGRATION_PYTHON="${MIGRATION_PYTHON:-python3}"
 
 export PYTHONPATH="$PROJECT_ROOT/app${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONDONTWRITEBYTECODE=1
 
 ORCHESTRATE_SYSTEMD=false
 KEEP_LEGACY_PATHS=false
+DATA_MIGRATION_APPLIED=false
 MIGRATION_ARGUMENTS=()
 MODE=""
 
@@ -88,10 +90,12 @@ restore_legacy_service() {
 
     systemctl stop "$NEW_SERVICE" >/dev/null 2>&1 || true
     systemctl disable "$NEW_SERVICE" "$NEW_UPDATER_PATH" >/dev/null 2>&1 || true
-    "$MIGRATION_PYTHON" \
-        -m zrzavy_energy_monitor_core.direct_migration \
-        "${rollback_arguments[@]}" \
-        --services-stopped || true
+    if [[ "$DATA_MIGRATION_APPLIED" == true ]]; then
+        "$MIGRATION_PYTHON" \
+            -m zrzavy_energy_monitor_core.direct_migration \
+            "${rollback_arguments[@]}" \
+            --services-stopped || true
+    fi
     systemctl daemon-reload || true
     systemctl enable --now "$OLD_SERVICE" || true
     systemctl enable --now "$OLD_UPDATER_PATH" || true
@@ -109,6 +113,11 @@ fi
 
 if [[ "$MODE" == "--rollback" ]]; then
     systemctl stop "$NEW_SERVICE" "$NEW_UPDATER_PATH" || true
+    systemctl stop "$OLD_SERVICE" "$OLD_UPDATER_PATH" || true
+    if systemctl_is_active "$OLD_SERVICE" || systemctl_is_active "$NEW_SERVICE"; then
+        echo "Rollback refused: a collector is still active." >&2
+        exit 2
+    fi
     run_data_migration
     systemctl disable "$NEW_SERVICE" "$NEW_UPDATER_PATH" || true
     systemctl daemon-reload
@@ -143,6 +152,7 @@ fi
 
 trap restore_legacy_service ERR
 run_data_migration
+DATA_MIGRATION_APPLIED=true
 
 install -m 0644 \
     "$UNIT_SOURCE/zrzavy-energy-monitor.service" \
