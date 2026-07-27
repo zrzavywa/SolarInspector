@@ -8,6 +8,9 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Documentation
 
+- Die unversionierten HTTP-Schnittstellen von Version 4.5 vollständig nach
+  Zielgruppe, Wirkung, Parametern, Antworten, Einheiten und Sicherheitsgrenzen
+  dokumentiert und ihre Abdeckung an die registrierten Flask-Routen gebunden.
 - Aktive Entwicklungsstandards auf den kanonischen Produktnamen und
   Core-Namespace ausgerichtet sowie Migration und historische
   4.5-Entwicklungsnachweise über zentrale Indizes erschlossen.
