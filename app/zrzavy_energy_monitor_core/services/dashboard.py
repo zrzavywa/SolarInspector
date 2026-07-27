@@ -17,6 +17,7 @@ from zrzavy_energy_monitor_core.services.periods import (
 
 
 def build_dashboard(database: Database, period: str, anchor: date) -> dict[str, Any]:
+    """build_dashboard provides the public operation implemented by this component."""
     start, end, labels, title = period_bounds(period, anchor)
     rows = database.rows_between(start.timestamp(), end.timestamp())
     series_keys = [

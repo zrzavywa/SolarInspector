@@ -167,6 +167,7 @@ def write_update_request(
     version: str,
     archive_path: str,
 ) -> None:
+    """write_update_request provides the public operation implemented by this component."""
     write_update_request_file(
         UPDATE_REQUEST_PATH,
         version,
@@ -175,6 +176,7 @@ def write_update_request(
 
 
 def get_installed_version() -> str:
+    """get_installed_version provides the public operation implemented by this component."""
     return read_installed_version(
         Path(__file__).resolve().parent.parent
         / "VERSION"
@@ -296,6 +298,7 @@ app.secret_key = secret_key
 
 @app.context_processor
 def template_context() -> dict[str, Any]:
+    """template_context provides the public operation implemented by this component."""
     return build_template_context(
         config=config_manager.get(),
         collector_running=collector.is_running(),
@@ -306,11 +309,13 @@ def template_context() -> dict[str, Any]:
 
 @app.get("/")
 def dashboard_page():
+    """dashboard_page handles the associated HTTP route and delegates application work to the corresponding service."""
     return render_dashboard_page(render_template)
 
 
 @app.get("/acquisition")
 def acquisition_page():
+    """acquisition_page handles the associated HTTP route and delegates application work to the corresponding service."""
     return render_acquisition_page(
         render_template,
         status=collector.status(),
@@ -320,6 +325,7 @@ def acquisition_page():
 
 @app.route("/configuration", methods=["GET", "POST"])
 def configuration_page():
+    """configuration_page handles the associated HTTP route and delegates application work to the corresponding service."""
     if request.method == "POST":
         current = apply_configuration_form(
             config_manager.get(),
@@ -340,6 +346,7 @@ def configuration_page():
 
 @app.get("/data")
 def data_page():
+    """data_page handles the associated HTTP route and delegates application work to the corresponding service."""
     return render_data_page(
         render_template,
         stats=database.stats(),
@@ -349,6 +356,7 @@ def data_page():
 
 @app.post("/api/start")
 def api_start():
+    """api_start handles the associated HTTP route and delegates application work to the corresponding service."""
     payload, status_code = build_start_api_response(
         collector
     )
@@ -360,6 +368,7 @@ def api_start():
 
 @app.post("/api/stop")
 def api_stop():
+    """api_stop handles the associated HTTP route and delegates application work to the corresponding service."""
     return jsonify(
         build_stop_api_response(collector)
     )
@@ -367,6 +376,7 @@ def api_stop():
 
 @app.post("/api/collect-once")
 def api_collect_once():
+    """api_collect_once handles the associated HTTP route and delegates application work to the corresponding service."""
     payload, status_code = (
         build_collect_once_api_response(
             collector
@@ -380,6 +390,7 @@ def api_collect_once():
 
 @app.get("/api/status")
 def api_status():
+    """api_status handles the associated HTTP route and delegates application work to the corresponding service."""
     return jsonify(
         build_status_api_response(collector)
     )
@@ -387,6 +398,7 @@ def api_status():
 
 @app.get("/api/health")
 def api_health():
+    """api_health handles the associated HTTP route and delegates application work to the corresponding service."""
     return build_health_api_response(
         get_installed_version()
     )
@@ -394,6 +406,7 @@ def api_health():
 
 @app.get("/api/live")
 def api_live():
+    """api_live handles the associated HTTP route and delegates application work to the corresponding service."""
     return jsonify(
         build_live_api_response(
             database,
@@ -405,6 +418,7 @@ def api_live():
 
 @app.get("/api/dashboard")
 def api_dashboard():
+    """api_dashboard handles the associated HTTP route and delegates application work to the corresponding service."""
     return jsonify(
         build_dashboard_api_response(
             database,
@@ -419,6 +433,7 @@ def api_dashboard():
 
 @app.get("/api/validation/events")
 def api_validation_events():
+    """api_validation_events handles the associated HTTP route and delegates application work to the corresponding service."""
     return jsonify(
         build_validation_events_api_response(
             database,
@@ -434,6 +449,7 @@ def api_validation_events():
 
 @app.get("/api/validation/summary")
 def api_validation_summary():
+    """api_validation_summary handles the associated HTTP route and delegates application work to the corresponding service."""
     validation = config_manager.get().get("validation", {})
     return jsonify(
         build_validation_summary_api_response(
@@ -448,6 +464,7 @@ def api_validation_summary():
 
 @app.get("/api/phases/live")
 def api_phase_live():
+    """api_phase_live handles the associated HTTP route and delegates application work to the corresponding service."""
     return jsonify(
         build_phase_live_api_response(
             database,
@@ -458,6 +475,7 @@ def api_phase_live():
 
 @app.get("/api/phases/dashboard")
 def api_phase_dashboard():
+    """api_phase_dashboard handles the associated HTTP route and delegates application work to the corresponding service."""
     return jsonify(
         build_phase_dashboard_api_response(
             database,
@@ -470,6 +488,7 @@ def api_phase_dashboard():
 
 @app.post("/api/test-device/<role>")
 def api_test_device(role: str):
+    """api_test_device handles the associated HTTP route and delegates application work to the corresponding service."""
     payload, status_code = (
         build_test_device_api_response(
             config_manager.get(),
@@ -492,6 +511,7 @@ def api_test_device(role: str):
 
 @app.post("/api/test-solakon-one")
 def api_test_solakon_one():
+    """api_test_solakon_one handles the associated HTTP route and delegates application work to the corresponding service."""
     payload, status_code = (
         build_test_solakon_one_api_response(
             config_manager.get(),
@@ -513,6 +533,7 @@ def api_test_solakon_one():
 
 @app.get("/api/export.csv")
 def api_export_csv():
+    """api_export_csv handles the associated HTTP route and delegates application work to the corresponding service."""
     start_date = parse_anchor(request.args.get("from"))
     end_date = parse_anchor(request.args.get("to")) + timedelta(days=1)
     tz = datetime.now().astimezone().tzinfo
@@ -557,6 +578,7 @@ def api_export_csv():
 
 @app.post("/api/delete-all")
 def api_delete_all():
+    """api_delete_all handles the associated HTTP route and delegates application work to the corresponding service."""
     return jsonify(
         build_delete_all_api_response(
             collector,
@@ -567,6 +589,7 @@ def api_delete_all():
 
 @app.get("/api/system/version")
 def api_system_version():
+    """api_system_version handles the associated HTTP route and delegates application work to the corresponding service."""
     return build_system_version_api_response(
         get_installed_version()
     )
@@ -574,6 +597,7 @@ def api_system_version():
 
 @app.get("/api/update/check")
 def api_update_check():
+    """api_update_check handles the associated HTTP route and delegates application work to the corresponding service."""
     payload, status_code = (
         build_update_check_response(
             get_installed_version(),
@@ -588,6 +612,7 @@ def api_update_check():
 
 @app.get("/api/update/status")
 def api_update_status():
+    """api_update_status handles the associated HTTP route and delegates application work to the corresponding service."""
     return read_update_status_response(
         UPDATE_STATUS_PATH,
         read_update_status,
@@ -595,6 +620,7 @@ def api_update_status():
 
 @app.post("/api/update/download")
 def api_update_download():
+    """api_update_download handles the associated HTTP route and delegates application work to the corresponding service."""
     payload, status_code = (
         perform_update_download(
             installed_version=(
@@ -618,12 +644,14 @@ def api_update_download():
 
 @app.get("/update")
 def update_page():
+    """update_page handles the associated HTTP route and delegates application work to the corresponding service."""
     return render_template("update.html")
 
 def generate_demo_data(
     days: int = 400,
     interval_minutes: int = 15,
 ) -> None:
+    """generate_demo_data provides the public operation implemented by this component."""
     generate_demo_samples(
         database,
         days=days,
@@ -637,6 +665,7 @@ def generate_demo_data(
 
 @app.post("/api/update/install")
 def api_update_install():
+    """api_update_install handles the associated HTTP route and delegates application work to the corresponding service."""
     return queue_update_installation(
         status_path=UPDATE_STATUS_PATH,
         status_reader=read_update_status,
@@ -646,12 +675,14 @@ def api_update_install():
 
 
 def parse_args() -> argparse.Namespace:
+    """parse_args provides the application entry-point operation."""
     return parse_runtime_args(
         APP_VERSION
     )
 
 
 def main() -> None:
+    """main provides the application entry-point operation."""
     run_application(
         parse_args(),
         application=app,
@@ -672,6 +703,7 @@ def main() -> None:
 
 
 def cleanup_pid_file() -> None:
+    """cleanup_pid_file provides the application entry-point operation."""
     cleanup_runtime_pid_file(
         PID_PATH,
         os.getpid(),

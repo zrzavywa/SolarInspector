@@ -1,3 +1,4 @@
+"""Release archive preparation and activation helpers. These functions create files, virtual environments, links, and subprocesses; privileged service control remains outside this module."""
 from __future__ import annotations
 
 import os
@@ -19,6 +20,7 @@ def create_release_venv(
     release_directory: Path,
     python_executable: str | None = None,
 ) -> Path:
+    """create_release_venv provides the public operation implemented by this component."""
     python_executable = os.path.realpath(
     python_executable or sys.executable
 )
@@ -48,6 +50,7 @@ def create_release_venv(
     return venv_directory
 
 def get_venv_python(venv_directory: Path) -> Path:
+    """get_venv_python provides the public operation implemented by this component."""
     if os.name == "nt":
         return venv_directory / "Scripts" / "python.exe"
 
@@ -58,6 +61,7 @@ def install_release_dependencies(
     release_directory: Path,
     venv_directory: Path,
 ) -> None:
+    """install_release_dependencies provides the public operation implemented by this component."""
     requirements_file = (
         release_directory / "app" / "requirements.txt"
     )
@@ -124,6 +128,7 @@ def run_release_smoke_test(
     release_directory: Path,
     venv_directory: Path,
 ) -> None:
+    """run_release_smoke_test provides the public operation implemented by this component."""
     venv_python = get_venv_python(venv_directory)
 
     environment = os.environ.copy()
@@ -181,6 +186,7 @@ def prepare_release_environment(
     releases_directory: Path,
     python_executable: str | None = None,
 ) -> Path:
+    """prepare_release_environment provides the public operation implemented by this component."""
     release_directory = prepare_release(
         archive_path=archive_path,
         version=version,
@@ -213,6 +219,7 @@ def validate_release_archive(
     archive_path: Path,
     expected_top_level: str,
 ) -> list[tarfile.TarInfo]:
+    """validate_release_archive provides the public operation implemented by this component."""
     if not archive_path.is_file():
         raise ReleaseInstallError(
             f"Release-Archiv nicht gefunden: {archive_path}"
@@ -287,6 +294,7 @@ def prepare_release(
     version: str,
     releases_directory: Path,
 ) -> Path:
+    """prepare_release provides the public operation implemented by this component."""
     expected_top_level = f"zrzavy-energy-monitor-{version}"
     target_directory = releases_directory / version
     temporary_directory = releases_directory / f".{version}.tmp"
@@ -334,6 +342,7 @@ def prepare_release(
 
 
 def read_current_release(current_link: Path) -> Path | None:
+    """read_current_release provides the public operation implemented by this component."""
     if not current_link.exists() and not current_link.is_symlink():
         return None
 
@@ -353,6 +362,7 @@ def activate_release(
     release_directory: Path,
     current_link: Path,
 ) -> Path | None:
+    """activate_release provides the public operation implemented by this component."""
     if not release_directory.is_dir():
         raise ReleaseInstallError(
             f"Release-Verzeichnis fehlt: {release_directory}"
@@ -391,6 +401,7 @@ def wait_for_healthcheck(
     timeout_seconds: int = 60,
     interval_seconds: float = 2.0,
 ) -> dict:
+    """wait_for_healthcheck provides the public operation implemented by this component."""
     deadline = time.monotonic() + timeout_seconds
     last_error: Exception | None = None
 
@@ -442,6 +453,7 @@ def activate_with_healthcheck(
     restart_service,
     timeout_seconds: int = 60,
 ) -> Path | None:
+    """activate_with_healthcheck provides the public operation implemented by this component."""
     previous_release = activate_release(
         release_directory=release_directory,
         current_link=current_link,
@@ -479,6 +491,7 @@ def rollback_release(
     previous_release: Path,
     current_link: Path,
 ) -> Path:
+    """rollback_release provides the public operation implemented by this component."""
     if not previous_release.is_dir():
         raise ReleaseInstallError(
             f"Vorheriges Release fehlt: {previous_release}"

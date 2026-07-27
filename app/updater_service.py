@@ -1,3 +1,4 @@
+"""Privileged update orchestration for backups, release preparation, activation, health checks, and service restart. The web process requests work through files; this module may invoke system commands."""
 from __future__ import annotations
 
 import argparse
@@ -53,6 +54,7 @@ def create_backup(
     database_path: Path,
     current_link: Path,
 ) -> Path:
+    """create_backup provides the public operation implemented by this component."""
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     target = backup_directory / f"before-{version}-{timestamp}"
 
@@ -86,6 +88,7 @@ def create_backup(
     return target
 
 def read_request(path: Path) -> dict:
+    """read_request provides the public operation implemented by this component."""
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
@@ -116,6 +119,7 @@ def read_request(path: Path) -> dict:
 def restart_systemd_service(
     service_name: str,
 ) -> None:
+    """restart_systemd_service provides the public operation implemented by this component."""
     try:
         subprocess.run(
             [
@@ -139,6 +143,7 @@ def configure_runtime_paths(
     config_path: Path,
     database_path: Path,
 ) -> None:
+    """configure_runtime_paths provides the public operation implemented by this component."""
     app_directory = release_directory / "app"
 
     if not app_directory.is_dir():
@@ -193,6 +198,7 @@ def run_update(
     config_path: Path,
     database_path: Path,
 ) -> None:
+    """run_update provides the public operation implemented by this component."""
     request = read_request(request_path)
 
     version = str(request["version"])
@@ -266,6 +272,7 @@ def run_update(
     request_path.unlink(missing_ok=True)
 
 def main() -> int:
+    """main provides the application entry-point operation."""
     parser = argparse.ArgumentParser(
         description="Zrzavy Energy Monitor privileged updater"
     )

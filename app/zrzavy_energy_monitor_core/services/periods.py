@@ -11,6 +11,7 @@ from typing import Optional
 
 
 def parse_anchor(value: Optional[str]) -> date:
+    """parse_anchor provides the public operation implemented by this component."""
     if not value:
         return datetime.now().astimezone().date()
     try:
@@ -22,6 +23,7 @@ def parse_anchor(value: Optional[str]) -> date:
 def period_bounds(
     period: str, anchor: date
 ) -> tuple[datetime, datetime, list[str], str]:
+    """period_bounds provides the public operation implemented by this component."""
     tz = datetime.now().astimezone().tzinfo
     weekdays_short = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
     weekdays_long = [
@@ -70,6 +72,7 @@ def period_bounds(
 
 
 def bucket_index(period: str, start: datetime, sample_dt: datetime) -> int:
+    """bucket_index provides the public operation implemented by this component."""
     if period == "week":
         return (sample_dt.date() - start.date()).days
     if period == "year":

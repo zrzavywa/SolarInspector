@@ -1,3 +1,4 @@
+"""Release metadata, artifact download, and checksum verification helpers. Network access is limited to the configured repository and file operations affect caller-selected paths."""
 from __future__ import annotations
 
 import hashlib
@@ -25,6 +26,7 @@ class UpdateCheckError(RuntimeError):
 
 @dataclass(frozen=True)
 class ReleaseInfo:
+    """ReleaseInfo groups the public state and operations for this component."""
     installed_version: str
     available_version: str
     update_available: bool
@@ -54,6 +56,7 @@ def check_for_update(
     installed_version: str,
     timeout: int = 10,
 ) -> ReleaseInfo:
+    """check_for_update provides the public operation implemented by this component."""
     headers = {
         "Accept": "application/vnd.github+json",
         "User-Agent": f"ZrzavyEnergyMonitor/{installed_version}",
@@ -165,6 +168,7 @@ def download_file(
 
 
 def calculate_sha256(path: Path) -> str:
+    """calculate_sha256 provides the public operation implemented by this component."""
     digest = hashlib.sha256()
 
     with path.open("rb") as handle:
@@ -204,6 +208,7 @@ def parse_checksum_file(content: str, expected_filename: str) -> str:
 
 
 def verify_sha256(path: Path, expected_checksum: str) -> None:
+    """verify_sha256 provides the public operation implemented by this component."""
     actual_checksum = calculate_sha256(path)
 
     if actual_checksum.lower() != expected_checksum.lower():
@@ -216,6 +221,7 @@ def download_and_verify_release(
     release: ReleaseInfo,
     target_directory: Path | None = None,
 ) -> Path:
+    """download_and_verify_release provides the public operation implemented by this component."""
     if not release.asset_url or not release.asset_name:
         raise UpdateVerificationError(
             "Das Release enthält kein Installationspaket."

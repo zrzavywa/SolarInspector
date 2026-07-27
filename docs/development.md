@@ -159,8 +159,11 @@ Mit Stand 4.5.0 bleiben insbesondere folgende Punkte offen:
 
 1. Zehn historische Dateien sind noch nicht Ruff-formatiert.
 2. Mypy deckt noch nicht die gesamte Anwendung und die Tests ab.
-3. Docstring-Regeln werden für Altcode noch nicht global geprüft.
-4. Modul- und API-Docstrings sind im Altcode nicht vollständig.
+3. Docstring-Regeln werden für Altcode noch nicht global geprüft; der
+   betriebsrelevante WP-03-Scope wird durch `tests/test_docstring_contract.py`
+   abgedeckt.
+4. Modul- und API-Docstrings außerhalb des WP-03-Scopes sind im Altcode nicht
+   vollständig.
 5. Der kanonische Einstiegspunkt `app/zrzavy_energy_monitor.py` bündelt
    weiterhin mehrere Web- und Laufzeitverantwortlichkeiten.
 6. Die weitere Modularisierung ist geplant, aber keiner veröffentlichten
