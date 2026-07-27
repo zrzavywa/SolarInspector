@@ -3,7 +3,7 @@
 Dieses Dokument beschreibt die verbindlichen Entwicklungsstandards für neue
 oder wesentlich überarbeitete Python-Komponenten von Zrzavy Energy Monitor 4.5.
 
-Die bestehende Codebasis wird schrittweise angepasst. Auch mit Stand 4.5.0
+Die bestehende Codebasis wird schrittweise angepasst. Auch mit Stand 4.5.1
 sind eine vollständige Neuformatierung, Typisierung oder Modularisierung des
 Altbestands nicht abgeschlossen.
 
@@ -159,21 +159,21 @@ typisiert und, soweit geeignet, in diese Konfiguration aufgenommen werden.
 Eine strikte Typprüfung der gesamten bestehenden Anwendung ist derzeit
 bewusst nicht aktiviert.
 
-## Verbleibende technische Schulden in 4.5.0
+## Verbleibende technische Schulden in 4.5.1
 
-Mit Stand 4.5.0 bleiben insbesondere folgende Punkte offen:
+Mit Stand 4.5.1 bleiben insbesondere folgende Punkte offen:
 
 1. Zehn historische Dateien sind noch nicht Ruff-formatiert.
 2. Mypy deckt noch nicht die gesamte Anwendung und die Tests ab.
-3. Docstring-Regeln werden für Altcode noch nicht global geprüft; der
-   betriebsrelevante WP-03-Scope wird durch `tests/test_docstring_contract.py`
-   abgedeckt.
-4. Modul- und API-Docstrings außerhalb des WP-03-Scopes sind im Altcode nicht
-   vollständig.
+3. Docstring-Regeln werden für Altcode weiterhin nicht global geprüft; der
+   aktuelle Vollmessungsvertrag weist 84/84 Module und 425/425 öffentliche
+   Symbole mit den geprüften Docstrings nach.
+4. Die vollständige Docstring-Messung ist ein Qualitätsvertrag und ersetzt
+   keine fachliche Laufzeitprüfung.
 5. Der kanonische Einstiegspunkt `app/zrzavy_energy_monitor.py` bündelt
    weiterhin mehrere Web- und Laufzeitverantwortlichkeiten.
 6. Die weitere Modularisierung ist geplant, aber keiner veröffentlichten
-   Version nach 4.5.0 verbindlich zugeordnet.
+   Version nach 4.5.1 verbindlich zugeordnet.
 
 Diese Punkte sind bekannte Migrationsaufgaben und keine Aufforderung zu einer
 ungeprüften Gesamtüberarbeitung.

@@ -6,9 +6,13 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+Keine Änderungen.
+
+## [4.5.1] - 2026-07-27
+
 ### Documentation
 
-- Architekturübersicht für den implementierten 4.5.0-Stand um Adapterfactory,
+- Architekturübersicht für den implementierten 4.5-Stand um Adapterfactory,
   normalisierte Modelle, Validierung, Quellenauswahl, Energiebilanz,
   Zeitreihenpersistenz, Update-/Rollbackgrenzen und direkte Migration ergänzt.
 - Lokale standardbibliotheksbasierte Dokumentationsqualitätsverträge für Links,
@@ -23,6 +27,17 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Aktive Entwicklungsstandards auf den kanonischen Produktnamen und
   Core-Namespace ausgerichtet sowie Migration und historische
   4.5-Entwicklungsnachweise über zentrale Indizes erschlossen.
+
+### Tests
+
+- Dokumentations-, Docstring-, Versions- und Releasevertragstests für den
+  Patch-Release konsistent und versionsdynamisch abgesichert.
+- Der vollständige Docstring-Qualitätsvertrag weist 84/84 Module und 425/425
+  öffentliche Symbole nach.
+
+4.5.1 enthält keine beabsichtigte Änderung der Laufzeit-, Mess-, Validierungs-,
+Persistenz-, Quellenauswahl-, Energiebilanz- oder Datenbankschema-Semantik.
+Hardwarevalidierung ist nicht Bestandteil dieses Releasevorbereitungslaufs.
 
 ## [4.5.0] - 2026-07-27
 

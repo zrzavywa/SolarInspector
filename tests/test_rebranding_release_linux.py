@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+VERSION = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
 
 def test_release_pipeline_uses_canonical_artifact_names() -> None:
@@ -24,7 +25,7 @@ def test_release_pipeline_uses_canonical_artifact_names() -> None:
 
     assert manifest["product"] == "Zrzavy Energy Monitor"
     assert manifest["product_id"] == "zrzavy-energy-monitor"
-    assert manifest["asset"] == "zrzavy-energy-monitor-4.5.0.tar.gz"
+    assert manifest["asset"] == f"zrzavy-energy-monitor-{VERSION}.tar.gz"
     assert 'PACKAGE_NAME="zrzavy-energy-monitor-${VERSION}"' in build_script
     assert "dist/zrzavy-energy-monitor-*.tar.gz" in workflow
     assert "dist/SolarInspector-" not in workflow
