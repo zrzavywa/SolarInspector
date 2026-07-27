@@ -1,68 +1,40 @@
 # Rebranding R.9 completion report
 
-R.9 completes the rebranding work. On 2026-07-27 the operator confirmed that
-the external migration, integrity/history comparison, representative
-Linux/systemd and device checks, and productive-copy rollback test had all
-been completed successfully. Codex did not access or change the productive
-installation. After that confirmation, the GitHub repository was renamed.
+R.9 was verified on the isolated Debian host `solarinspector-test` on
+2026-07-27. The verification used a real SolarInspector 4.1.3 checkout and the
+copied legacy configuration and SQLite history. No productive installation,
+private device validation, release, push, or pull request was performed during
+the migration run. The GitHub repository had already been renamed externally;
+this task did not perform that rename.
 
 ## Repository rename gate
 
-| Condition | Result | Evidence or missing evidence |
+| Condition | Result | Evidence |
 | --- | --- | --- |
-| Build and inspect `zrzavy-energy-monitor-4.5.0.tar.gz` | passed | Local build, SHA-256 verification, manifest and archive exclusion tests |
-| Test direct migration against a copy of the productive 4.1.3 installation | passed | Operator-confirmed external test; synthetic 4.1.3 migration also passed locally |
-| Compare SQLite integrity and measurement history before and after | passed | Operator-confirmed external comparison; synthetic database was `ok` before and after with 2/2 rows preserved |
-| Verify new systemd units, healthcheck and device access | passed | Operator-confirmed external test; unit syntax/conflict tests and local healthchecks also passed |
-| Test rollback to the backed-up productive 4.1.3 installation | passed | Operator-confirmed external test; synthetic apply/failed-apply/rollback also passed locally |
-| Prepare README, badges and release pipeline | passed | Repository-local documentation and pipeline tests passed |
-| Complete test suite is green | passed | 824 passed, 1 hardware test skipped |
-| Diff contains no secrets or productive data | passed | Diff/status audit; only explicit synthetic test-secret literals found |
+| Identify the 4.1.3 source | passed | `/home/zrzavywa/SolarInspector_Test`, commit `a19026b` (`Release SolarInspector 4.1.3`) |
+| Prepare a realistic legacy installation | passed | `/opt/solarinspector`, project-local virtual environment, canonical legacy config/database paths and three systemd units |
+| Create and inspect a complete pre-migration backup | passed | Dated private archive plus source archive; both SHA-256 and `tar -tzf` checks passed |
+| Run immutable migration dry-runs | passed | Data-only and systemd-orchestrated plans passed; hashes, units and target paths remained unchanged |
+| Apply the 4.1.3-to-4.5.0 migration | passed | New service enabled and active; old service inactive |
+| Compare SQLite integrity and history | passed | `ok` before and after; all 368 historical `samples` rows were field-for-field identical |
+| Verify systemd exclusion and health | passed | Exact `/proc` checks found one new and zero old collectors; health reported version `4.5.0`, canonical product metadata, database `ok` and web `ok` |
+| Save configuration under systemd hardening | passed | `ProtectSystem=strict` retained; an isolated atomic write/replace test passed through the allowlisted canonical config directory |
+| Restart the new service | passed | Service, health, integrity and process checks passed after restart |
+| Roll back to 4.1.3 | passed | Legacy health reported `4.1.3`; 368 rows and their digest were restored exactly; no new collector ran |
+| Apply again after rollback | passed | Fresh immutable backup root used; service, health, integrity, history and process checks passed again |
+| Complete repository verification | passed | 824 passed, 1 hardware test skipped; Ruff format/lint, mypy, compileall and `git diff --check` passed |
 
-All mandatory conditions are satisfied. The repository is
-`zrzavywa/zrzavy-energy-monitor` and `origin` is
-`https://github.com/zrzavywa/zrzavy-energy-monitor.git`.
+The first real reapply exposed two safety defects: rollback retained canonical
+target files, and the systemd error trap attempted data rollback even when the
+data apply had not completed. R.9 now preserves the inactive target files
+under `failed-target`, removes their canonical active copies and SQLite
+sidecars, stops both collectors before rollback, and only invokes trap rollback
+after a completed data apply. Privileged migration also disables repository
+bytecode generation. Focused migration/Linux tests cover these behaviors.
 
-## Remaining legacy identifier inventory
-
-The final tracked-file inventory contains 337 matches in 94 files:
-
-| Area | Files | Classification |
-| --- | ---: | --- |
-| Application | 20 | Deprecated entrypoint/imports, environment fallbacks, legacy paths, direct migration and updater persistence exclusions |
-| Tests and fixtures | 28 | Compatibility assertions, historical 4.1.3 fixtures and legacy fallback coverage |
-| Documentation | 30 | Migration guidance, historical phase reports and explicit compatibility policy |
-| Scripts, systemd, updater and workflows | 8 | Legacy migration inputs, old upgrade tooling, service conflict/user compatibility and test-only variables |
-| Repository metadata and top-level files | 8 | Historical project guidance, changelog, trademark policy and ignore rules |
-
-The filename inventory outside `.git`, `.venv` and `dist` contains the legacy
-wrapper `app/solarinspector.py`, the migration guide, and the three retained
-4.1.3-era Raspberry Pi scripts. Ignored local runtime files under `app/data`
-and bytecode caches were observed but are neither tracked nor present in the
-diff. No invalid current public use of the former product name remains.
-
-The exact line-oriented inventory is reproducible with:
-
-```text
-git grep -n -I -E 'SolarInspector|SOLARINSPECTOR|solarinspector|Solarinspector'
-find . -type f \( -name '*solarinspector*' -o -name '*SolarInspector*' \) -print
-```
-
-## Verification notes
-
-- The work-order names `tests/test_runtime.py` and `tests/test_web.py`, which
-  do not exist. Their current equivalents
-  `tests/test_entrypoint_compatibility.py`,
-  `tests/test_web_api_characterization.py`, and
-  `tests/test_web_branding.py` were run.
-- The literal entrypoint import commands fail without an application secret,
-  as required by the existing security behavior. They pass with isolated,
-  synthetic secrets and temporary config/database paths.
-- Both canonical and legacy entrypoints were started on loopback with
-  temporary state. Both returned a successful `/api/health` response; the
-  legacy entrypoint emitted the expected deprecation warnings.
-- The Tasmota hardware test remains skipped because no real device was
-  supplied. It is not reported as passed.
+A controlled Debian reboot was not run. The required systemd service restart
+was run successfully. Real-device hardware checks remain unavailable and are
+not reported as passed.
 
 ## Required completion record
 
@@ -71,116 +43,54 @@ task: Rebranding zu Zrzavy Energy Monitor
 status: completed
 branch: feature/4.5-rebrand-zrzavy-energy-monitor
 base_commit: f403a63dabebb6022d1a88a4ed64391ee97f524f
-final_commit: this commit
+final_commit: null
 old_repository: zrzavywa/SolarInspector
 new_repository: zrzavywa/zrzavy-energy-monitor
 repository_renamed: true
-completed_blocks: [R.1, R.2, R.3, R.4, R.5, R.6, R.7, R.8, R.9]
-external_gate_confirmation: operator-confirmed on 2026-07-27
-branding:
-  product_name: Zrzavy Energy Monitor
-  product_id: zrzavy-energy-monitor
-  description: Open-source home energy monitoring and validation
-  abbreviation_policy_verified: true
-code:
-  new_entrypoint: app/zrzavy_energy_monitor.py
-  legacy_entrypoint_wrapper: app/solarinspector.py
-  new_core_namespace: app/zrzavy_energy_monitor_core
-  legacy_imports_supported:
-    - solarinspector
-    - solarinspector_core
-environment:
-  canonical_variables:
-    - ZRZAVY_ENERGY_MONITOR_SECRET
-    - ZRZAVY_ENERGY_MONITOR_CONFIG_PATH
-    - ZRZAVY_ENERGY_MONITOR_DATABASE_PATH
-    - ZRZAVY_ENERGY_MONITOR_UPDATE_STATUS_PATH
-    - ZRZAVY_ENERGY_MONITOR_UPDATE_REQUEST_PATH
-    - ZRZAVY_ENERGY_MONITOR_UPDATE_CACHE_DIR
-  legacy_variables_supported:
-    - SOLARINSPECTOR_SECRET
-    - SOLARINSPECTOR_CONFIG_PATH
-    - SOLARINSPECTOR_DATABASE_PATH
-    - SOLARINSPECTOR_UPDATE_STATUS_PATH
-    - SOLARINSPECTOR_UPDATE_REQUEST_PATH
-    - SOLARINSPECTOR_UPDATE_CACHE_DIR
-  precedence_verified: true
-  secret_redaction_verified: true
+repository_rename_performed_by_this_task: false
+
 paths:
-  new_paths:
-    - /opt/zrzavy-energy-monitor
-    - /etc/zrzavy-energy-monitor/config.json
-    - /var/lib/zrzavy-energy-monitor/data/zrzavy-energy-monitor.db
-    - /var/cache/zrzavy-energy-monitor/updates
-    - /var/log/zrzavy-energy-monitor/zrzavy-energy-monitor.log
-  legacy_paths_supported:
-    - /opt/solarinspector
-    - /etc/solarinspector/config.json
-    - /var/lib/solarinspector/data/solarinspector.db
-  migration_verified: true
+  migration_verified: verified_on_debian
+  legacy_source_dir: /home/zrzavywa/SolarInspector_Test
+  legacy_version: 4.1.3
+  legacy_commit: a19026b
+
 systemd:
-  new_units:
-    - zrzavy-energy-monitor.service
-    - zrzavy-energy-monitor-updater.service
-    - zrzavy-energy-monitor-updater.path
-  old_units_disabled: operator_confirmed
-  parallel_run_prevented: true
-  rollback_verified: true
+  new_service_enabled: true
+  new_service_active: true
+  old_service_active: false
+  parallel_run_prevented: verified_on_debian
+  atomic_configuration_save: verified_on_debian
+  service_restart_verified: verified_on_debian
+  debian_reboot: not_run
+  rollback_verified: verified_on_debian
+
 updater:
   new_repository_configured: true
   new_asset_prefix_configured: true
-  direct_upgrade_verified: true
-  rollback_verified: true
+  direct_upgrade_verified: verified_on_debian
+  rollback_verified: verified_on_debian
+
 data:
-  database_rows_before: 2
-  database_rows_after: 2
+  historical_samples_before: 368
+  historical_samples_after: 368
+  historical_digest: 39409d52849be362edddea08616d5e68f2c6a2f98f511607b97308865494c1dc
   integrity_before: ok
   integrity_after: ok
   data_loss_detected: false
-documentation:
-  files_created:
-    - docs/development/4.5/rebranding-inventory.md
-    - docs/development/4.5/rebranding-zrzavy-energy-monitor.md
-    - docs/development/4.5/rebranding-completion-report.md
-    - docs/migration-from-solarinspector.md
-  files_updated:
-    - README.md
-    - CHANGELOG.md
-    - CONTRIBUTING.md
-    - TRADEMARKS.md
-    - docs/README.md
-    - docs/api.md
-    - docs/architecture.md
-    - docs/configuration.md
-    - docs/devices.md
-    - docs/installation-raspberry-pi.md
-    - docs/operation.md
-    - docs/security.md
-    - docs/shrdzm-grid-meter.md
-    - docs/troubleshooting.md
-    - docs/updates.md
-  legacy_mentions_remaining:
-    - migration and rollback instructions
-    - deprecated compatibility interfaces
-    - historical documents and fixtures
-    - retained 4.1.3 upgrade tooling
-  invalid_public_legacy_mentions: []
+
 tests:
-  count_before: 824
-  count_after: 824
   result: 824 passed, 1 hardware test skipped
-  coverage_percent: 91
-quality:
-  ruff: passed
+  ruff_format: passed
+  ruff_lint: passed
   mypy: passed (59 source files)
-  import_cycles: no critical import cycles detected
-  documentation_standards: passed
-technical_debt:
-  - Remove legacy wrappers and environment aliases only under the documented deprecation policy.
-  - Decide separately whether the existing solarinspector Unix account should ever be migrated.
-intentionally_deferred: []
-next_step: Push the feature branch and open a draft pull request when explicitly approved.
-migration_strategy: single_direct_migration
-source_version: 4.1.3
-target_version: 4.5.0
+  compileall: passed
+  diff_check: passed
+
+intentionally_deferred:
+  - unavailable real-device hardware checks
+  - controlled Debian reboot
 ```
+
+The Debian migration gate is passed. The already completed external GitHub
+rename was observed but was not performed or modified by this task.

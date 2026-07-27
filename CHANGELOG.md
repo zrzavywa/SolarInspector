@@ -69,6 +69,15 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Fixed
 
+- Die gehärtete systemd-Unit erlaubt atomare Konfigurationsupdates im
+  kanonischen Verzeichnis `/etc/zrzavy-energy-monitor`, während das übrige
+  System durch `ProtectSystem=strict` schreibgeschützt bleibt.
+- Der Debian-Rollback bewahrt fehlgeschlagene Zieldaten als Diagnosekopie,
+  entfernt danach deren inaktive kanonische Pfade und ermöglicht eine erneute
+  Migration mit einem frischen, unveränderlichen Backup.
+- Die systemd-Orchestrierung stoppt vor dem Rollback beide Collector, führt
+  Fehler-Rollbacks nur nach abgeschlossenem Daten-Apply aus und erzeugt bei
+  privilegierten Läufen keine root-eigenen Bytecode-Caches im Repository.
 - Quellenmessungen aus demselben Collector-Zyklus werden erst nach Abschluss
   der Geräteabfragen zeitlich bewertet und nicht mehr fälschlich als zukünftige
   Messwerte verworfen.

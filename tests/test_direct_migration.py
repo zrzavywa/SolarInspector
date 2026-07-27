@@ -6,6 +6,7 @@ import hashlib
 import json
 import sqlite3
 from contextlib import closing
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -184,12 +185,14 @@ def test_repeated_apply_refuses_to_overwrite_backup_or_target(
 def test_rollback_restores_source_and_preserves_failed_target(
     tmp_path: Path,
 ) -> None:
-    """Restore legacy data while retaining canonical evidence for diagnosis."""
+    """Restore legacy data and retain only backed-up canonical evidence."""
 
     paths = _create_legacy_installation(tmp_path)
     original_config = paths.source_config.read_bytes()
     original_rows = _sample_rows(paths.source_database)
     apply_direct_migration(paths, services_stopped=True)
+    Path(f"{paths.target_database}-wal").touch()
+    Path(f"{paths.target_database}-shm").touch()
     paths.source_config.write_text('{"damaged": true}\n', encoding="utf-8")
     with closing(sqlite3.connect(paths.source_database)) as connection:
         connection.execute(
@@ -207,9 +210,24 @@ def test_rollback_restores_source_and_preserves_failed_target(
     assert (paths.backup_directory / "failed-target/config.json").is_file()
     failed_database = paths.backup_directory / "failed-target/zrzavy-energy-monitor.db"
     assert _sample_rows(failed_database) == original_rows
-    assert paths.target_database.is_file()
+    assert not paths.target_config.exists()
+    assert not paths.target_database.exists()
+    assert not Path(f"{paths.target_database}-wal").exists()
+    assert not Path(f"{paths.target_database}-shm").exists()
     manifest = json.loads(paths.manifest_path.read_text(encoding="utf-8"))
     assert manifest["status"] == "rolled_back"
+
+    reapplied_paths = replace(
+        paths,
+        backup_root=paths.backup_root / "reapply",
+    )
+    reapplied = apply_direct_migration(
+        reapplied_paths,
+        services_stopped=True,
+    )
+
+    assert reapplied.status == "applied"
+    assert _sample_rows(reapplied_paths.target_database) == original_rows
 
 
 def test_failed_apply_keeps_source_unchanged_and_records_failure(

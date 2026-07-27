@@ -51,6 +51,7 @@ def test_canonical_systemd_units_prevent_collector_conflicts() -> None:
     assert "/opt/zrzavy-energy-monitor/current" in application
     assert "ZRZAVY_ENERGY_MONITOR_CONFIG_PATH=" in application
     assert "ZRZAVY_ENERGY_MONITOR_DATABASE_PATH=" in application
+    assert "ReadWritePaths=/etc/zrzavy-energy-monitor" in application
     assert "/opt/solarinspector" not in application + updater + updater_path
     assert "Unit=zrzavy-energy-monitor-updater.service" in updater_path
 
@@ -72,9 +73,14 @@ def test_linux_scripts_are_syntactically_valid_and_safety_gated() -> None:
     content = migration.read_text(encoding="utf-8")
     assert "--orchestrate-systemd" in content
     assert "--keep-legacy-paths" in content
+    assert "PYTHONDONTWRITEBYTECODE=1" in content
     assert '"$EUID" -ne 0' in content
     assert 'systemctl_is_active "$NEW_SERVICE"' in content
     assert 'systemctl stop "$OLD_SERVICE"' in content
+    assert 'systemctl stop "$OLD_SERVICE" "$OLD_UPDATER_PATH"' in content
+    assert "Rollback refused: a collector is still active." in content
     assert "trap restore_legacy_service ERR" in content
+    assert "DATA_MIGRATION_APPLIED=false" in content
+    assert 'if [[ "$DATA_MIGRATION_APPLIED" == true ]]' in content
     assert "wait_for_healthcheck" in content
     assert 'systemctl disable "$OLD_SERVICE" "$OLD_UPDATER_PATH"' in content
