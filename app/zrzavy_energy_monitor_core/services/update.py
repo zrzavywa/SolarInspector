@@ -23,6 +23,13 @@ StatusWriter = Callable[..., dict[str, Any]]
 RequestWriter = Callable[..., None]
 
 
+def _error_message(exc: Exception) -> str:
+    """Return a stable, client-safe message for an update failure."""
+    if isinstance(exc, OSError):
+        return "Update konnte lokal nicht gespeichert werden."
+    return str(exc) or "Update konnte nicht heruntergeladen und geprüft werden."
+
+
 def build_update_check_response(
     installed_version: str,
     update_checker: UpdateChecker,
@@ -70,15 +77,14 @@ def perform_update_download(
     status_writer: StatusWriter,
 ) -> tuple[dict[str, Any], int | None]:
     """Check, download, verify, and persist an update."""
-    status_writer(
-        status_path,
-        state="checking",
-        progress=10,
-        message="GitHub Release wird geprüft.",
-        installed_version=installed_version,
-    )
-
     try:
+        status_writer(
+            status_path,
+            state="checking",
+            progress=10,
+            message="GitHub Release wird geprüft.",
+            installed_version=installed_version,
+        )
         release = update_checker(installed_version)
 
         if not release.update_available:
@@ -120,13 +126,26 @@ def perform_update_download(
     except (
         UpdateCheckError,
         UpdateVerificationError,
+        OSError,
     ) as exc:
-        status = status_writer(
-            status_path,
-            state="failed",
-            progress=0,
-            message=str(exc),
-        )
+        message = _error_message(exc)
+        try:
+            status = status_writer(
+                status_path,
+                state="failed",
+                progress=0,
+                message=message,
+                installed_version=installed_version,
+            )
+        except OSError:
+            status = {
+                "state": "failed",
+                "progress": 0,
+                "message": message,
+                "installed_version": installed_version,
+                "available_version": None,
+                "archive_path": None,
+            }
         return status, 502
 
 

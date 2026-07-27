@@ -8,6 +8,22 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 Keine Änderungen.
 
+## [4.5.2] - 2026-07-27
+
+### Behoben
+
+- Update-Downloads behandeln Schreib-, API-, Antwort- und Prüffehler als
+  konsistente JSON-Fehler und geben keine internen Pfade oder Stacktraces aus.
+- Statusdateien werden auch beim ersten Schreibvorgang atomar geschrieben und
+  temporäre Dateien nach Fehlern bereinigt.
+- Bootstrap und systemd erlauben dem Dienstkonto den Zugriff auf State- und
+  Update-Cachepfade, ohne bestehende Nutzdaten rekursiv umzubesitzen.
+- Das Frontend prüft HTTP-Status und Content-Type vor dem JSON-Parsing und setzt
+  fehlgeschlagene Downloads in einen terminalen Fehlerzustand.
+
+Das direkte Upgrade von 4.5.0 bzw. 4.5.1 ist vorgesehen; bestehende Daten und
+Konfigurationen bleiben erhalten. Tag und GitHub-Release werden separat erstellt.
+
 ## [4.5.1] - 2026-07-27
 
 ### Documentation

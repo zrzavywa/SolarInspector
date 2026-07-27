@@ -12,15 +12,18 @@ UPDATER_DIR="/opt/zrzavy-energy-monitor/updater"
 STATE_DIR="/var/lib/zrzavy-energy-monitor"
 CACHE_DIR="/var/cache/zrzavy-energy-monitor/updates"
 LOG_DIR="/var/log/zrzavy-energy-monitor"
+SERVICE_USER="${ZRZAVY_ENERGY_MONITOR_SERVICE_USER:-solarinspector}"
+SERVICE_GROUP="${ZRZAVY_ENERGY_MONITOR_SERVICE_GROUP:-$SERVICE_USER}"
 
 echo "[Zrzavy Energy Monitor] Verzeichnisse vorbereiten"
 
 install -d -m 0755 /opt/zrzavy-energy-monitor
 install -d -m 0755 /opt/zrzavy-energy-monitor/releases
 install -d -m 0755 "$UPDATER_DIR"
-install -d -m 0775 "$STATE_DIR"
-install -d -m 0775 "$CACHE_DIR"
-install -d -m 0755 "$LOG_DIR"
+install -d -o "$SERVICE_USER" -g "$SERVICE_GROUP" -m 0775 "$STATE_DIR"
+install -d -o "$SERVICE_USER" -g "$SERVICE_GROUP" -m 0775 "$(dirname "$CACHE_DIR")"
+install -d -o "$SERVICE_USER" -g "$SERVICE_GROUP" -m 0775 "$CACHE_DIR"
+install -d -o "$SERVICE_USER" -g "$SERVICE_GROUP" -m 0755 "$LOG_DIR"
 
 echo "[Zrzavy Energy Monitor] Updater installieren"
 
