@@ -40,6 +40,8 @@ from zrzavy_energy_monitor_core.services.phase_power import (
 
 
 class ShellyReader:
+    """ShellyReader groups the public state and operations for this component."""
+
     def __init__(self):
         self._session = requests.Session()
         self._simulation_start = time.monotonic()
@@ -66,6 +68,7 @@ class ShellyReader:
         return payload
 
     def read(self, device: dict[str, Any], role: str) -> MeterReading:
+        """read reads the configured device or transport and returns the adapter result."""
         device_type = device.get("type")
         factor = float(device.get("direction_factor", 1))
 

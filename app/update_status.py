@@ -1,3 +1,5 @@
+"""Persistent update-status file helpers. Timestamps are written as UTC ISO-8601 strings and the functions access only caller-supplied paths."""
+
 from __future__ import annotations
 
 import json
@@ -17,10 +19,12 @@ DEFAULT_STATUS = {
 
 
 def utc_now_iso() -> str:
+    """utc_now_iso provides the public operation implemented by this component."""
     return datetime.now(timezone.utc).isoformat()
 
 
 def read_update_status(path: Path) -> dict[str, Any]:
+    """read_update_status provides the public operation implemented by this component."""
     if not path.exists():
         return dict(DEFAULT_STATUS)
 
@@ -38,6 +42,7 @@ def write_update_status(
     path: Path,
     **values: Any,
 ) -> dict[str, Any]:
+    """write_update_status provides the public operation implemented by this component."""
     current = read_update_status(path)
     current.update(values)
     current["updated_at"] = utc_now_iso()

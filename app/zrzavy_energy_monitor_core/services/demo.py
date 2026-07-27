@@ -144,6 +144,7 @@ def generate_demo_samples(
         }
 
         def energy(key: str) -> float:
+            """energy provides the public operation implemented by this component."""
             if not previous_values:
                 return 0.0
 

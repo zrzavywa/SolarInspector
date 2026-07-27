@@ -23,6 +23,7 @@ def build_template_context(
     app_version: str,
     device_types: dict[str, str],
 ) -> dict[str, Any]:
+    """build_template_context provides the public operation implemented by this component."""
     return {
         "app_version": app_version,
         "product_name": PRODUCT_NAME,

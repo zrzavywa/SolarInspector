@@ -22,6 +22,8 @@ class ModbusError(RuntimeError):
 
 @dataclass
 class SolakonOneReading:
+    """SolakonOneReading groups the public state and operations for this component."""
+
     model_name: Optional[str] = None
     serial_number: Optional[str] = None
     status: str = "Unbekannt"
@@ -54,6 +56,7 @@ class SolakonOneReading:
     warnings: str = ""
 
     def to_dict(self) -> dict[str, Any]:
+        """to_dict provides the public operation implemented by this component."""
         return asdict(self)
 
 
@@ -101,6 +104,7 @@ class ModbusTcpConnection:
         return b"".join(chunks)
 
     def read_holding_registers(self, address: int, count: int) -> list[int]:
+        """read_holding_registers reads the configured device or transport and returns the adapter result."""
         if not (0 <= address <= 65535):
             raise ValueError("Registeradresse außerhalb des gültigen Bereichs.")
         if not (1 <= count <= 125):
@@ -192,6 +196,7 @@ class SolakonOneReader:
         )
 
     def read(self, config: dict[str, Any]) -> SolakonOneReading:
+        """read reads the configured device or transport and returns the adapter result."""
         if config.get("simulation"):
             return self._simulate()
 

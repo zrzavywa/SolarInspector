@@ -22,6 +22,8 @@ from zrzavy_energy_monitor_core.models.source_selection import SourceSelectionRe
 
 
 class Database:
+    """Database groups the public state and operations for this component."""
+
     def __init__(self, path: Path):
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -29,6 +31,7 @@ class Database:
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
+        """connect provides the public operation implemented by this component."""
         conn = sqlite3.connect(self.path, timeout=30)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys=ON")
@@ -38,6 +41,7 @@ class Database:
             conn.close()
 
     def initialize(self) -> None:
+        """initialize performs the corresponding lifecycle or persistence operation."""
         with self.connect() as conn:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute(
@@ -519,6 +523,7 @@ class Database:
         )
 
     def latest(self) -> Optional[dict[str, Any]]:
+        """latest provides the public operation implemented by this component."""
         with self.connect() as conn:
             row = conn.execute(
                 "SELECT * FROM samples ORDER BY ts_epoch DESC LIMIT 1"
@@ -528,6 +533,7 @@ class Database:
     def rows_between(
         self, start_epoch: float, end_epoch: float
     ) -> list[dict[str, Any]]:
+        """rows_between provides the public operation implemented by this component."""
         with self.connect() as conn:
             rows = conn.execute(
                 """
@@ -626,6 +632,7 @@ class Database:
         return [dict(row) for row in rows]
 
     def stats(self) -> dict[str, Any]:
+        """stats provides the public operation implemented by this component."""
         with self.connect() as conn:
             row = conn.execute(
                 """
@@ -640,6 +647,7 @@ class Database:
         return result
 
     def delete_all(self) -> None:
+        """delete_all performs the corresponding lifecycle or persistence operation."""
         with self.connect() as conn:
             if _table_exists(conn, "source_selection_events"):
                 conn.execute("DELETE FROM source_selection_events")

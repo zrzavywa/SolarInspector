@@ -64,6 +64,8 @@ class _GridMeasurementSelection:
 
 
 class Collector:
+    """Collector groups the public state and operations for this component."""
+
     def __init__(self, config_manager: ConfigManager, database: Database):
         self.config_manager = config_manager
         self.database = database
@@ -289,6 +291,7 @@ class Collector:
         )
 
     def start(self) -> bool:
+        """start performs the corresponding lifecycle or persistence operation."""
         config = self.config_manager.get()
         if not self._has_enabled_source(config):
             with self._lock:
@@ -312,6 +315,7 @@ class Collector:
             return True
 
     def stop(self) -> bool:
+        """stop performs the corresponding lifecycle or persistence operation."""
         with self._lock:
             if not self._thread or not self._thread.is_alive():
                 return False
@@ -322,9 +326,11 @@ class Collector:
         return True
 
     def is_running(self) -> bool:
+        """is_running provides the public operation implemented by this component."""
         return bool(self._thread and self._thread.is_alive())
 
     def status(self) -> dict[str, Any]:
+        """status provides the public operation implemented by this component."""
         with self._lock:
             latest = dict(self._last_sample) if self._last_sample else None
             return {
@@ -508,6 +514,7 @@ class Collector:
         )
 
     def collect_once(self) -> dict[str, Any]:
+        """collect_once performs the corresponding lifecycle or persistence operation."""
         config = self.config_manager.get()
         if not self._has_enabled_source(config):
             raise ValueError(
@@ -936,6 +943,7 @@ class Collector:
         return int(self.database.insert_sample(sample))
 
     def reset_state(self) -> None:
+        """reset_state performs the corresponding lifecycle or persistence operation."""
         with self._lock:
             self._last_sample = None
             self._last_error = ""

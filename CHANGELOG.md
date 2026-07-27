@@ -8,6 +8,9 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Documentation
 
+- Betriebs-, Update-, Persistenz-, Collector-, Web- und Geräte-Schnittstellen
+  im priorisierten WP-03-Scope mit englischen PEP-257-/Google-Docstrings
+  ergänzt und durch einen AST-Vertragstest abgesichert.
 - Die unversionierten HTTP-Schnittstellen von Version 4.5 vollständig nach
   Zielgruppe, Wirkung, Parametern, Antworten, Einheiten und Sicherheitsgrenzen
   dokumentiert und ihre Abdeckung an die registrierten Flask-Routen gebunden.
