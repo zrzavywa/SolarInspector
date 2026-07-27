@@ -43,7 +43,8 @@ task: Rebranding zu Zrzavy Energy Monitor
 status: completed
 branch: feature/4.5-rebrand-zrzavy-energy-monitor
 base_commit: f403a63dabebb6022d1a88a4ed64391ee97f524f
-final_commit: null
+final_commit: 85cc8329572c9acb9bfd9b23da6793de54b1d1bf
+merge_commit: bbffb65a44d7b6552b017b1fbac9d4e40a2db99d
 old_repository: zrzavywa/SolarInspector
 new_repository: zrzavywa/zrzavy-energy-monitor
 repository_renamed: true
