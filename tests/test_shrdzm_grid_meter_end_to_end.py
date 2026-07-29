@@ -120,8 +120,8 @@ def _form() -> dict[str, str]:
         "grid_meter_scheme": "http",
         "grid_meter_host": "192.0.2.60",
         "grid_meter_port": "80",
-        "grid_meter_username": "reader",
-        "grid_meter_password": "integration-secret",
+        "grid_meter_username": "<redacted-user>",
+        "grid_meter_password": "<redacted-password>",
         "grid_meter_timeout_seconds": "3",
         "grid_meter_poll_interval_seconds": "5",
         "grid_meter_direction_factor": "1",
@@ -203,13 +203,13 @@ def test_connection_api_reads_fixture_without_exposing_secret() -> None:
     assert diagnostic["values"]["grid_import_power_w"]["value"] == 568.0
     assert diagnostic["values"]["grid_export_power_w"]["value"] == 0.0
     assert "1.7.0" in diagnostic["available_fields"]
-    assert "integration-secret" not in repr(response)
+    assert "<redacted-password>" not in repr(response)
     assert session.calls == [
         (
             "http://192.0.2.60:80/getLastData",
             {
-                "user": "reader",
-                "password": "integration-secret",
+                "user": "<redacted-user>",
+                "password": "<redacted-password>",
             },
             3.0,
             None,
@@ -265,4 +265,4 @@ def test_ui_and_documentation_expose_completed_contract() -> None:
     assert "1.7.0" in guide
     assert "2.7.0" in guide
     assert "Hardwarevalidierung" in guide
-    assert "integration-secret" not in guide
+    assert "<redacted-password>" not in guide

@@ -61,6 +61,8 @@ Hardware-Handoffs können weiterhin offenen Prüfbedarf enthalten:
   [Datenfluss](phase-10-data-flow.md),
   [Findings](phase-10-findings.md) und
   [Schemainventar](phase-10-schema-inventory.md)
+- Phase 10B:
+  [Analyse und vorbereitender Implementierungsauftrag](phase-10b-analysis.md)
 
 ## Zwischenphase 10A
 

@@ -100,7 +100,7 @@ def test_development_archive_index_links_every_historical_file() -> None:
         if path.is_file() and path.name != "README.md"
     }
 
-    assert len(archived_files) == 42
+    assert len(archived_files) == 43
     assert archived_files <= linked_targets
 
 

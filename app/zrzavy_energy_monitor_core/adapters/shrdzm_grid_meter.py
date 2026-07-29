@@ -6,7 +6,7 @@ import json
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Final, Protocol, cast
 
 import requests
@@ -84,6 +84,7 @@ class ShrdzmGridMeterReading:
 
     values: tuple[ShrdzmParsedValue, ...]
     device_time: str | None
+    measured_at: datetime | None
     diagnostics: tuple[str, ...]
     available_paths: tuple[str, ...]
 
@@ -247,6 +248,7 @@ class ShrdzmRestGridMeterAdapter:
                 value=value,
                 raw_value=raw_value,
                 source_id=self._source.source_id,
+                measured_at=reading.measured_at or received_at,
                 received_at=received_at,
                 quality=quality,
             )
@@ -347,6 +349,10 @@ class ShrdzmRestGridMeterAdapter:
 
         if not isinstance(payload, Mapping):
             raise ShrdzmResponseError("SHRDZM JSON root must be an object.")
+        if "error" in payload:
+            raise ShrdzmResponseError(
+                "SHRDZM reported an authentication or device error."
+            )
         return {str(key): value for key, value in payload.items()}
 
 
@@ -398,10 +404,13 @@ def parse_shrdzm_grid_meter_payload(
             )
         )
 
-    device_time = _device_time(payload)
+    device_time, measured_at, time_diagnostic = _device_times(payload)
+    if time_diagnostic:
+        diagnostics.append(time_diagnostic)
     return ShrdzmGridMeterReading(
         values=tuple(values),
         device_time=device_time,
+        measured_at=measured_at,
         diagnostics=tuple(diagnostics),
         available_paths=tuple(iter_scalar_paths(payload)),
     )
@@ -657,11 +666,7 @@ def _energy_total_to_wh(
     if unit == "auto":
         unit = _standard_obis_energy_unit(path) or ""
         if not unit:
-            return (
-                None,
-                f"Energy unit is ambiguous for {label}: {path}. "
-                "Configure wh, kwh, or mwh.",
-            )
+            return None, None
 
     factors = {
         "wh": 1.0,
@@ -678,7 +683,7 @@ def _energy_total_to_wh(
 
 
 def _standard_obis_energy_unit(path: str) -> str | None:
-    """Return the documented raw unit for standard SHRDZM totals."""
+    """Return the hardware-confirmed raw unit for standard totals."""
 
     normalized = path.strip().strip(".")
     if normalized.endswith(("1.8.0", "2.8.0")):
@@ -692,6 +697,7 @@ def _measurement(
     value: float,
     raw_value: object | None,
     source_id: str,
+    measured_at: datetime,
     received_at: datetime,
     quality: MeasurementQuality,
 ) -> Measurement:
@@ -703,7 +709,7 @@ def _measurement(
         unit=unit_for_metric(metric),
         source_id=source_id,
         role=MeasurementRole.GRID_METER,
-        measured_at=received_at,
+        measured_at=measured_at,
         received_at=received_at,
         quality=quality,
         raw_value=raw_value,
@@ -730,15 +736,35 @@ def _numeric_value(value: object) -> float | None:
     return result if math.isfinite(result) else None
 
 
-def _device_time(payload: Mapping[str, Any]) -> str | None:
-    """Return one non-secret device timestamp when present."""
+def _device_times(
+    payload: Mapping[str, Any],
+) -> tuple[str | None, datetime | None, str | None]:
+    """Return metadata time and confirmed UTC measurement time."""
 
-    for key in ("timestamp", "UTC"):
-        value = payload.get(key)
-        if isinstance(value, (str, int, float)):
-            candidate = str(value).strip()
-            if candidate:
-                return candidate
+    local_time = _time_string(payload.get("timestamp"))
+    utc_time = _time_string(payload.get("UTC"))
+    measured_at: datetime | None = None
+    diagnostic: str | None = None
+    if utc_time:
+        try:
+            parsed = datetime.fromisoformat(utc_time.replace("Z", "+00:00"))
+            measured_at = (
+                parsed.replace(tzinfo=timezone.utc)
+                if parsed.tzinfo is None
+                else parsed.astimezone(timezone.utc)
+            )
+        except ValueError:
+            diagnostic = "SHRDZM UTC timestamp is invalid."
+    return local_time or utc_time, measured_at, diagnostic
+
+
+def _time_string(value: object) -> str | None:
+    """Return one non-empty scalar timestamp representation."""
+
+    if isinstance(value, (str, int, float)):
+        candidate = str(value).strip()
+        if candidate:
+            return candidate
     return None
 
 
