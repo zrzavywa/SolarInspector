@@ -6,6 +6,10 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+Keine Änderungen.
+
+## [4.5.4] - 2026-07-29
+
 ### Geändert
 
 - SHRDZM-Adapter verarbeitet bestätigte UTC-Messzeiten, HTTP-200-Fehlerobjekte
