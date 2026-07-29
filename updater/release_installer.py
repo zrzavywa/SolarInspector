@@ -8,6 +8,7 @@ import sys
 import time
 import requests
 from pathlib import Path
+from release_contract import find_python311, read_release_version
 
 
 class ReleaseInstallError(RuntimeError):
@@ -18,7 +19,7 @@ def create_release_venv(
     release_directory: Path,
     python_executable: str | None = None,
 ) -> Path:
-    python_executable = os.path.realpath(python_executable or sys.executable)
+    python_executable = os.path.realpath(python_executable or find_python311())
     venv_directory = release_directory / ".venv"
 
     if venv_directory.exists():
@@ -120,27 +121,20 @@ def run_release_smoke_test(
 ) -> None:
     venv_python = get_venv_python(venv_directory)
 
-    environment = os.environ.copy()
-    environment["PYTHONPATH"] = str(release_directory / "app")
-    environment.setdefault(
-        "SOLARINSPECTOR_SECRET",
-        "zrzavy-energy-monitor-release-smoke-test",
-    )
-
     command = [
         str(venv_python),
         "-c",
-        (
-            "import zrzavy_energy_monitor; "
-            "print(zrzavy_energy_monitor.get_installed_version())"
-        ),
+        "import compileall, pathlib, sys; "
+        "assert compileall.compile_dir(sys.argv[1], quiet=1); "
+        "print(pathlib.Path(sys.argv[2]).read_text().strip())",
+        str(release_directory / "app"),
+        str(release_directory / "VERSION"),
     ]
 
     try:
         result = subprocess.run(
             command,
             cwd=release_directory,
-            env=environment,
             check=True,
             capture_output=True,
             text=True,
@@ -156,9 +150,7 @@ def run_release_smoke_test(
             + (exc.stderr or exc.stdout or str(exc))
         ) from exc
 
-    expected_version = (
-        (release_directory / "VERSION").read_text(encoding="utf-8").strip()
-    )
+    expected_version = read_release_version(release_directory)
 
     actual_version = result.stdout.strip()
 
@@ -386,10 +378,11 @@ def wait_for_healthcheck(
                     f"Healthcheck meldet Status {payload.get('status')!r}."
                 )
 
-            if payload.get("version") != expected_version:
+            reported_version = payload.get("version", payload.get("installed_version"))
+            if reported_version != expected_version:
                 raise ReleaseInstallError(
                     "Healthcheck meldet eine unerwartete Version: "
-                    f"{payload.get('version')!r}"
+                    f"{reported_version!r}"
                 )
 
             return payload

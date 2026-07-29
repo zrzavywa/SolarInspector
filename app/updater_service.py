@@ -265,6 +265,7 @@ def run_update(
         state="success",
         progress=100,
         message="Update erfolgreich installiert.",
+        installed_version=version,
         available_version=version,
         archive_path=str(archive_path),
     )

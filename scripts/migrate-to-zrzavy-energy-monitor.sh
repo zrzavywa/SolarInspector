@@ -3,10 +3,23 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-MIGRATION_PYTHON="${MIGRATION_PYTHON:-python3}"
+MIGRATION_PYTHON="${MIGRATION_PYTHON:-}"
 
 export PYTHONPATH="$PROJECT_ROOT/app${PYTHONPATH:+:$PYTHONPATH}"
 export PYTHONDONTWRITEBYTECODE=1
+
+if [[ -z "$MIGRATION_PYTHON" ]]; then
+    for candidate in /opt/python-3.11.15/bin/python3.11 python3.13 python3.12 python3.11; do
+        if command -v "$candidate" >/dev/null 2>&1 || [[ -x "$candidate" ]]; then
+            MIGRATION_PYTHON="$candidate"
+            break
+        fi
+    done
+fi
+if [[ -z "$MIGRATION_PYTHON" ]]; then
+    echo "Migration refused: Python 3.11+ not found." >&2
+    exit 2
+fi
 
 ORCHESTRATE_SYSTEMD=false
 KEEP_LEGACY_PATHS=false
@@ -168,7 +181,7 @@ systemctl daemon-reload
 systemctl enable --now "$NEW_SERVICE"
 
 "$MIGRATION_PYTHON" -c \
-    "from release_installer import wait_for_healthcheck; wait_for_healthcheck('$HEALTHCHECK_URL', '4.5.0')"
+        "from release_contract import read_release_version; from pathlib import Path; from release_installer import wait_for_healthcheck; wait_for_healthcheck('$HEALTHCHECK_URL', read_release_version(Path('/opt/zrzavy-energy-monitor/current')) )"
 
 systemctl enable --now "$NEW_UPDATER_PATH"
 systemctl disable "$OLD_SERVICE" "$OLD_UPDATER_PATH"
@@ -180,4 +193,4 @@ else
 fi
 
 trap - ERR
-echo "Zrzavy Energy Monitor 4.5.0 migration completed."
+echo "Zrzavy Energy Monitor $(tr -d '[:space:]' < /opt/zrzavy-energy-monitor/current/VERSION) migration completed."

@@ -63,6 +63,7 @@ jobs:
         run: |
           chmod +x scripts/build-release.sh
           ./scripts/build-release.sh
+          (cd dist && sha256sum -c zrzavy-energy-monitor-*.tar.gz.sha256)
 
       - name: GitHub Release erstellen
         uses: softprops/action-gh-release@v2

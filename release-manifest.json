@@ -1,13 +1,13 @@
 {
   "product": "Zrzavy Energy Monitor",
   "product_id": "zrzavy-energy-monitor",
-  "version": "4.5.4",
+  "version": "4.5.5",
   "channel": "stable",
   "config_schema": 5,
   "minimum_python": "3.11",
   "minimum_updater": "1.0.0",
-  "asset": "zrzavy-energy-monitor-4.5.4.tar.gz",
-  "checksum_asset": "zrzavy-energy-monitor-4.5.4.tar.gz.sha256",
+  "asset": "zrzavy-energy-monitor-4.5.5.tar.gz",
+  "checksum_asset": "zrzavy-energy-monitor-4.5.5.tar.gz.sha256",
   "healthcheck": "/api/health",
   "service_restart_required": true
 }
