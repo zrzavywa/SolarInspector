@@ -8,6 +8,14 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 Keine Änderungen.
 
+## [4.5.5] - 2026-07-29
+
+### Behoben
+
+- Phase 10C: Python 3.11+, portable SHA-256-Prüfung und importfreier Preflight.
+- Release- und Migrationspfade verwenden die deklarierte Zielversion 4.5.5.
+- Healthchecks akzeptieren ausschließlich `status=ok` und die exakte Release-Version.
+
 ## [4.5.4] - 2026-07-29
 
 ### Geändert

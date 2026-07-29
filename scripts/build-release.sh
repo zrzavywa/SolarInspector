@@ -105,9 +105,9 @@ COPYFILE_DISABLE=1 tar -czf "$ARCHIVE" \
   "$PACKAGE_NAME"
 
 if command -v shasum >/dev/null 2>&1; then
-  shasum -a 256 "$ARCHIVE" > "${ARCHIVE}.sha256"
+  (cd "$(dirname "$ARCHIVE")" && shasum -a 256 "$(basename "$ARCHIVE")") > "${ARCHIVE}.sha256"
 else
-  sha256sum "$ARCHIVE" > "${ARCHIVE}.sha256"
+  (cd "$(dirname "$ARCHIVE")" && sha256sum "$(basename "$ARCHIVE")") > "${ARCHIVE}.sha256"
 fi
 
 echo "Release-Paket erstellt:"

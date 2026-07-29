@@ -1,4 +1,4 @@
-"""Safely migrate SolarInspector 4.1.3 data to canonical 4.5.0 paths.
+"""Safely migrate SolarInspector 4.1.3 data to canonical 4.5.5 paths.
 
 This module does not control services. Mutating callers must first stop the
 legacy and canonical collectors and pass that verified precondition explicitly.
@@ -31,7 +31,9 @@ from zrzavy_energy_monitor_core.paths import (
 )
 from zrzavy_energy_monitor_core.persistence.maintenance import inspect_database
 
-MIGRATION_ID: Final = "solarinspector-4.1.3-to-zrzavy-energy-monitor-4.5.0"
+TARGET_VERSION: Final = "4.5.5"
+LEGACY_VERSION: Final = "4.1.3"
+MIGRATION_ID: Final = f"solarinspector-4.1.3-to-zrzavy-energy-monitor-{TARGET_VERSION}"
 MANIFEST_NAME: Final = "migration-manifest.json"
 PRIVATE_DIRECTORY_MODE: Final = 0o700
 DEFAULT_LEGACY_SYSTEMD_UNITS: Final = (
@@ -43,6 +45,41 @@ DEFAULT_LEGACY_SYSTEMD_UNITS: Final = (
 
 class DirectMigrationError(RuntimeError):
     """Report a failed or unsafe direct rebranding migration."""
+
+
+def resolve_legacy_installation(root: Path) -> Path:
+    """Resolve a safe SolarInspector 4.1.3 installation directory.
+
+    A missing or broken ``current`` symlink may be repaired by selecting an
+    exact validated release. Existing real files or directories are never
+    replaced automatically.
+    """
+    current = root / "current"
+    candidates: list[Path] = []
+    if current.is_symlink():
+        if current.exists():
+            candidates.append(current.resolve())
+    elif current.exists():
+        raise DirectMigrationError(f"legacy current path is not a symlink: {current}")
+    candidates.extend(sorted(root.glob(f"{LEGACY_VERSION}")))
+    candidates.extend(sorted(root.glob(f"releases/{LEGACY_VERSION}")))
+    for candidate in candidates:
+        version_file = candidate / "VERSION"
+        if (
+            candidate.is_dir()
+            and version_file.is_file()
+            and version_file.read_text(encoding="utf-8").strip() == LEGACY_VERSION
+            and (candidate / "app/solarinspector.py").is_file()
+            and (candidate / ".venv/bin/python").is_file()
+        ):
+            if current.is_symlink() and not current.exists():
+                current.unlink()
+            if not current.exists():
+                current.symlink_to(candidate, target_is_directory=True)
+            return candidate
+    raise DirectMigrationError(
+        f"validated SolarInspector {LEGACY_VERSION} installation not found below {root}"
+    )
 
 
 @dataclass(frozen=True)
@@ -179,7 +216,7 @@ def apply_direct_migration(
         "schema_version": 1,
         "migration_id": MIGRATION_ID,
         "source_version": "4.1.3",
-        "target_version": "4.5.0",
+        "target_version": TARGET_VERSION,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "status": "backing_up",
         "paths": _serialized_paths(paths),
@@ -406,7 +443,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(
         description=(
-            "Direct SolarInspector 4.1.3 to Zrzavy Energy Monitor 4.5.0 "
+            f"Direct SolarInspector 4.1.3 to Zrzavy Energy Monitor {TARGET_VERSION} "
             "configuration and SQLite migration"
         )
     )
@@ -450,11 +487,20 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("/var/lib/zrzavy-energy-monitor/backups"),
     )
     args = parser.parse_args(argv)
+    try:
+        source_installation_root = args.source_installation_root
+        if source_installation_root == Path("/opt/solarinspector"):
+            source_installation_root = resolve_legacy_installation(
+                source_installation_root
+            )
+    except DirectMigrationError as exc:
+        print(f"Migration refused: {exc}", file=sys.stderr)
+        return 2
     paths = DirectMigrationPaths(
         source_config=args.source_config,
         source_database=args.source_database,
         source_log=args.source_log,
-        source_installation_root=args.source_installation_root,
+        source_installation_root=source_installation_root,
         source_systemd_units=tuple(
             args.source_systemd_unit or DEFAULT_LEGACY_SYSTEMD_UNITS
         ),
