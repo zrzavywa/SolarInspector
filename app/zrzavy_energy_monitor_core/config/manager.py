@@ -261,7 +261,7 @@ class ConfigManager:
         )
         solakon["simulation"] = bool(solakon.get("simulation", False))
 
-        for role in ("house_meter", "solakon_meter"):
+        for role in ("house_meter", "solakon_meter", "plant_meter"):
             device = config[role]
 
             if device.get("type") not in DEVICE_TYPES:
@@ -293,6 +293,10 @@ class ConfigManager:
             device["direction_factor"] = normalize_direction_factor(
                 device.get("direction_factor", 1)
             )
+
+            if role == "plant_meter":
+                component_id = device.get("component_id", 0)
+                device["component_id"] = max(0, min(15, int(component_id)))
 
             if role == "house_meter":
                 device["measurement_role"] = normalize_measurement_role(

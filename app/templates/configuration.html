@@ -154,7 +154,8 @@
 
   {% for role, title, subtitle in [
     ('house_meter', 'Separate Hausanschlussmessung', 'Netzbezug positiv, Einspeisung negativ'),
-    ('solakon_meter', 'AC-Erzeugungsmessung über Shelly', 'Shelly PM Mini Gen 3 zwischen Solakon ONE und Steckdose')
+    ('solakon_meter', 'AC-Erzeugungsmessung über Shelly', 'Shelly PM Mini Gen 3 zwischen Solakon ONE und Steckdose'),
+    ('plant_meter', 'Anlagen-AC über Shelly Plug M Gen3', 'Read-only zwischen Solakon-AC-Ausgang und Steckdose beziehungsweise Hausnetz')
   ] %}
   {% set device = config[role] %}
   <section class="panel device-config">
@@ -174,6 +175,9 @@
       <label><span>Benutzername (optional)</span><input name="{{ role }}_username" value="{{ device.username }}"></label>
       <label><span>Passwort (optional)</span><input type="password" name="{{ role }}_password" value="{{ device.password }}"></label>
       <label><span>Timeout in Sekunden</span><input type="number" min="1" max="30" name="{{ role }}_timeout_seconds" value="{{ device.timeout_seconds }}"></label>
+      {% if role == 'plant_meter' %}
+      <label><span>RPC-Komponente</span><input type="number" min="0" max="15" name="{{ role }}_component_id" value="{{ device.component_id }}"><small>Standard: 0 (`switch:0`)</small></label>
+      {% endif %}
       <label><span>Messrichtung</span>
         <select name="{{ role }}_direction_factor">
           <option value="1" {{ "selected" if device.direction_factor == 1 else "" }}>Normal (+1)</option>
@@ -442,6 +446,11 @@ document.querySelectorAll(".test-device").forEach(button => {
         timeout_seconds: document.querySelector(`[name="${role}_timeout_seconds"]`).value,
         direction_factor: document.querySelector(`[name="${role}_direction_factor"]`).value
       };
+      if (role === "plant_meter") {
+        payload.component_id = document.querySelector(
+          `[name="${role}_component_id"]`
+        ).value;
+      }
       if (role === "house_meter") {
         payload.measurement_role = document.querySelector(
           `[name="${role}_measurement_role"]`

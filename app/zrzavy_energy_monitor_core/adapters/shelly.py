@@ -76,6 +76,8 @@ class ShellyReader:
             reading = self._simulate(role)
         elif device_type == "shelly_pm_mini_gen3":
             reading = self._read_pm1(device)
+        elif device_type == "shelly_plug_m_gen3":
+            reading = self._read_plug_m_gen3(device)
         elif device_type == "shelly_3em_gen1":
             reading = self._read_3em_gen1(device)
         elif device_type == "shelly_pro_3em":
@@ -112,6 +114,31 @@ class ShellyReader:
             source="PM1.GetStatus",
             power_available=data.get("apower") is not None,
             power_is_device_total=data.get("apower") is not None,
+        )
+
+    def _read_plug_m_gen3(self, device: dict[str, Any]) -> MeterReading:
+        """Read the Plug M Gen3 switch status through its read-only RPC."""
+
+        component_id = int(device.get("component_id", 0))
+        data = self._get_json(device, f"/rpc/Switch.GetStatus?id={component_id}")
+        raw_power = data.get("apower")
+        power = _finite_number(raw_power)
+        return MeterReading(
+            power_w=power or 0.0,
+            voltage_v=_finite_number(data.get("voltage")),
+            current_a=_finite_number(data.get("current")),
+            power_factor=_finite_number(data.get("pf")),
+            frequency_hz=_finite_number(data.get("freq")),
+            energy_total_wh=_nested_finite(data, "aenergy", "total"),
+            returned_energy_total_wh=_nested_finite(data, "ret_aenergy", "total"),
+            source="Switch.GetStatus",
+            power_available=power is not None,
+            power_is_device_total=power is not None,
+            is_valid=True if power is not None else False,
+            errors=(
+                (("relay_off",) if data.get("output") is False else ())
+                + (() if power is not None else ("missing_active_power",))
+            ),
         )
 
     def _read_3em_gen1(self, device: dict[str, Any]) -> MeterReading:
@@ -804,6 +831,23 @@ def _float_or_none(value: Any) -> Optional[float]:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _finite_number(value: Any) -> Optional[float]:
+    """Return finite non-boolean numbers only."""
+
+    if isinstance(value, bool):
+        return None
+    try:
+        normalized = float(value)
+    except (TypeError, ValueError):
+        return None
+    return normalized if math.isfinite(normalized) else None
+
+
+def _nested_finite(data: dict[str, Any], parent: str, child: str) -> Optional[float]:
+    item = data.get(parent)
+    return _finite_number(item.get(child)) if isinstance(item, dict) else None
 
 
 def _nested_float(data: dict[str, Any], parent: str, child: str) -> Optional[float]:

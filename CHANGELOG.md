@@ -8,6 +8,19 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 Keine Änderungen.
 
+## [4.5.3] - 2026-07-29
+
+### Hinzugefügt
+
+- Shelly Plug M Gen3 als optionale, lokale und read-only Anlagen-AC-Quelle
+  über `Switch.GetStatus` ergänzt.
+- `apower = 0` bleibt ein gültiger Messwert; fehlende oder ungültige Werte
+  fallen auf Solakon ONE zurück. Das Relais wird niemals geschaltet.
+- Konfiguration, anonymisierte Fixture und Phase-10A-Nachweise ergänzt.
+
+Die reale Hardwarecharakterisierung von Vorzeichen, Rückspeisung und
+`ret_aenergy` ist vor der Releasefreigabe noch durchzuführen.
+
 ## [4.5.2] - 2026-07-27
 
 ### Behoben

@@ -8,7 +8,7 @@
 
 > Open-source home energy monitoring and validation
 
-> Dokumentationsstand: Zrzavy Energy Monitor **4.5.2**
+> Dokumentationsstand: Zrzavy Energy Monitor **4.5.3**
 > Primärplattform: Raspberry Pi OS beziehungsweise Debian-basierte Linux-Systeme
 
 ## Hauptfunktionen

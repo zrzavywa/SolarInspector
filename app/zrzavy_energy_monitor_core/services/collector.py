@@ -525,7 +525,11 @@ class Collector:
         now_epoch = now.timestamp()
         grid_cfg = config.get("grid_meter", {})
         house_cfg = config["house_meter"]
-        solar_cfg = config["solakon_meter"]
+        solar_cfg = (
+            config["plant_meter"]
+            if config.get("plant_meter", {}).get("enabled")
+            else config["solakon_meter"]
+        )
         one_cfg = config["solakon_one"]
 
         errors: list[str] = []
