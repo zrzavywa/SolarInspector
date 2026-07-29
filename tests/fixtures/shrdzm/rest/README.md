@@ -1,7 +1,8 @@
 # SHRDZM REST fixtures
 
-These fixtures are sanitized, synthetic test data based on publicly
-documented SHRDZM response conventions.
+These fixtures are sanitized test data based on documented SHRDZM response
+conventions. The real import fixture contains no device identity or
+credentials.
 
 Confirmed transport contract:
 
@@ -16,19 +17,24 @@ Confirmed transport contract:
 The fixture values do not contain real serial numbers, meter identifiers,
 MAC addresses, passwords, tokens, public IP addresses, or personal data.
 
-Energy totals in the standard SHRDZM OBIS fields are represented as raw
-watt-hours. SolarInspector therefore keeps them in its canonical internal
-Wh unit. Explicit `kwh` and `mwh` overrides remain available for custom
-mappings. `auto` is intentionally accepted only for the standard total
-OBIS fields and never guesses a unit for arbitrary custom paths.
+Energy totals in the standard SHRDZM OBIS fields are confirmed as raw Wh;
+the operator display may show the corresponding values in kWh. With `auto`,
+ZEM normalizes those standard paths as Wh. Explicit `wh`, `kwh`, or `mwh`
+overrides remain available for custom mappings.
 
 Files:
 
 - `grid_import_normal.json`: complete grid-import sample
+- `grid_import_real_sanitized.json`: supplied real import evidence, sanitized
+  for repository use
+- `grid_zero_real_sanitized.json`: supplied real zero-point evidence, sanitized
+  for repository use
+- `grid_export_real_sanitized.json`: supplied real export evidence, sanitized
+  for repository use
 - `grid_export_normal.json`: complete grid-export sample
 - `grid_zero_power.json`: valid zero-power sample
 - `grid_partial_values.json`: intentionally incomplete sample
 - `grid_invalid_values.json`: malformed required numeric values
 
-A later hardware block must capture and sanitize the exact response from
-Walter's eventual device before Phase 07 is declared fully complete.
+The `13.7.0` field remains intentionally unused; real export, zero-point, and
+energy-unit evidence is represented by the sanitized fixtures above.

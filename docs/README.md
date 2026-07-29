@@ -27,6 +27,7 @@ Diese Dokumentation beschreibt Installation, Konfiguration und Betrieb von Zrzav
 - [Mitwirken](../CONTRIBUTING.md)
 - [Änderungshistorie](../CHANGELOG.md)
 - [Release Notes 4.5.2](release-notes-4.5.2.md)
+- [Release Notes 4.5.4](release-notes-4.5.4.md)
 - [Markenhinweise](../TRADEMARKS.md)
 
 ## Dokumentationsprinzipien

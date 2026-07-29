@@ -6,7 +6,13 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
-Keine Änderungen.
+### Geändert
+
+- SHRDZM-Adapter verarbeitet bestätigte UTC-Messzeiten, HTTP-200-Fehlerobjekte
+  und fehlende Werte ohne erfundene Nullwerte.
+- `1.8.0` und `2.8.0` werden nach Hardwarebestätigung bei
+  `energy_total_unit=auto` als Wh normalisiert; Betreiberanzeigen in kWh
+  ändern die interne Einheit nicht.
 
 ## [4.5.3] - 2026-07-29
 

@@ -12,7 +12,8 @@ Implementiert und automatisiert getestet sind:
 - Query-Authentifizierung, HTTP Basic oder explizit keine Authentifizierung,
 - direkte OBIS-Schlüssel und konfigurierbare verschachtelte JSON-Pfade,
 - Netzbezug, Einspeisung, saldierte Netzleistung und echte Nullwerte,
-- Energiezähler in der internen Zrzavy-Energy-Monitor-Einheit Wh,
+- Energiezähler der bestätigten Standard-OBIS-Pfade in der internen Wh-Einheit;
+  die Betreiberanzeige kann dieselben Werte in kWh darstellen,
 - optionale Phasenspannungen und Phasenströme,
 - kontrollierte Zustände `ONLINE`, `DEGRADED`, `OFFLINE` und `DISABLED`,
 - priorisierte Nutzung als offizielle Netzreferenz mit bestehenden Quellen
@@ -47,8 +48,8 @@ fehlend interpretiert.
 | `grid_power_w` | `16.7.0` | saldierte Wirkleistung, falls verfügbar |
 | `grid_import_power_w` | `1.7.0` | aktueller Netzbezug |
 | `grid_export_power_w` | `2.7.0` | aktuelle Einspeisung |
-| `grid_import_total_kwh` | `1.8.0` | kumulierter Netzbezug |
-| `grid_export_total_kwh` | `2.8.0` | kumulierte Einspeisung |
+| `grid_import_total_kwh` | `1.8.0` | kumulierter Netzbezug, JSON-Wert in Wh |
+| `grid_export_total_kwh` | `2.8.0` | kumulierte Einspeisung, JSON-Wert in Wh |
 | `phase_voltage_l1_v` | `32.7.0` | Spannung L1 |
 | `phase_voltage_l2_v` | `52.7.0` | Spannung L2 |
 | `phase_voltage_l3_v` | `72.7.0` | Spannung L3 |
@@ -59,6 +60,10 @@ fehlend interpretiert.
 Die tatsächlich verfügbaren OBIS-Werte werden vom offiziellen Zähler und
 dessen Freigabe durch den Netzbetreiber bestimmt. Fehlende optionale Werte
 dürfen nicht durch erfundene Nullwerte ersetzt werden.
+
+`13.7.0` wird in ZEM 4.5.4 nicht als Leistungsfaktor interpretiert. Der Wert
+ist für die Anlage nicht relevant; Wirk- und Blindleistung werden getrennt
+behandelt.
 
 ## Konfigurationsbeispiel
 
@@ -100,11 +105,10 @@ dürfen nicht durch erfundene Nullwerte ersetzt werden.
 ```
 
 Die Feldnamen der historischen Konfiguration enden bei den Energiezählern
-weiterhin auf `_kwh`. Intern werden die Messwerte unabhängig davon in Wh
-normalisiert. Bei `energy_total_unit: "auto"` verwendet Zrzavy Energy Monitor für
-die Standard-OBIS-Zähler `1.8.0` und `2.8.0` die bestätigte Rohdateneinheit
-Wh. Für eigene Pfade muss die Einheit ausdrücklich als `wh`, `kwh` oder
-`mwh` konfiguriert werden.
+weiterhin auf `_kwh`. Intern werden bestätigte Energiezähler unabhängig davon
+in Wh normalisiert. Bei `energy_total_unit: "auto"` werden `1.8.0` und `2.8.0`
+als Wh interpretiert. Für eigene Pfade muss die bestätigte Rohdateneinheit
+ausdrücklich als `wh`, `kwh` oder `mwh` konfiguriert werden.
 
 ## Authentifizierungsmodi
 

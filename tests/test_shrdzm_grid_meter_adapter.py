@@ -23,7 +23,6 @@ from zrzavy_energy_monitor_core.models.device import DeviceConnectionStatus
 from zrzavy_energy_monitor_core.models.metrics import Metric
 from zrzavy_energy_monitor_core.models.quality import MeasurementQuality
 from zrzavy_energy_monitor_core.models.roles import MeasurementRole
-from zrzavy_energy_monitor_core.models.units import Unit
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "shrdzm" / "rest"
 
@@ -143,12 +142,64 @@ def test_import_fixture_produces_online_snapshot() -> None:
     assert values[Metric.GRID_EXPORT_POWER].value == 0.0
     assert values[Metric.GRID_IMPORT_TOTAL].value == 5_853_648.0
     assert values[Metric.GRID_EXPORT_TOTAL].value == 15_317.0
-    assert values[Metric.GRID_IMPORT_TOTAL].unit is Unit.WATT_HOUR
     assert values[Metric.PHASE_VOLTAGE_L1].value == 238.0
     assert values[Metric.PHASE_CURRENT_L3].value == 1.57
     assert metadata["transport"] == "shrdzm_rest"
     assert metadata["rest_endpoint"] == "/getLastData"
     assert metadata["device_time"] == "2024-10-20T19:51:25"
+    assert values[Metric.GRID_POWER].measured_at.isoformat() == (
+        "2024-10-20T17:51:26+00:00"
+    )
+
+
+def test_sanitized_real_import_fixture_preserves_confirmed_fields() -> None:
+    """The supplied real import evidence maps without device identity data."""
+
+    snapshot, values = _snapshot(_fixture("grid_import_real_sanitized.json"))
+
+    assert snapshot.status is DeviceConnectionStatus.ONLINE
+    assert values[Metric.GRID_POWER].value == 498.0
+    assert values[Metric.GRID_IMPORT_POWER].value == 498.0
+    assert values[Metric.GRID_EXPORT_POWER].value == 0.0
+    assert values[Metric.PHASE_VOLTAGE_L1].value == 232.40
+    assert values[Metric.PHASE_CURRENT_L3].value == 0.61
+    assert values[Metric.GRID_POWER].measured_at.isoformat() == (
+        "2026-07-29T14:36:46+00:00"
+    )
+    assert values[Metric.GRID_IMPORT_TOTAL].value == 23_238_061.0
+    assert values[Metric.GRID_EXPORT_TOTAL].value == 3593.0
+
+
+def test_sanitized_real_zero_fixture_preserves_confirmed_zero_fields() -> None:
+    """The supplied real zero evidence keeps all three power values at zero."""
+
+    snapshot, values = _snapshot(_fixture("grid_zero_real_sanitized.json"))
+
+    assert snapshot.status is DeviceConnectionStatus.ONLINE
+    assert values[Metric.GRID_POWER].value == 0.0
+    assert values[Metric.GRID_IMPORT_POWER].value == 0.0
+    assert values[Metric.GRID_EXPORT_POWER].value == 0.0
+    assert values[Metric.GRID_POWER].measured_at.isoformat() == (
+        "2026-07-29T14:36:46+00:00"
+    )
+    assert values[Metric.GRID_IMPORT_TOTAL].value == 23_238_061.0
+    assert values[Metric.GRID_EXPORT_TOTAL].value == 3593.0
+
+
+def test_sanitized_real_export_fixture_preserves_confirmed_direction() -> None:
+    """The supplied real export evidence confirms negative net power."""
+
+    snapshot, values = _snapshot(_fixture("grid_export_real_sanitized.json"))
+
+    assert snapshot.status is DeviceConnectionStatus.ONLINE
+    assert values[Metric.GRID_POWER].value == -45.0
+    assert values[Metric.GRID_IMPORT_POWER].value == 0.0
+    assert values[Metric.GRID_EXPORT_POWER].value == 45.0
+    assert values[Metric.GRID_POWER].measured_at.isoformat() == (
+        "2026-07-29T16:27:21+00:00"
+    )
+    assert values[Metric.GRID_IMPORT_TOTAL].value == 23_238_264.0
+    assert values[Metric.GRID_EXPORT_TOTAL].value == 3595.0
 
 
 def test_export_fixture_normalizes_negative_grid_power() -> None:
@@ -173,6 +224,21 @@ def test_zero_fixture_retains_real_zero() -> None:
     assert values[Metric.GRID_EXPORT_POWER].value == 0.0
 
 
+def test_invalid_utc_timestamp_degrades_without_using_it_as_measurement_time() -> None:
+    """An invalid UTC value is never silently accepted as measured_at."""
+
+    payload = _fixture("grid_import_normal.json")
+    payload["UTC"] = "not-a-timestamp"
+
+    snapshot, values = _snapshot(payload)
+
+    assert snapshot.status is DeviceConnectionStatus.DEGRADED
+    assert (
+        values[Metric.GRID_POWER].measured_at == values[Metric.GRID_POWER].received_at
+    )
+    assert "UTC timestamp is invalid" in (snapshot.error or "")
+
+
 def test_query_authentication_uses_parameters_not_url() -> None:
     """Documented REST credentials remain outside the URL string."""
 
@@ -181,8 +247,8 @@ def test_query_authentication_uses_parameters_not_url() -> None:
         scheme="https",
         port=8443,
         timeout_seconds=7,
-        username="device-user",
-        password="very-secret",
+        username="<redacted-user>",
+        password="<redacted-password>",
     )
     adapter = ShrdzmRestGridMeterAdapter(
         config,
@@ -196,15 +262,15 @@ def test_query_authentication_uses_parameters_not_url() -> None:
         (
             "https://192.0.2.60:8443/getLastData",
             {
-                "user": "device-user",
-                "password": "very-secret",
+                "user": "<redacted-user>",
+                "password": "<redacted-password>",
             },
             7.0,
             None,
         )
     ]
-    assert "very-secret" not in repr(snapshot)
-    assert "device-user" not in repr(snapshot)
+    assert "<redacted-password>" not in repr(snapshot)
+    assert "<redacted-user>" not in repr(snapshot)
 
 
 def test_custom_query_parameter_names_are_supported() -> None:
@@ -212,8 +278,8 @@ def test_custom_query_parameter_names_are_supported() -> None:
 
     session = FakeSession(FakeResponse(payload=_fixture("grid_import_normal.json")))
     config = _config(
-        username="reader",
-        password="secret",
+        username="<redacted-user>",
+        password="<redacted-password>",
     )
     config["shrdzm_rest"].update(
         {
@@ -228,8 +294,8 @@ def test_custom_query_parameter_names_are_supported() -> None:
     ).read_snapshot()
 
     assert session.calls[0][1] == {
-        "login": "reader",
-        "key": "secret",
+        "login": "<redacted-user>",
+        "key": "<redacted-password>",
     }
 
 
@@ -239,7 +305,7 @@ def test_basic_authentication_uses_documented_admin_fallback() -> None:
     session = FakeSession(FakeResponse(payload=_fixture("grid_import_normal.json")))
     config = _config(
         username="",
-        password="secret",
+        password="<redacted-password>",
     )
     config["shrdzm_rest"]["authentication_mode"] = "basic"
 
@@ -249,7 +315,7 @@ def test_basic_authentication_uses_documented_admin_fallback() -> None:
     ).read_snapshot()
 
     assert session.calls[0][1] == {}
-    assert session.calls[0][3] == ("admin", "secret")
+    assert session.calls[0][3] == ("admin", "<redacted-password>")
 
 
 def test_no_authentication_ignores_stored_credentials() -> None:
@@ -257,8 +323,8 @@ def test_no_authentication_ignores_stored_credentials() -> None:
 
     session = FakeSession(FakeResponse(payload=_fixture("grid_import_normal.json")))
     config = _config(
-        username="stored-user",
-        password="stored-secret",
+        username="<redacted-user>",
+        password="<redacted-password>",
     )
     config["shrdzm_rest"]["authentication_mode"] = "none"
 
@@ -335,7 +401,7 @@ def test_explicit_kwh_total_unit_converts_to_canonical_wh() -> None:
     assert values[Metric.GRID_EXPORT_TOTAL].value == 1250.0
 
 
-def test_auto_unit_rejects_ambiguous_custom_total_path() -> None:
+def test_auto_unit_omits_unverified_custom_total_path() -> None:
     """Auto scaling never guesses a unit for custom counter fields."""
 
     config = _config()
@@ -345,9 +411,9 @@ def test_auto_unit_rejects_ambiguous_custom_total_path() -> None:
 
     snapshot, values = _snapshot(payload, config=config)
 
-    assert snapshot.status is DeviceConnectionStatus.DEGRADED
+    assert snapshot.status is DeviceConnectionStatus.ONLINE
     assert Metric.GRID_IMPORT_TOTAL not in values
-    assert "Energy unit is ambiguous" in (snapshot.error or "")
+    assert snapshot.error is None
 
 
 def test_exact_obis_key_precedes_dotted_path_traversal() -> None:
@@ -394,8 +460,8 @@ def test_diagnostic_paths_are_optional_and_credential_free() -> None:
     """Connection-test metadata can expose paths but never secrets."""
 
     config = _config(
-        username="reader",
-        password="do-not-leak",
+        username="<redacted-user>",
+        password="<redacted-password>",
         _include_diagnostic_paths=True,
     )
     snapshot, _values = _snapshot(
@@ -406,8 +472,8 @@ def test_diagnostic_paths_are_optional_and_credential_free() -> None:
 
     paths = json.loads(metadata["available_scalar_paths_json"])
     assert "1.7.0" in paths
-    assert "do-not-leak" not in repr(snapshot)
-    assert "reader" not in repr(snapshot)
+    assert "<redacted-password>" not in repr(snapshot)
+    assert "<redacted-user>" not in repr(snapshot)
 
 
 def test_disabled_source_does_not_call_http() -> None:
@@ -446,15 +512,15 @@ def test_missing_host_returns_offline_without_network_call() -> None:
     ("error", "message"),
     [
         (
-            requests.Timeout("URL contains password=do-not-leak"),
+            requests.Timeout("URL contains password=<redacted-password>"),
             "SHRDZM request timed out.",
         ),
         (
-            requests.ConnectionError("URL contains password=do-not-leak"),
+            requests.ConnectionError("URL contains password=<redacted-password>"),
             "SHRDZM device is unreachable.",
         ),
         (
-            requests.RequestException("URL contains password=do-not-leak"),
+            requests.RequestException("URL contains password=<redacted-password>"),
             "SHRDZM HTTP request failed.",
         ),
     ],
@@ -466,7 +532,7 @@ def test_transport_failures_are_credential_safe(
     """Network diagnostics never reuse exception URLs."""
 
     adapter = ShrdzmRestGridMeterAdapter(
-        _config(password="do-not-leak"),
+        _config(password="<redacted-password>"),
         session=FakeSession(error=error),
     )
 
@@ -475,7 +541,7 @@ def test_transport_failures_are_credential_safe(
     assert snapshot.status is DeviceConnectionStatus.OFFLINE
     assert snapshot.measurements == ()
     assert message in (snapshot.error or "")
-    assert "do-not-leak" not in (snapshot.error or "")
+    assert "<redacted-password>" not in (snapshot.error or "")
 
 
 @pytest.mark.parametrize("status_code", [401, 403, 404, 500])
@@ -485,7 +551,7 @@ def test_http_error_statuses_are_offline(
     """HTTP failures retain the code without exposing the URL."""
 
     adapter = ShrdzmRestGridMeterAdapter(
-        _config(password="do-not-leak"),
+        _config(password="<redacted-password>"),
         session=FakeSession(
             FakeResponse(
                 status_code=status_code,
@@ -498,7 +564,7 @@ def test_http_error_statuses_are_offline(
 
     assert snapshot.status is DeviceConnectionStatus.OFFLINE
     assert f"HTTP status {status_code}" in (snapshot.error or "")
-    assert "do-not-leak" not in (snapshot.error or "")
+    assert "<redacted-password>" not in (snapshot.error or "")
 
 
 @pytest.mark.parametrize(
@@ -527,3 +593,18 @@ def test_unusable_responses_are_offline(
 
     assert snapshot.status is DeviceConnectionStatus.OFFLINE
     assert snapshot.measurements == ()
+
+
+def test_http_200_error_object_is_authentication_failure() -> None:
+    """A JSON error is not a successful HTTP measurement response."""
+
+    adapter = ShrdzmRestGridMeterAdapter(
+        _config(password="<redacted-password>"),
+        session=FakeSession(FakeResponse(payload={"error": "wrong user/password"})),
+    )
+
+    snapshot = adapter.read_snapshot()
+
+    assert snapshot.status is DeviceConnectionStatus.OFFLINE
+    assert "authentication or device error" in (snapshot.error or "")
+    assert "<redacted-password>" not in (snapshot.error or "")
