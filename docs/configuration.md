@@ -316,6 +316,26 @@ shelly_pm_mini_gen3
 simulation
 ```
 
+## Abschnitt `plant_meter`
+
+Der optionale `plant_meter` unterstützt den Shelly Plug M Gen3 als lokale,
+read-only Messquelle zwischen Solakon-AC-Ausgang und Steckdose beziehungsweise
+Hausnetz. Er ist standardmäßig deaktiviert und fällt bei fehlenden oder
+abgelehnten Werten auf Solakon ONE AC zurück.
+
+| Feld | Typ | Standard | Bedeutung |
+|---|---|---:|---|
+| `enabled` | Boolean | `false` | Quelle aktivieren |
+| `type` | String | `shelly_plug_m_gen3` | Gerätetyp |
+| `host` | String | leer | lokale IP oder Hostname |
+| `component_id` | Integer | `0` | RPC-Komponente, normalerweise `switch:0` |
+| `timeout_seconds` | Zahl | `3` | begrenzter Read-only-Timeout |
+| `direction_factor` | Integer | `1` | Vorzeichenkorrektur nach Hardwaretest |
+
+Gelesen wird ausschließlich `Switch.GetStatus?id=<component_id>`. Das Relais,
+die Zähler und die Gerätekonfiguration werden niemals verändert. Ein explizites
+`apower: 0` ist gültig; fehlendes oder ungültiges `apower` ist unavailable.
+
 ## Abschnitt `persistence.retention`
 
 Die Aufbewahrung ist standardmäßig deaktiviert und arbeitet bei Aktivierung

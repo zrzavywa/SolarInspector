@@ -67,11 +67,22 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "timeout_seconds": 3,
         "direction_factor": 1,
     },
+    "plant_meter": {
+        "enabled": False,
+        "type": "shelly_plug_m_gen3",
+        "host": "",
+        "component_id": 0,
+        "username": "",
+        "password": "",
+        "timeout_seconds": 3,
+        "direction_factor": 1,
+    },
 }
 
 
 DEVICE_TYPES: dict[str, str] = {
     "shelly_pm_mini_gen3": "Shelly PM Mini Gen 3 / PM1",
+    "shelly_plug_m_gen3": "Shelly Plug M Gen3 / Switch",
     "shelly_3em_gen1": "Shelly 3EM Gen 1",
     "shelly_pro_3em": "Shelly Pro 3EM / EM RPC",
     "simulation": "Simulation",

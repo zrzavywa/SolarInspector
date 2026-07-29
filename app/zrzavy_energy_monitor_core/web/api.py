@@ -648,6 +648,7 @@ def build_test_device_api_response(
     if role not in {
         "house_meter",
         "solakon_meter",
+        "plant_meter",
     }:
         return {
             "ok": False,
@@ -679,6 +680,11 @@ def build_test_device_api_response(
                 1,
             ),
         }
+        if role == "plant_meter":
+            updates["component_id"] = payload.get(
+                "component_id",
+                root_config[role].get("component_id", 0),
+            )
         if role == "house_meter":
             updates.update(
                 {

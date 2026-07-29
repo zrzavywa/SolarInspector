@@ -179,7 +179,7 @@ Content-Type: application/json
 - **Synthetisches Beispiel:**
 
 ```json
-{"status":"ok","version":"4.5.1","config_schema":5,"database":"ok","web":"ok","product_name":"Zrzavy Energy Monitor","product_id":"zrzavy-energy-monitor","product_description":"Open-source home energy monitoring and validation"}
+{"status":"ok","version":"4.5.2","config_schema":5,"database":"ok","web":"ok","product_name":"Zrzavy Energy Monitor","product_id":"zrzavy-energy-monitor","product_description":"Open-source home energy monitoring and validation"}
 ```
 
 ### `GET /api/system/version`
@@ -194,7 +194,7 @@ Content-Type: application/json
 - **Einheiten, Seiteneffekte und Sicherheit:** keine Einheiten, lesend;
   Versionsinformationen sind ohne Zugriffsschutz sichtbar.
 - **Synthetisches Beispiel:** `GET /api/system/version` liefert
-  `{"product":"Zrzavy Energy Monitor","product_name":"Zrzavy Energy Monitor","product_id":"zrzavy-energy-monitor","product_description":"Open-source home energy monitoring and validation","version":"4.5.1","config_schema":5}`.
+  `{"product":"Zrzavy Energy Monitor","product_name":"Zrzavy Energy Monitor","product_id":"zrzavy-energy-monitor","product_description":"Open-source home energy monitoring and validation","version":"4.5.2","config_schema":5}`.
 
 ## Live- und Dashboard-Daten
 
@@ -524,7 +524,7 @@ API-Aufrufen.
 - **Seiteneffekt und Sicherheit:** externer HTTPS-Zugriff auf GitHub; keine
   lokale Installation, aber aktiver Netzwerkaufruf ohne API-Zugriffsschutz.
 - **Synthetisches Beispiel:** `GET /api/update/check` liefert
-  `{"status":"ok","installed_version":"4.5.1","available_version":"4.5.1","update_available":false,"asset_name":"zrzavy-energy-monitor-4.5.1.tar.gz"}`.
+  `{"status":"ok","installed_version":"4.5.2","available_version":"4.5.2","update_available":false,"asset_name":"zrzavy-energy-monitor-4.5.2.tar.gz"}`.
 
 ### `GET /api/update/status`
 

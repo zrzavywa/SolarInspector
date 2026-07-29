@@ -8,6 +8,35 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 Keine Änderungen.
 
+## [4.5.3] - 2026-07-29
+
+### Hinzugefügt
+
+- Shelly Plug M Gen3 als optionale, lokale und read-only Anlagen-AC-Quelle
+  über `Switch.GetStatus` ergänzt.
+- `apower = 0` bleibt ein gültiger Messwert; fehlende oder ungültige Werte
+  fallen auf Solakon ONE zurück. Das Relais wird niemals geschaltet.
+- Konfiguration, anonymisierte Fixture und Phase-10A-Nachweise ergänzt.
+
+Die reale Hardwarecharakterisierung von Vorzeichen, Rückspeisung und
+`ret_aenergy` ist vor der Releasefreigabe noch durchzuführen.
+
+## [4.5.2] - 2026-07-27
+
+### Behoben
+
+- Update-Downloads behandeln Schreib-, API-, Antwort- und Prüffehler als
+  konsistente JSON-Fehler und geben keine internen Pfade oder Stacktraces aus.
+- Statusdateien werden auch beim ersten Schreibvorgang atomar geschrieben und
+  temporäre Dateien nach Fehlern bereinigt.
+- Bootstrap und systemd erlauben dem Dienstkonto den Zugriff auf State- und
+  Update-Cachepfade, ohne bestehende Nutzdaten rekursiv umzubesitzen.
+- Das Frontend prüft HTTP-Status und Content-Type vor dem JSON-Parsing und setzt
+  fehlgeschlagene Downloads in einen terminalen Fehlerzustand.
+
+Das direkte Upgrade von 4.5.0 bzw. 4.5.1 ist vorgesehen; bestehende Daten und
+Konfigurationen bleiben erhalten. Tag und GitHub-Release werden separat erstellt.
+
 ## [4.5.1] - 2026-07-27
 
 ### Documentation

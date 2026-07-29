@@ -2,7 +2,7 @@
 
 ## Dokumentstatus und Geltungsbereich
 
-Dieses Dokument beschreibt den implementierten Stand von **Zrzavy Energy Monitor 4.5.1**. Repositorypfade ohne Präfix sind relativ zur Repositorywurzel. Pfade unter `/opt`, `/etc`, `/var/lib`, `/var/cache` und `/var/log` sind Deploymentpfade, keine Repositorypfade.
+Dieses Dokument beschreibt den implementierten Stand von **Zrzavy Energy Monitor 4.5.3**. Repositorypfade ohne Präfix sind relativ zur Repositorywurzel. Pfade unter `/opt`, `/etc`, `/var/lib`, `/var/cache` und `/var/log` sind Deploymentpfade, keine Repositorypfade.
 
 Die Abschnitte „Ist-Architektur 4.5“ und „Zielarchitektur 5.0 – geplant“ sind bewusst getrennt. MQTT, Home-Assistant-Discovery und eine versionierte externe API sind in 4.5 nicht implementiert.
 

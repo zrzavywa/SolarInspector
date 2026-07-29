@@ -50,10 +50,16 @@ def write_update_status(
     path.parent.mkdir(parents=True, exist_ok=True)
 
     temporary_path = path.with_suffix(path.suffix + ".tmp")
-    temporary_path.write_text(
-        json.dumps(current, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    temporary_path.replace(path)
+    try:
+        temporary_path.write_text(
+            json.dumps(current, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        temporary_path.replace(path)
+    finally:
+        try:
+            temporary_path.unlink()
+        except FileNotFoundError:
+            pass
 
     return current

@@ -15,7 +15,7 @@ nicht ausdrücklich einen aktuellen Stand oder offenen Handlungsbedarf nennen.
 
 ## Aktueller Produktstand
 
-Zrzavy Energy Monitor 4.5.0 ist der dokumentierte aktuelle Produktstand.
+Zrzavy Energy Monitor 4.5.3 ist der dokumentierte aktuelle Produktstand.
 SolarInspector 4.1.3 bezeichnet den Migrationsausgangspunkt. Aussagen über
 Version 5.0 oder spätere Architekturziele sind geplant und beschreiben keinen
 Bestandteil von Version 4.5.0.
@@ -61,6 +61,12 @@ Hardware-Handoffs können weiterhin offenen Prüfbedarf enthalten:
   [Datenfluss](phase-10-data-flow.md),
   [Findings](phase-10-findings.md) und
   [Schemainventar](phase-10-schema-inventory.md)
+
+## Zwischenphase 10A
+
+- [Analyse Shelly Plug M Gen3](phase-10a-shelly-plug-m-gen3-analysis.md)
+- [Hardware-Evidence](phase-10a-shelly-plug-m-gen3-hardware-evidence.md)
+- [Abschlussstatus](phase-10a-shelly-plug-m-gen3-completion.md)
 
 ## Rebranding und Migration
 

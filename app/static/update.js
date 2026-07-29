@@ -32,6 +32,20 @@ const ACTIVE_UPDATE_STATES = new Set([
   "rollback",
 ]);
 
+async function readJsonResponse(response, fallbackMessage) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    throw new Error(
+      response.ok ? fallbackMessage : `Serverfehler beim Update: HTTP ${response.status}`,
+    );
+  }
+  try {
+    return await response.json();
+  } catch (_error) {
+    throw new Error("Der Update-Server hat eine ungültige Antwort geliefert.");
+  }
+}
+
 
 function formatDate(value) {
   if (!value) {
@@ -61,7 +75,7 @@ async function loadInstalledVersion() {
     throw new Error(`Versionsabfrage fehlgeschlagen: HTTP ${response.status}`);
   }
 
-  const payload = await response.json();
+  const payload = await readJsonResponse(response, "Ungültige Versionsantwort.");
   installedVersion.textContent = payload.version;
 }
 
@@ -81,7 +95,7 @@ async function checkForUpdate() {
       },
     });
 
-    const payload = await response.json();
+    const payload = await readJsonResponse(response, "Ungültige Updateantwort.");
 
     if (!response.ok || payload.status !== "ok") {
       throw new Error(
@@ -144,7 +158,7 @@ async function fetchUpdateStatus() {
     );
   }
 
-  return response.json();
+  return readJsonResponse(response, "Ungültige Statusantwort.");
 }
 
 
@@ -197,7 +211,7 @@ async function installUpdate() {
       body: JSON.stringify({}),
     });
 
-    const payload = await response.json();
+    const payload = await readJsonResponse(response, "Ungültige Installationsantwort.");
 
     if (!response.ok) {
       throw new Error(
@@ -283,7 +297,7 @@ async function loadDownloadStatus() {
     throw new Error(`Statusabfrage fehlgeschlagen: HTTP ${response.status}`);
   }
 
-  const payload = await response.json();
+  const payload = await readJsonResponse(response, "Ungültige Statusantwort.");
   renderDownloadStatus(payload);
 
   return payload;
@@ -307,7 +321,7 @@ async function downloadUpdate() {
       },
     });
 
-    const payload = await response.json();
+    const payload = await readJsonResponse(response, "Ungültige Downloadantwort.");
     renderDownloadStatus(payload);
 
     if (!response.ok) {
@@ -317,6 +331,11 @@ async function downloadUpdate() {
       );
     }
   } catch (error) {
+    renderDownloadStatus({
+      state: "failed",
+      progress: 0,
+      message: error.message,
+    });
     errorMessage.textContent = error.message;
     errorCard.hidden = false;
   } finally {

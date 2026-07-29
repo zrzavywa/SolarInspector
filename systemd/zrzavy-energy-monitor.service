@@ -23,6 +23,7 @@ ProtectSystem=strict
 ReadWritePaths=/etc/zrzavy-energy-monitor
 ReadWritePaths=/var/lib/zrzavy-energy-monitor
 ReadWritePaths=/var/log/zrzavy-energy-monitor
+ReadWritePaths=/var/cache/zrzavy-energy-monitor
 
 [Install]
 WantedBy=multi-user.target

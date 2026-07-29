@@ -144,7 +144,7 @@ def apply_configuration_form(
             "simulation": form.get("solakon_one_simulation") == "on",
         }
     )
-    for role in ("house_meter", "solakon_meter"):
+    for role in ("house_meter", "solakon_meter", "plant_meter"):
         current[role].update(
             {
                 "enabled": form.get(f"{role}_enabled") == "on",

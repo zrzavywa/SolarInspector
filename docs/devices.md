@@ -6,6 +6,7 @@
 |---|---|---|
 | Solakon ONE | Modbus TCP | PV-, AC-, Batterie-, Last- und Gerätewerte |
 | Shelly PM Mini Gen 3 | lokale RPC-API | unabhängige AC-Messung der Solakon-Anlage |
+| Shelly Plug M Gen3 | lokale RPC-API | read-only AC-Messung hinter dem Solakon-AC-Ausgang |
 | Shelly 3EM Gen 1 | lokale HTTP-API | dreiphasige Hausanschlussmessung |
 | Shelly Pro 3EM | lokale RPC-API | dreiphasige Hausanschlussmessung |
 | SHRDZM-Kundenschnittstellen-Modul | lokale REST API | offizielle Referenz für Netzbezug und Einspeisung |
@@ -73,6 +74,22 @@ Prüfung im Browser oder mit `curl`:
 ```bash
 curl --fail "http://<SHELLY-IP>/rpc/PM1.GetStatus?id=0"
 ```
+
+## Shelly Plug M Gen3
+
+Der Plug wird zwischen Solakon-AC-Ausgang und Steckdose beziehungsweise
+Hausnetz eingesetzt. Die optionale Konfiguration `plant_meter` ist
+standardmäßig deaktiviert. Gelesen wird ausschließlich:
+
+```text
+/rpc/Switch.GetStatus?id=0
+```
+
+`apower` wird als `PLANT_AC_POWER` normalisiert. Ein expliziter Wert von `0 W`
+ist gültig; fehlende oder ungültige Werte lösen den bestehenden Fallback auf
+Solakon ONE AC aus. `output=false` wird nur diagnostiziert. Das Relais, die
+Zähler und die Gerätekonfiguration werden niemals verändert. Vorzeichen und
+`direction_factor` müssen mit realer Hardware charakterisiert werden.
 
 ## Shelly 3EM Gen 1
 
